@@ -18,7 +18,7 @@ function FloatingIcons() {
       delay: Math.random() * 10,
       duration: 15 + Math.random() * 20,
       size: 16 + Math.random() * 24,
-      opacity: 0.1 + Math.random() * 0.15,
+      opacity: 0.04 + Math.random() * 0.06,
     }));
   }, []);
 
