@@ -1,12 +1,53 @@
 import { Link } from "wouter";
-import { Users, Plus, Music2 } from "lucide-react";
+import { Users, Plus, Music2, Music, Headphones, Disc3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SpotifyIcon } from "@/components/spotify-icon";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
+
+function FloatingIcons() {
+  const icons = useMemo(() => {
+    const iconTypes = [Music, Music2, Headphones, Disc3, "spotify"];
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      type: iconTypes[i % iconTypes.length],
+      left: Math.random() * 100,
+      delay: Math.random() * 10,
+      duration: 15 + Math.random() * 20,
+      size: 16 + Math.random() * 24,
+      opacity: 0.1 + Math.random() * 0.15,
+    }));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {icons.map((icon) => (
+        <div
+          key={icon.id}
+          className="absolute animate-float-up"
+          style={{
+            left: `${icon.left}%`,
+            animationDelay: `${icon.delay}s`,
+            animationDuration: `${icon.duration}s`,
+            opacity: icon.opacity,
+          }}
+        >
+          {icon.type === "spotify" ? (
+            <SpotifyIcon size={icon.size} />
+          ) : (
+            <icon.type
+              size={icon.size}
+              className="text-[#1DB954]"
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState("");
@@ -19,8 +60,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between p-4 border-b border-border">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      <FloatingIcons />
+      <header className="flex items-center justify-between p-4 border-b border-border relative z-10">
         <div className="flex items-center gap-2">
           <SpotifyIcon size={28} />
           <span className="font-semibold text-lg">Oda Oyunu</span>
@@ -28,7 +70,7 @@ export default function Home() {
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative z-10">
         <div className="max-w-md w-full space-y-8 animate-fade-in">
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3">
@@ -98,7 +140,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="p-4 border-t border-border">
+      <footer className="p-4 border-t border-border relative z-10">
         <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <span>Geliştirici:</span>
