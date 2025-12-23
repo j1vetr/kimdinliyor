@@ -98,8 +98,35 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="p-4 border-t border-border text-center text-sm text-muted-foreground">
-        <p>Spotify Oda Oyunu - Multiplayer Müzik Oyunu</p>
+      <footer className="p-4 border-t border-border">
+        <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <span>Geliştirici:</span>
+            <a
+              href="https://toov.com.tr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-foreground hover:text-primary transition-colors"
+              data-testid="link-developer"
+            >
+              TOOV
+            </a>
+            <span className="text-primary">&lt;3</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Powered by</span>
+            <a
+              href="https://spotify.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+              data-testid="link-spotify"
+            >
+              <SpotifyIcon size={20} />
+              <span className="font-semibold text-[#1DB954]">Spotify</span>
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   );

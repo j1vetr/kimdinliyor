@@ -569,6 +569,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } else if (Array.from(selected).some(id => correct.has(id))) {
         isPartialCorrect = true;
         score = 5;
+      } else {
+        score = -2;
       }
 
       await storage.updateAnswer(answer.id, { isCorrect, isPartialCorrect, score });
