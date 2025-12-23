@@ -155,7 +155,7 @@ export default function Game() {
   }
 
   const game = gameQuery.data;
-  const otherPlayers = game.players.filter((p) => p.id !== userId);
+  const allPlayers = game.players; // Include self for voting
   const isShowingResults = game.status === "results";
 
   return (
@@ -204,13 +204,14 @@ export default function Game() {
                   Bu şarkıyı kim/kimler dinliyor?
                 </h3>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {otherPlayers.map((player) => (
+                  {allPlayers.map((player) => (
                     <PlayerCard
                       key={player.id}
                       player={player}
                       isSelectable={!hasAnswered}
                       isSelected={selectedPlayers.includes(player.id)}
                       onSelect={(selected) => handlePlayerToggle(player.id, selected)}
+                      isSelf={player.id === userId}
                     />
                   ))}
                 </div>

@@ -5,6 +5,7 @@ import {
   tracksCache,
   rounds,
   answers,
+  spotifyTokens,
   type User,
   type InsertUser,
   type Room,
@@ -22,6 +23,12 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
+
+export interface SpotifyToken {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
+}
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 
@@ -62,6 +69,11 @@ export interface IStorage {
   getAnswer(roundId: string, oderId: string): Promise<Answer | undefined>;
   createAnswer(answer: InsertAnswer): Promise<Answer>;
   updateAnswer(id: string, data: Partial<Answer>): Promise<Answer | undefined>;
+
+  // Spotify Tokens
+  getSpotifyToken(userId: string): Promise<SpotifyToken | undefined>;
+  saveSpotifyToken(userId: string, token: SpotifyToken): Promise<void>;
+  deleteSpotifyToken(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -215,6 +227,45 @@ export class DatabaseStorage implements IStorage {
   async updateAnswer(id: string, data: Partial<Answer>): Promise<Answer | undefined> {
     const [answer] = await db.update(answers).set(data).where(eq(answers.id, id)).returning();
     return answer || undefined;
+  }
+
+  // Spotify Tokens
+  async getSpotifyToken(userId: string): Promise<SpotifyToken | undefined> {
+    const [token] = await db
+      .select()
+      .from(spotifyTokens)
+      .where(eq(spotifyTokens.oderId, userId));
+    if (!token) return undefined;
+    return {
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      expiresAt: token.expiresAt,
+    };
+  }
+
+  async saveSpotifyToken(userId: string, token: SpotifyToken): Promise<void> {
+    const existing = await this.getSpotifyToken(userId);
+    if (existing) {
+      await db
+        .update(spotifyTokens)
+        .set({
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
+          expiresAt: token.expiresAt,
+        })
+        .where(eq(spotifyTokens.oderId, userId));
+    } else {
+      await db.insert(spotifyTokens).values({
+        oderId: userId,
+        accessToken: token.accessToken,
+        refreshToken: token.refreshToken,
+        expiresAt: token.expiresAt,
+      });
+    }
+  }
+
+  async deleteSpotifyToken(userId: string): Promise<void> {
+    await db.delete(spotifyTokens).where(eq(spotifyTokens.oderId, userId));
   }
 }
 

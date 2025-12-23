@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { isSpotifyConnected, getRecentlyPlayedTracks, getTopTracks } from "./spotify";
+import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks } from "./spotify";
 import type { Room, RoomPlayer, Track } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -52,26 +52,71 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Spotify status
+  // Spotify OAuth - Check user connection status
   app.get("/api/spotify/status", async (req, res) => {
     try {
-      const connected = await isSpotifyConnected();
-      res.json({ connected });
+      const { userId } = req.query;
+      if (!userId || typeof userId !== "string") {
+        return res.json({ connected: false });
+      }
+      const token = await storage.getSpotifyToken(userId);
+      res.json({ connected: !!token });
     } catch (error) {
       res.json({ connected: false });
     }
   });
 
+  // Spotify OAuth - Get auth URL for a user
   app.get("/api/spotify/auth-url", async (req, res) => {
     try {
-      const connected = await isSpotifyConnected();
-      if (connected) {
-        res.json({ connected: true, authUrl: null });
-      } else {
-        res.json({ connected: false, authUrl: null, message: "Spotify bağlantısı kurulamadı" });
+      const { userId, roomCode } = req.query;
+      if (!userId || typeof userId !== "string") {
+        return res.status(400).json({ error: "userId gerekli" });
       }
+      const state = `${userId}:${roomCode || ""}`;
+      const authUrl = getSpotifyAuthUrl(state);
+      res.json({ authUrl });
     } catch (error) {
       res.status(500).json({ error: "Spotify auth error" });
+    }
+  });
+
+  // Spotify OAuth - Callback
+  app.get("/api/spotify/callback", async (req, res) => {
+    try {
+      const { code, state, error } = req.query;
+      
+      if (error) {
+        return res.redirect("/?spotify_error=access_denied");
+      }
+
+      if (!code || typeof code !== "string" || !state || typeof state !== "string") {
+        return res.redirect("/?spotify_error=invalid_request");
+      }
+
+      const [userId, roomCode] = state.split(":");
+      
+      const tokens = await exchangeCodeForTokens(code);
+      if (!tokens) {
+        return res.redirect("/?spotify_error=token_exchange_failed");
+      }
+
+      const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
+      await storage.saveSpotifyToken(userId, {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt,
+      });
+
+      await storage.updateUser(userId, { spotifyConnected: true });
+
+      if (roomCode) {
+        return res.redirect(`/oyun/${roomCode}/lobby?spotify_connected=true`);
+      }
+      return res.redirect("/?spotify_connected=true");
+    } catch (error) {
+      console.error("Spotify callback error:", error);
+      res.redirect("/?spotify_error=callback_failed");
     }
   });
 
@@ -184,11 +229,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Create unique user name
       const uniqueName = await generateUniqueName(displayName.trim());
       
-      // Create user
+      // Create user (Spotify not connected yet - will connect via OAuth)
       const user = await storage.createUser({
         displayName: displayName.trim(),
         uniqueName,
-        spotifyConnected: true,
+        spotifyConnected: false,
       });
 
       // Add player to room
@@ -227,22 +272,53 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "En az 2 oyuncu gerekli" });
       }
 
-      // Fetch tracks from Spotify
+      // Fetch tracks from each player's Spotify account
       await storage.clearRoomTracks(room.id);
       
-      try {
-        const recentTracks = await getRecentlyPlayedTracks(30);
-        const topTracks = await getTopTracks(20);
-        
-        const allTracks = [...recentTracks, ...topTracks];
-        const uniqueTracks = new Map<string, typeof allTracks[0]>();
-        allTracks.forEach(t => uniqueTracks.set(t.id, t));
+      const tracksByUser = new Map<string, { track: any; userId: string }[]>();
+      
+      for (const player of players) {
+        try {
+          let token = await storage.getSpotifyToken(player.userId);
+          if (!token) continue;
 
-        // Add tracks to cache with random player assignments
-        for (const track of Array.from(uniqueTracks.values())) {
-          const numListeners = Math.floor(Math.random() * players.length) + 1;
-          const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
-          const listeners = shuffledPlayers.slice(0, numListeners).map(p => p.userId);
+          // Refresh token if expired
+          if (token.expiresAt < new Date()) {
+            const refreshed = await refreshAccessToken(token.refreshToken);
+            if (refreshed) {
+              const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+              await storage.saveSpotifyToken(player.userId, {
+                accessToken: refreshed.accessToken,
+                refreshToken: token.refreshToken,
+                expiresAt: newExpiresAt,
+              });
+              token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
+            }
+          }
+
+          const recentTracks = await getRecentlyPlayedTracks(token.accessToken, 20);
+          const topTracks = await getTopTracks(token.accessToken, 15);
+          
+          const allTracks = [...recentTracks, ...topTracks];
+          for (const track of allTracks) {
+            if (!tracksByUser.has(track.id)) {
+              tracksByUser.set(track.id, []);
+            }
+            const existing = tracksByUser.get(track.id)!;
+            if (!existing.some(e => e.userId === player.userId)) {
+              existing.push({ track, userId: player.userId });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to fetch tracks for user ${player.userId}:`, error);
+        }
+      }
+
+      // Add tracks to cache with actual listeners
+      if (tracksByUser.size > 0) {
+        for (const [trackId, entries] of Array.from(tracksByUser.entries())) {
+          const track = entries[0].track;
+          const listeners = entries.map(e => e.userId);
 
           await storage.addTrack({
             roomId: room.id,
@@ -254,9 +330,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             sourceUserIds: listeners,
           });
         }
-      } catch (error) {
-        console.error("Failed to fetch Spotify tracks:", error);
-        // Create demo tracks if Spotify fails
+      } else {
+        // Create demo tracks if no Spotify tracks available
         const demoTracks = [
           { name: "Bohemian Rhapsody", artist: "Queen" },
           { name: "Stairway to Heaven", artist: "Led Zeppelin" },

@@ -1,70 +1,103 @@
 import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 
-let connectionSettings: any;
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || "";
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || "";
+const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || "";
 
-async function getAccessToken() {
-  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
-    return connectionSettings.settings.access_token;
-  }
-  
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
+const SPOTIFY_SCOPES = [
+  "user-read-recently-played",
+  "user-top-read",
+  "playlist-read-private",
+  "playlist-read-collaborative",
+].join(" ");
 
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
-  }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=spotify',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  const refreshToken = connectionSettings?.settings?.oauth?.credentials?.refresh_token;
-  const accessToken = connectionSettings?.settings?.access_token || connectionSettings.settings?.oauth?.credentials?.access_token;
-  const clientId = connectionSettings?.settings?.oauth?.credentials?.client_id;
-  const expiresIn = connectionSettings.settings?.oauth?.credentials?.expires_in;
-
-  if (!connectionSettings || (!accessToken || !clientId || !refreshToken)) {
-    throw new Error('Spotify not connected');
-  }
-
-  return { accessToken, clientId, refreshToken, expiresIn };
+export function getSpotifyAuthUrl(state: string): string {
+  const params = new URLSearchParams({
+    client_id: SPOTIFY_CLIENT_ID,
+    response_type: "code",
+    redirect_uri: SPOTIFY_REDIRECT_URI,
+    scope: SPOTIFY_SCOPES,
+    state: state,
+  });
+  return `https://accounts.spotify.com/authorize?${params.toString()}`;
 }
 
-export async function getSpotifyClient(): Promise<SpotifyApi | null> {
+export async function exchangeCodeForTokens(code: string): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+} | null> {
   try {
-    const { accessToken, clientId, refreshToken, expiresIn } = await getAccessToken();
-
-    const spotify = SpotifyApi.withAccessToken(clientId, {
-      access_token: accessToken,
-      token_type: "Bearer",
-      expires_in: expiresIn || 3600,
-      refresh_token: refreshToken,
+    const response = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code: code,
+        redirect_uri: SPOTIFY_REDIRECT_URI,
+      }),
     });
 
-    return spotify;
+    if (!response.ok) {
+      console.error("Token exchange failed:", await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
+      expiresIn: data.expires_in,
+    };
   } catch (error) {
-    console.error("Failed to get Spotify client:", error);
+    console.error("Token exchange error:", error);
     return null;
   }
 }
 
-export async function isSpotifyConnected(): Promise<boolean> {
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  accessToken: string;
+  expiresIn: number;
+} | null> {
   try {
-    await getAccessToken();
-    return true;
-  } catch {
-    return false;
+    const response = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Token refresh failed:", await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      accessToken: data.access_token,
+      expiresIn: data.expires_in,
+    };
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    return null;
   }
+}
+
+export function createSpotifyClient(accessToken: string): SpotifyApi {
+  return SpotifyApi.withAccessToken(SPOTIFY_CLIENT_ID, {
+    access_token: accessToken,
+    token_type: "Bearer",
+    expires_in: 3600,
+    refresh_token: "",
+  });
 }
 
 export interface SpotifyTrack {
@@ -75,12 +108,11 @@ export interface SpotifyTrack {
   previewUrl: string | null;
 }
 
-export async function getRecentlyPlayedTracks(limit: number = 50): Promise<SpotifyTrack[]> {
-  const client = await getSpotifyClient();
-  if (!client) return [];
+export async function getRecentlyPlayedTracks(accessToken: string, limit: number = 50): Promise<SpotifyTrack[]> {
+  const client = createSpotifyClient(accessToken);
 
   try {
-    const response = await client.player.getRecentlyPlayedTracks(limit);
+    const response = await client.player.getRecentlyPlayedTracks(limit as 50);
     return response.items.map((item) => ({
       id: item.track.id,
       name: item.track.name,
@@ -94,12 +126,11 @@ export async function getRecentlyPlayedTracks(limit: number = 50): Promise<Spoti
   }
 }
 
-export async function getTopTracks(limit: number = 50): Promise<SpotifyTrack[]> {
-  const client = await getSpotifyClient();
-  if (!client) return [];
+export async function getTopTracks(accessToken: string, limit: number = 50): Promise<SpotifyTrack[]> {
+  const client = createSpotifyClient(accessToken);
 
   try {
-    const response = await client.currentUser.topItems("tracks", "medium_term", limit);
+    const response = await client.currentUser.topItems("tracks", "medium_term", limit as 50);
     return response.items.map((track) => ({
       id: track.id,
       name: track.name,
@@ -113,9 +144,8 @@ export async function getTopTracks(limit: number = 50): Promise<SpotifyTrack[]> 
   }
 }
 
-export async function getUserPlaylists() {
-  const client = await getSpotifyClient();
-  if (!client) return [];
+export async function getUserPlaylists(accessToken: string) {
+  const client = createSpotifyClient(accessToken);
 
   try {
     const response = await client.currentUser.playlists.playlists(50);
@@ -126,9 +156,8 @@ export async function getUserPlaylists() {
   }
 }
 
-export async function getPlaylistTracks(playlistId: string): Promise<SpotifyTrack[]> {
-  const client = await getSpotifyClient();
-  if (!client) return [];
+export async function getPlaylistTracks(accessToken: string, playlistId: string): Promise<SpotifyTrack[]> {
+  const client = createSpotifyClient(accessToken);
 
   try {
     const response = await client.playlists.getPlaylistItems(playlistId, undefined, undefined, 50);

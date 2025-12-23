@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RoomWithPlayers } from "@shared/schema";
+
+interface SpotifyStatus {
+  connected: boolean;
+}
 
 export default function Lobby() {
   const params = useParams<{ code: string }>();
@@ -47,11 +51,54 @@ export default function Lobby() {
     },
   });
 
+  const spotifyStatusQuery = useQuery<SpotifyStatus>({
+    queryKey: ["/api/spotify/status", userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/spotify/status?userId=${userId}`);
+      return response.json();
+    },
+    enabled: !!userId,
+    refetchInterval: 3000,
+  });
+
+  const connectSpotify = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/spotify/auth-url?userId=${userId}&roomCode=${roomCode}`);
+      const data = await response.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+      } else {
+        toast({
+          title: "Hata",
+          description: "Spotify bağlantı URL'si alınamadı.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Hata",
+        description: "Spotify bağlantısı başlatılamadı.",
+        variant: "destructive",
+      });
+    }
+  }, [userId, roomCode, toast]);
+
   useEffect(() => {
     if (roomQuery.data?.status === "playing") {
       setLocation(`/oyun/${roomCode}/game`);
     }
   }, [roomQuery.data?.status, roomCode, setLocation]);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("spotify_connected") === "true") {
+      toast({
+        title: "Spotify Bağlandı",
+        description: "Spotify hesabınız başarıyla bağlandı.",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast]);
 
   const copyRoomCode = useCallback(async () => {
     try {
@@ -245,6 +292,47 @@ export default function Lobby() {
             )}
           </div>
         </div>
+
+        {!spotifyStatusQuery.data?.connected && (
+          <Card className="border-primary/30 bg-primary/5 animate-fade-in">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
+                  <SpotifyIcon size={28} />
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="font-semibold text-lg">Spotify'ı Bağla</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Oyuna katılmak için Spotify hesabını bağlamalısın
+                  </p>
+                </div>
+                <Button
+                  onClick={connectSpotify}
+                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-semibold gap-2"
+                  data-testid="button-connect-spotify"
+                >
+                  <SpotifyIcon size={18} />
+                  Spotify ile Bağlan
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {spotifyStatusQuery.data?.connected && (
+          <Card className="border-primary/30 bg-primary/10 animate-fade-in">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
+                <SpotifyIcon size={20} />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-primary">Spotify Bağlı</p>
+                <p className="text-muted-foreground text-sm">Oyuna hazırsın!</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="mt-auto pt-4 border-t border-border">
           {isHost ? (

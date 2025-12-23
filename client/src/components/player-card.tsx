@@ -20,6 +20,7 @@ interface PlayerCardProps {
   showScore?: boolean;
   resultType?: "correct" | "incorrect" | "partial" | null;
   scoreGained?: number;
+  isSelf?: boolean;
 }
 
 export function PlayerCard({
@@ -31,6 +32,7 @@ export function PlayerCard({
   showScore = false,
   resultType = null,
   scoreGained,
+  isSelf = false,
 }: PlayerCardProps) {
   const initials = player.displayName
     .split(" ")
@@ -77,6 +79,7 @@ export function PlayerCard({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium truncate" data-testid={`text-player-name-${player.id}`}>
             {player.displayName}
+            {isSelf && <span className="text-muted-foreground ml-1">(Sen)</span>}
           </span>
           {isHost && (
             <Badge variant="secondary" className="text-xs gap-1">
