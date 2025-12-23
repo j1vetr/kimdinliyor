@@ -18,7 +18,7 @@ function FloatingIcons() {
       delay: Math.random() * 10,
       duration: 15 + Math.random() * 20,
       size: 16 + Math.random() * 24,
-      opacity: 0.04 + Math.random() * 0.06,
+      opacity: 0.02 + Math.random() * 0.03,
     }));
   }, []);
 
@@ -30,6 +30,7 @@ function FloatingIcons() {
           className="absolute animate-float-up"
           style={{
             left: `${icon.left}%`,
+            bottom: "-50px",
             animationDelay: `${icon.delay}s`,
             animationDuration: `${icon.duration}s`,
             opacity: icon.opacity,
