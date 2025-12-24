@@ -52,6 +52,7 @@ export interface IStorage {
   addPlayerToRoom(data: InsertRoomPlayer): Promise<RoomPlayer>;
   updatePlayerScore(id: string, score: number): Promise<void>;
   removePlayerFromRoom(roomId: string, oderId: string): Promise<void>;
+  resetPlayerScores(roomId: string): Promise<void>;
 
   // Tracks
   getTracksByRoom(roomId: string): Promise<Track[]>;
@@ -162,6 +163,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(roomPlayers)
       .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, oderId)));
+  }
+
+  async resetPlayerScores(roomId: string): Promise<void> {
+    await db
+      .update(roomPlayers)
+      .set({ totalScore: 0 })
+      .where(eq(roomPlayers.roomId, roomId));
   }
 
   // Tracks

@@ -373,8 +373,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(404).json({ error: "Oda bulunamadı" });
       }
 
-      if (room.status !== "waiting") {
-        return res.status(400).json({ error: "Oyun zaten başlamış" });
+      // Allow joining when waiting or finished (after game ends)
+      // Block joining during active game
+      if (room.status === "playing") {
+        return res.status(400).json({ error: "Oyun devam ediyor, şu anda katılamazsınız" });
       }
 
       // Check password for private rooms
@@ -506,6 +508,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
+      // Reset player scores for new game
+      await storage.resetPlayerScores(room.id);
+      
       // Fetch tracks from each player's Spotify account
       await storage.clearRoomTracks(room.id);
       
@@ -831,7 +836,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const newRoundNumber = (room.currentRound || 0) + 1;
 
     if (newRoundNumber > (room.totalRounds || 10)) {
-      // Game finished
+      // Game finished - keep room in finished state until new game starts
       await storage.updateRoom(room.id, { status: "finished" });
       gameState.status = "finished";
       broadcastToRoom(roomCode, { type: "game_finished" });
@@ -875,6 +880,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
     
     if (!track) {
+      // No tracks available - mark game as finished
+      await storage.updateRoom(room.id, { status: "finished" });
       gameState.status = "finished";
       broadcastToRoom(roomCode, { type: "game_finished" });
       return;

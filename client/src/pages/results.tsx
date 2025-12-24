@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Trophy, Medal, Crown, Home, RotateCcw, Loader2, Star, Target, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +22,7 @@ interface FinalResults {
 
 export default function Results() {
   const params = useParams<{ code: string }>();
+  const [, setLocation] = useLocation();
   const roomCode = params.code?.toUpperCase();
   const userId = localStorage.getItem("userId");
 
@@ -51,9 +52,7 @@ export default function Results() {
           <p className="text-muted-foreground mb-6">
             Oyun sonuçlarına ulaşılamadı.
           </p>
-          <Link href="/">
-            <Button>Ana Sayfaya Dön</Button>
-          </Link>
+          <Button onClick={() => setLocation("/")}>Ana Sayfaya Dön</Button>
         </Card>
       </div>
     );
@@ -210,18 +209,25 @@ export default function Results() {
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-4">
-          <Link href="/" className="flex-1">
-            <Button variant="outline" className="w-full" size="lg">
-              <Home className="h-5 w-5 mr-2" />
-              Ana Sayfa
-            </Button>
-          </Link>
-          <Link href={`/oyun/${roomCode}/lobby`} className="flex-1">
-            <Button className="w-full" size="lg" data-testid="button-return-lobby">
-              <RotateCcw className="h-5 w-5 mr-2" />
-              Lobiye Dön
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            className="flex-1" 
+            size="lg"
+            onClick={() => setLocation("/")}
+            data-testid="button-home"
+          >
+            <Home className="h-5 w-5 mr-2" />
+            Ana Sayfa
+          </Button>
+          <Button 
+            className="flex-1" 
+            size="lg" 
+            onClick={() => setLocation(`/oyun/${roomCode}/lobby`)}
+            data-testid="button-return-lobby"
+          >
+            <RotateCcw className="h-5 w-5 mr-2" />
+            Lobiye Dön
+          </Button>
         </div>
       </main>
     </div>
