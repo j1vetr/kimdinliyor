@@ -65,6 +65,28 @@ export default function Results() {
 
   const isHost = roomStatusQuery.data?.hostUserId === userId;
 
+  const returnToLobbyMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/rooms/${roomCode}/return-lobby`, {});
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Lobiye dönülemedi");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+      setLocation(`/oyun/${roomCode}/lobi`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Hata",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const rematchMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", `/api/rooms/${roomCode}/rematch`, { userId });
@@ -274,10 +296,15 @@ export default function Results() {
             variant="outline"
             className="flex-1" 
             size="lg" 
-            onClick={() => setLocation(`/oyun/${roomCode}/lobi`)}
+            onClick={() => returnToLobbyMutation.mutate()}
+            disabled={returnToLobbyMutation.isPending}
             data-testid="button-return-lobby"
           >
-            <RotateCcw className="h-5 w-5 mr-2" />
+            {returnToLobbyMutation.isPending ? (
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            ) : (
+              <RotateCcw className="h-5 w-5 mr-2" />
+            )}
             Lobiye Dön
           </Button>
           {isHost ? (

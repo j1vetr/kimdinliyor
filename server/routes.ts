@@ -868,6 +868,32 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Return to lobby - end game and reset room to waiting
+  app.post("/api/rooms/:code/return-lobby", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const room = await storage.getRoomByCode(code.toUpperCase());
+
+      if (!room) {
+        return res.status(404).json({ error: "Oda bulunamadı" });
+      }
+
+      // Reset room status to waiting
+      await storage.updateRoom(room.id, { status: "waiting", currentRound: 0 });
+      
+      // Clear game state
+      gameStates.delete(code.toUpperCase());
+
+      // Broadcast return to lobby
+      broadcastToRoom(code.toUpperCase(), { type: "return_to_lobby" });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Return to lobby error:", error);
+      res.status(500).json({ error: "Lobiye dönülemedi" });
+    }
+  });
+
   // Rematch - reset scores and go back to lobby
   app.post("/api/rooms/:code/rematch", async (req, res) => {
     try {
