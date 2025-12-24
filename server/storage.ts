@@ -191,6 +191,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearRoomContent(roomId: string): Promise<void> {
+    // First delete answers that reference rounds in this room
+    const roomRounds = await db.select().from(rounds).where(eq(rounds.roomId, roomId));
+    for (const round of roomRounds) {
+      await db.delete(answers).where(eq(answers.roundId, round.id));
+    }
+    // Then delete rounds that reference content in this room
+    await db.delete(rounds).where(eq(rounds.roomId, roomId));
+    // Finally delete the content cache
     await db.delete(contentCache).where(eq(contentCache.roomId, roomId));
   }
 

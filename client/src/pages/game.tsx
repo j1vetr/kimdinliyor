@@ -395,10 +395,21 @@ export default function Game() {
             </div>
 
             <div className="flex flex-col lg:w-[400px] xl:w-[480px] lg:min-h-0 lg:flex-1 lg:max-h-full gap-4">
-              <div className="bg-card/90 backdrop-blur-md rounded-2xl border border-border shadow-lg p-4 flex flex-col lg:flex-1 lg:min-h-0 lg:max-h-full">
-                <div className="text-center mb-4">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Tahmin Et</p>
-                  <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-500 to-red-500/60 bg-clip-text text-transparent">
+              <div className={`relative bg-gradient-to-br from-red-500/10 via-card/95 to-card backdrop-blur-md rounded-2xl border-2 shadow-xl p-4 flex flex-col lg:flex-1 lg:min-h-0 lg:max-h-full transition-all ${
+                !hasAnswered && selectedPlayers.length === 0 
+                  ? "border-red-500/50 animate-pulse shadow-red-500/20" 
+                  : hasAnswered 
+                    ? "border-green-500/50" 
+                    : "border-red-500"
+              }`}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <Badge className="bg-red-500 text-white px-4 py-1 text-sm font-bold shadow-lg">
+                    <Users className="h-3.5 w-3.5 mr-1.5" />
+                    KİMİ TAHMİN EDİYORSUN?
+                  </Badge>
+                </div>
+                <div className="text-center mb-4 mt-3">
+                  <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-500 to-red-400 bg-clip-text text-transparent">
                     {getQuestionText()}
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">Birden fazla oyuncu seçebilirsin</p>
