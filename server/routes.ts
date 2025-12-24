@@ -272,6 +272,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "En az 2 oyuncu gerekli" });
       }
 
+      // Check if all players have Spotify connected
+      const playersWithUsers = await storage.getRoomWithPlayers(code.toUpperCase());
+      const disconnectedPlayers = playersWithUsers?.players.filter(p => !p.user.spotifyConnected) || [];
+      if (disconnectedPlayers.length > 0) {
+        const names = disconnectedPlayers.map(p => p.user.displayName).join(", ");
+        return res.status(400).json({ 
+          error: `Tüm oyuncuların Spotify bağlaması gerekli. Bağlanmayanlar: ${names}` 
+        });
+      }
+
       // Fetch tracks from each player's Spotify account
       await storage.clearRoomTracks(room.id);
       

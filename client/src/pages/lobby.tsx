@@ -180,7 +180,9 @@ export default function Lobby() {
   const isHost = room.hostUserId === userId;
   const playerCount = players.length;
   const maxPlayers = room.maxPlayers || 8;
-  const canStart = isHost && playerCount >= 2;
+  const allSpotifyConnected = players.every(p => p.user.spotifyConnected);
+  const disconnectedCount = players.filter(p => !p.user.spotifyConnected).length;
+  const canStart = isHost && playerCount >= 2 && allSpotifyConnected;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -336,27 +338,36 @@ export default function Lobby() {
 
         <div className="mt-auto pt-4 border-t border-border">
           {isHost ? (
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={() => startGameMutation.mutate()}
-              disabled={!canStart || startGameMutation.isPending}
-              data-testid="button-start-game"
-            >
-              {startGameMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Başlatılıyor...
-                </>
-              ) : (
-                <>
-                  <Play className="h-5 w-5 mr-2" />
-                  {canStart
-                    ? "Oyunu Başlat"
-                    : `Başlatmak için en az 2 oyuncu gerekli`}
-                </>
+            <div className="space-y-2">
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={() => startGameMutation.mutate()}
+                disabled={!canStart || startGameMutation.isPending}
+                data-testid="button-start-game"
+              >
+                {startGameMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Başlatılıyor...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-5 w-5 mr-2" />
+                    {canStart
+                      ? "Oyunu Başlat"
+                      : playerCount < 2
+                        ? "Başlatmak için en az 2 oyuncu gerekli"
+                        : `${disconnectedCount} oyuncu Spotify bağlamalı`}
+                  </>
+                )}
+              </Button>
+              {!allSpotifyConnected && playerCount >= 2 && (
+                <p className="text-sm text-center text-muted-foreground">
+                  Tüm oyuncuların Spotify hesabını bağlaması gerekiyor
+                </p>
               )}
-            </Button>
+            </div>
           ) : (
             <div className="text-center p-4 rounded-lg bg-muted/50">
               <p className="text-muted-foreground">

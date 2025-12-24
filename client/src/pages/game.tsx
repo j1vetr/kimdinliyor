@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send } from "lucide-react";
+import { Loader2, Users, Send, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,6 +54,9 @@ export default function Game() {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentTrackIdRef = useRef<string | null>(null);
 
   const gameQuery = useQuery<GameState>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -107,6 +110,60 @@ export default function Game() {
       setLocation(`/oyun/${roomCode}/results`);
     }
   }, [gameQuery.data?.status, roomCode, setLocation]);
+
+  // Audio preview playback
+  useEffect(() => {
+    const game = gameQuery.data;
+    
+    // Stop audio on results, finished, or waiting status
+    if (!game || game.status === "results" || game.status === "finished" || game.status === "waiting") {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+        currentTrackIdRef.current = null;
+      }
+      return;
+    }
+    
+    // Only play audio during question phase
+    if (game.status === "question" && game.track) {
+      // Only start new audio if track changed
+      if (game.track.id !== currentTrackIdRef.current) {
+        // Stop previous audio first
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+        
+        currentTrackIdRef.current = game.track.id;
+        
+        // Only create audio if preview URL exists
+        if (game.track.previewUrl) {
+          const audio = new Audio(game.track.previewUrl);
+          audio.volume = isMuted ? 0 : 0.7;
+          audio.play().catch(console.error);
+          audioRef.current = audio;
+        }
+      }
+    }
+  }, [gameQuery.data?.status, gameQuery.data?.track?.id, gameQuery.data?.track?.previewUrl]);
+
+  // Handle mute state changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : 0.7;
+    }
+  }, [isMuted]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const handlePlayerToggle = useCallback((playerId: string, selected: boolean) => {
     if (hasAnswered) return;
@@ -171,6 +228,18 @@ export default function Game() {
           <Badge variant="secondary">
             Tur {game.currentRound}/{game.totalRounds}
           </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMuted(!isMuted)}
+            data-testid="button-mute"
+          >
+            {isMuted ? (
+              <VolumeX className="h-5 w-5" />
+            ) : (
+              <Volume2 className="h-5 w-5" />
+            )}
+          </Button>
           <ThemeToggle />
         </div>
       </header>
