@@ -19,12 +19,24 @@ interface GameState {
   usedTrackIds: Set<string>;
   tracksByOwner: Map<string, string[]>;
   lastOwnerIndex: number;
+  isLightningRound: boolean;
+  playerStreaks: Map<string, number>;
 }
 
 const gameStates = new Map<string, GameState>();
 
 // User selected devices
 const userDevices = new Map<string, string>();
+
+// Helper: Check if round is lightning round (every 5th round: 5, 10)
+function isLightningRound(roundNumber: number): boolean {
+  return roundNumber % 5 === 0 && roundNumber > 0;
+}
+
+// Helper: Get round time limit
+function getRoundTimeLimit(roundNumber: number): number {
+  return isLightningRound(roundNumber) ? 10 : 20;
+}
 
 function broadcastToRoom(roomCode: string, message: any) {
   const connections = roomConnections.get(roomCode);
@@ -607,6 +619,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         usedTrackIds: new Set(),
         tracksByOwner,
         lastOwnerIndex: -1,
+        isLightningRound: false,
+        playerStreaks: new Map(),
       });
 
       // Start first round after a short delay
@@ -689,13 +703,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
+      // Get current round time limit
+      const currentRoundNumber = room.currentRound || 0;
+      const roundTimeLimit = getRoundTimeLimit(currentRoundNumber);
+
+      // Get player streaks
+      const playerStreaks: Record<string, number> = {};
+      if (gameState?.playerStreaks) {
+        gameState.playerStreaks.forEach((streak, oderId) => {
+          playerStreaks[oderId] = streak;
+        });
+      }
+
       res.json({
         roomId: room.id,
         roomName: room.name,
         status: gameState?.status || "waiting",
-        currentRound: room.currentRound || 0,
+        currentRound: currentRoundNumber,
         totalRounds: room.totalRounds || 10,
-        timeLeft: gameState?.timeLeft || 20,
+        timeLeft: gameState?.timeLeft || roundTimeLimit,
+        totalTime: roundTimeLimit,
+        isLightningRound: gameState?.isLightningRound || false,
+        playerStreaks,
         track: track ? {
           id: track.id,
           spotifyTrackId: track.trackId,
@@ -863,20 +892,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
     await storage.updateRoom(room.id, { currentRound: newRoundNumber });
 
+    // Check if this is a lightning round
+    const lightning = isLightningRound(newRoundNumber);
+    const timeLimit = getRoundTimeLimit(newRoundNumber);
+
     // Update game state
     gameState.status = "question";
     gameState.currentRound = newRoundNumber;
-    gameState.timeLeft = 20;
+    gameState.timeLeft = timeLimit;
     gameState.trackId = track.id;
     gameState.roundStartTime = Date.now();
     gameState.answeredUsers = new Set();
+    gameState.isLightningRound = lightning;
 
-    broadcastToRoom(roomCode, { type: "round_started", round: newRoundNumber });
+    broadcastToRoom(roomCode, { 
+      type: "round_started", 
+      round: newRoundNumber,
+      isLightningRound: lightning,
+      timeLimit,
+    });
 
-    // Start timer
+    // Start timer with correct time limit
     const timer = setInterval(() => {
       const elapsed = Math.floor((Date.now() - gameState.roundStartTime!) / 1000);
-      gameState.timeLeft = Math.max(0, 20 - elapsed);
+      gameState.timeLeft = Math.max(0, timeLimit - elapsed);
 
       if (gameState.timeLeft <= 0) {
         clearInterval(timer);
@@ -900,9 +939,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const track = (await storage.getTracksByRoom(room.id)).find(t => t.id === currentRound.trackId);
     const correctUserIds = track?.sourceUserIds || [];
 
-    // Calculate scores
+    // Calculate scores with streak bonus and lightning multiplier
     const answers = await storage.getAnswersByRound(currentRound.id);
     const players = await storage.getRoomPlayers(room.id);
+    const isLightning = gameState.isLightningRound;
 
     for (const answer of answers) {
       const selected = answer.selectedUserIds || [];
@@ -919,16 +959,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
-      const score = (correctCount * 5) - (wrongCount * 5);
+      // Base score calculation
+      let baseScore = (correctCount * 5) - (wrongCount * 5);
       const isCorrect = correctCount === correct.size && wrongCount === 0;
       const isPartialCorrect = correctCount > 0 && !isCorrect;
 
-      await storage.updateAnswer(answer.id, { isCorrect, isPartialCorrect, score });
+      // Apply lightning round 2x multiplier
+      if (isLightning) {
+        baseScore = baseScore * 2;
+      }
+
+      // Track streak and apply bonus
+      const userId = answer.oderId;
+      const currentStreak = gameState.playerStreaks.get(userId) || 0;
+      let streakBonus = 0;
+
+      if (isCorrect || isPartialCorrect) {
+        // Increment streak for correct answers
+        const newStreak = currentStreak + 1;
+        gameState.playerStreaks.set(userId, newStreak);
+        
+        // +10 bonus for 3+ streak
+        if (newStreak >= 3) {
+          streakBonus = 10;
+        }
+      } else {
+        // Reset streak on wrong answer
+        gameState.playerStreaks.set(userId, 0);
+      }
+
+      const finalScore = baseScore + streakBonus;
+
+      await storage.updateAnswer(answer.id, { isCorrect, isPartialCorrect, score: finalScore });
 
       // Update player score
       const player = players.find(p => p.userId === answer.oderId);
       if (player) {
-        await storage.updatePlayerScore(player.id, (player.totalScore || 0) + score);
+        await storage.updatePlayerScore(player.id, (player.totalScore || 0) + finalScore);
       }
     }
 

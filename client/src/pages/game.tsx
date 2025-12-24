@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Volume2, VolumeX, Music, Check, Trophy, User, ArrowRight } from "lucide-react";
+import { Loader2, Users, Send, Volume2, VolumeX, Music, Check, Trophy, User, ArrowRight, Zap, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,9 @@ interface GameState {
   currentRound: number;
   totalRounds: number;
   timeLeft: number;
+  totalTime: number;
+  isLightningRound: boolean;
+  playerStreaks: Record<string, number>;
   track: {
     id: string;
     spotifyTrackId: string;
@@ -52,6 +55,7 @@ export default function Game() {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20);
+  const [totalTime, setTotalTime] = useState(20);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlayingOnDevice, setIsPlayingOnDevice] = useState(false);
   const currentTrackIdRef = useRef<string | null>(null);
@@ -120,8 +124,9 @@ export default function Game() {
   useEffect(() => {
     if (gameQuery.data) {
       setTimeLeft(gameQuery.data.timeLeft);
+      setTotalTime(gameQuery.data.totalTime || 20);
     }
-  }, [gameQuery.data?.timeLeft]);
+  }, [gameQuery.data?.timeLeft, gameQuery.data?.totalTime]);
 
   useEffect(() => {
     if (gameQuery.data) {
@@ -279,6 +284,18 @@ export default function Game() {
               <Badge variant="outline" className="font-medium">
                 Tur {game.currentRound}/{game.totalRounds}
               </Badge>
+              {game.isLightningRound && (
+                <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30 animate-pulse">
+                  <Zap className="h-3 w-3 mr-1" />
+                  2x Puan
+                </Badge>
+              )}
+              {userId && game.playerStreaks[userId] >= 2 && (
+                <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30">
+                  <Flame className="h-3 w-3 mr-1" />
+                  {game.playerStreaks[userId]} Seri
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -294,8 +311,8 @@ export default function Game() {
 
           <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-4 p-3 md:p-6 min-h-0 overflow-y-auto">
             <div className="flex flex-col items-center lg:justify-center lg:flex-1 gap-3 md:gap-4">
-              <TimerRing timeLeft={timeLeft} totalTime={20} size={100} className="md:hidden" />
-              <TimerRing timeLeft={timeLeft} totalTime={20} size={140} className="hidden md:block" />
+              <TimerRing timeLeft={timeLeft} totalTime={totalTime} size={100} className="md:hidden" />
+              <TimerRing timeLeft={timeLeft} totalTime={totalTime} size={140} className="hidden md:block" />
               
               <div className="flex flex-col items-center gap-2 md:gap-3 text-center">
                 <div 
