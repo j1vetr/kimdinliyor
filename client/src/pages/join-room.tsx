@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/logo";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -185,10 +186,7 @@ export default function JoinRoom() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <div className="flex items-center gap-2">
-            <SpotifyIcon size={24} />
-            <span className="font-semibold">Odaya Katıl</span>
-          </div>
+          <Logo height={28} />
         </div>
         <ThemeToggle />
       </header>

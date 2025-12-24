@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SpotifyIcon } from "@/components/spotify-icon";
+import { Logo } from "@/components/logo";
 import { useQuery } from "@tanstack/react-query";
 
 interface FinalResults {
@@ -106,10 +106,7 @@ export default function Results() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <SpotifyIcon size={24} />
-          <span className="font-semibold">Oyun Bitti</span>
-        </div>
+        <Logo height={28} />
         <ThemeToggle />
       </header>
 

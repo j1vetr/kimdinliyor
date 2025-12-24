@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SpotifyIcon } from "@/components/spotify-icon";
+import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { TimerRing } from "@/components/timer-ring";
 import { useToast } from "@/hooks/use-toast";
@@ -225,7 +225,7 @@ export default function Game() {
           
           <header className="relative z-10 flex items-center justify-between p-3 md:p-4 bg-background/80 backdrop-blur-sm border-b border-border">
             <div className="flex items-center gap-2">
-              <SpotifyIcon size={20} />
+              <Logo height={24} />
               <Badge variant="outline" className="font-medium">
                 Tur {game.currentRound}/{game.totalRounds}
               </Badge>
@@ -388,7 +388,7 @@ export default function Game() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-sm">
             <div className="flex items-center gap-2">
-              <SpotifyIcon size={20} />
+              <Logo height={24} />
               <span className="font-semibold">Tur Sonuçları</span>
             </div>
             <Badge variant="secondary">

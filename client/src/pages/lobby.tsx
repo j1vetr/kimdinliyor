@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SpotifyIcon } from "@/components/spotify-icon";
+import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -217,12 +218,7 @@ export default function Lobby() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <div className="flex items-center gap-2">
-            <SpotifyIcon size={24} />
-            <span className="font-semibold truncate max-w-[150px] md:max-w-none">
-              {room.name}
-            </span>
-          </div>
+          <Logo height={28} />
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="font-mono">

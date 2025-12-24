@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SpotifyIcon } from "@/components/spotify-icon";
+import { Logo } from "@/components/logo";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 
@@ -64,10 +65,7 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col relative">
       <FloatingIcons />
       <header className="flex items-center justify-between p-4 border-b border-border relative z-10">
-        <div className="flex items-center gap-2">
-          <SpotifyIcon size={28} />
-          <span className="font-semibold text-lg">Oda Oyunu</span>
-        </div>
+        <Logo height={36} />
         <ThemeToggle />
       </header>
 
