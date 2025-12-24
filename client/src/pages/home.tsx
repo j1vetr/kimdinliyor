@@ -65,7 +65,7 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col relative">
       <FloatingIcons />
       <header className="flex items-center justify-between p-4 border-b border-border relative z-10">
-        <Logo height={36} />
+        <Logo height={56} />
         <ThemeToggle />
       </header>
 

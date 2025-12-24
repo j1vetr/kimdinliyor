@@ -82,7 +82,7 @@ export default function CreateRoom() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <Logo height={28} />
+          <Logo height={48} />
         </div>
         <ThemeToggle />
       </header>

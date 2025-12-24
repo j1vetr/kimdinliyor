@@ -218,7 +218,7 @@ export default function Lobby() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <Logo height={28} />
+          <Logo height={48} />
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="font-mono">
