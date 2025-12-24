@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, UserX, Smartphone, Speaker, Laptop, RefreshCw, LogIn } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, LogIn } from "lucide-react";
+import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { SpotifyIcon } from "@/components/spotify-icon";
 import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { useToast } from "@/hooks/use-toast";
@@ -13,21 +13,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RoomWithPlayers } from "@shared/schema";
 
-interface SpotifyStatus {
+interface GoogleStatus {
   connected: boolean;
-}
-
-interface SpotifyDevice {
-  id: string;
-  name: string;
-  type: string;
-  isActive: boolean;
-  volumePercent: number | null;
-}
-
-interface DevicesResponse {
-  devices: SpotifyDevice[];
-  selectedDeviceId: string | null;
 }
 
 export default function Lobby() {
@@ -91,52 +78,14 @@ export default function Lobby() {
     },
   });
 
-  const spotifyStatusQuery = useQuery<SpotifyStatus>({
-    queryKey: ["/api/spotify/status", userId],
+  const googleStatusQuery = useQuery<GoogleStatus>({
+    queryKey: ["/api/google/status", userId],
     queryFn: async () => {
-      const response = await fetch(`/api/spotify/status?userId=${userId}`);
+      const response = await fetch(`/api/google/status?userId=${userId}`);
       return response.json();
     },
     enabled: !!userId,
     refetchInterval: 3000,
-  });
-
-  const devicesQuery = useQuery<DevicesResponse>({
-    queryKey: ["/api/spotify/devices", userId],
-    queryFn: async () => {
-      const response = await fetch(`/api/spotify/devices?userId=${userId}`);
-      return response.json();
-    },
-    enabled: !!userId && spotifyStatusQuery.data?.connected,
-    refetchInterval: (query) => {
-      const deviceCount = query.state.data?.devices?.length ?? 0;
-      const hasDevices = deviceCount > 0;
-      return hasDevices ? 10000 : 3000;
-    },
-  });
-
-  const selectDeviceMutation = useMutation({
-    mutationFn: async (deviceId: string) => {
-      const response = await apiRequest("POST", "/api/spotify/select-device", {
-        userId,
-        deviceId,
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/spotify/devices", userId] });
-      toast({
-        title: "Cihaz seçildi",
-        description: "Şarkılar bu cihazda çalacak.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Hata",
-        description: "Cihaz seçilemedi.",
-        variant: "destructive",
-      });
-    },
   });
 
   const handleQuickJoin = async () => {
@@ -156,7 +105,7 @@ export default function Lobby() {
       
       toast({
         title: "Lobiye katıldın!",
-        description: "Spotify hesabını bağlamayı unutma.",
+        description: "YouTube hesabını bağlamayı unutma.",
       });
     } catch (error: any) {
       toast({
@@ -169,23 +118,23 @@ export default function Lobby() {
     }
   };
 
-  const connectSpotify = useCallback(async () => {
+  const connectGoogle = useCallback(async () => {
     try {
-      const response = await fetch(`/api/spotify/auth-url?userId=${userId}&roomCode=${roomCode}`);
+      const response = await fetch(`/api/google/auth-url?userId=${userId}&roomCode=${roomCode}`);
       const data = await response.json();
       if (data.authUrl) {
         window.location.href = data.authUrl;
       } else {
         toast({
           title: "Hata",
-          description: "Spotify bağlantı URL'si alınamadı.",
+          description: "Google bağlantı URL'si alınamadı.",
           variant: "destructive",
         });
       }
     } catch {
       toast({
         title: "Hata",
-        description: "Spotify bağlantısı başlatılamadı.",
+        description: "Google bağlantısı başlatılamadı.",
         variant: "destructive",
       });
     }
@@ -199,14 +148,16 @@ export default function Lobby() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("spotify_connected") === "true") {
+    if (urlParams.get("google_connected") === "true") {
       toast({
-        title: "Spotify Bağlandı",
-        description: "Spotify hesabınız başarıyla bağlandı.",
+        title: "YouTube Bağlandı",
+        description: "Google hesabınız başarıyla bağlandı.",
       });
       window.history.replaceState({}, "", window.location.pathname);
+      queryClient.invalidateQueries({ queryKey: ["/api/google/status", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
     }
-  }, [toast]);
+  }, [toast, userId, roomCode]);
 
   const copyRoomCode = useCallback(async () => {
     try {
@@ -229,8 +180,8 @@ export default function Lobby() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: roomQuery.data?.name || "Spotify Oda Oyunu",
-          text: "Spotify Oda Oyununa katıl!",
+          title: roomQuery.data?.name || "Kim Beğendi?",
+          text: "Kim Beğendi? oyununa katıl!",
           url: shareUrl,
         });
       } catch {
@@ -248,17 +199,6 @@ export default function Lobby() {
       });
     }
   }, [roomCode, roomQuery.data?.name, toast]);
-
-  const getDeviceIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "smartphone":
-        return <Smartphone className="h-4 w-4" />;
-      case "speaker":
-        return <Speaker className="h-4 w-4" />;
-      default:
-        return <Laptop className="h-4 w-4" />;
-    }
-  };
 
   if (roomQuery.isLoading) {
     return (
@@ -294,10 +234,9 @@ export default function Lobby() {
   const isHost = room.hostUserId === userId;
   const playerCount = players.length;
   const maxPlayers = room.maxPlayers || 8;
-  const allSpotifyConnected = players.every(p => p.user.spotifyConnected);
-  const disconnectedCount = players.filter(p => !p.user.spotifyConnected).length;
-  const hasSelectedDevice = !!devicesQuery.data?.selectedDeviceId;
-  const canStart = isHost && playerCount >= 2 && allSpotifyConnected;
+  const allGoogleConnected = players.every(p => p.user.googleConnected);
+  const disconnectedCount = players.filter(p => !p.user.googleConnected).length;
+  const canStart = isHost && playerCount >= 2 && allGoogleConnected;
   
   const isUserInRoom = userId && players.some(p => p.userId === userId);
   const isFull = playerCount >= maxPlayers;
@@ -428,81 +367,41 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Spotify Status - Compact & Always Visible */}
-        {!spotifyStatusQuery.data?.connected ? (
-          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-[#1DB954]/10 border border-[#1DB954]/30">
+        {/* YouTube/Google Status - Compact & Always Visible */}
+        {!googleStatusQuery.data?.connected ? (
+          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-[#1DB954]/20 flex items-center justify-center shrink-0">
-                <SpotifyIcon size={20} />
+              <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
+                <SiYoutube className="h-5 w-5 text-red-500" />
               </div>
               <div>
-                <p className="font-semibold text-sm">Spotify Bağlanmadı</p>
-                <p className="text-xs text-muted-foreground">Oyuna katılmak için bağla</p>
+                <p className="font-semibold text-sm">YouTube Bağlanmadı</p>
+                <p className="text-xs text-muted-foreground">Oyuna katılmak için Google ile bağlan</p>
               </div>
             </div>
             <Button
-              onClick={connectSpotify}
-              className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold gap-2 shrink-0"
-              data-testid="button-connect-spotify"
+              onClick={connectGoogle}
+              className="bg-white hover:bg-gray-100 text-gray-900 font-bold gap-2 shrink-0 border border-gray-300"
+              data-testid="button-connect-google"
             >
-              <SpotifyIcon size={16} />
-              Bağla
+              <SiGoogle className="h-4 w-4" />
+              Google ile Bağlan
             </Button>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-[#1DB954]/10 border border-[#1DB954]/30">
+          <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
             <div className="flex items-center gap-3">
               <div className="relative shrink-0">
-                <div className="h-8 w-8 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
-                  <SpotifyIcon size={16} />
+                <div className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <SiYoutube className="h-4 w-4 text-red-500" />
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-[#1DB954] rounded-full flex items-center justify-center">
-                  <svg className="w-2 h-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               </div>
-              <span className="text-sm font-medium text-[#1DB954]">Bağlı</span>
-            </div>
-            
-            {/* Inline Device Selector */}
-            <div className="flex items-center gap-2">
-              {devicesQuery.isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              ) : devicesQuery.data?.devices.length === 0 ? (
-                <span className="text-xs text-muted-foreground" title="Spotify'ı aç ve bir şeyler çal">Spotify'ı aç</span>
-              ) : (
-                <div className="flex items-center gap-1">
-                  {devicesQuery.data?.devices.slice(0, 3).map((device) => {
-                    const isSelected = devicesQuery.data?.selectedDeviceId === device.id;
-                    return (
-                      <button
-                        key={device.id}
-                        onClick={() => selectDeviceMutation.mutate(device.id)}
-                        disabled={selectDeviceMutation.isPending}
-                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
-                          isSelected
-                            ? "bg-[#1DB954] text-black"
-                            : "bg-muted/60 hover:bg-muted"
-                        }`}
-                        data-testid={`button-device-${device.id}`}
-                      >
-                        {getDeviceIcon(device.type)}
-                        <span className="max-w-[80px] truncate">{device.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/spotify/devices", userId] })}
-                disabled={devicesQuery.isFetching}
-                data-testid="button-refresh-devices"
-              >
-                <RefreshCw className={`h-4 w-4 ${devicesQuery.isFetching ? "animate-spin" : ""}`} />
-              </Button>
+              <span className="text-sm font-medium text-green-500">YouTube Bağlı</span>
             </div>
           </div>
         )}
@@ -537,7 +436,8 @@ export default function Lobby() {
                           id: player.user.id,
                           displayName: player.user.displayName,
                           uniqueName: player.user.uniqueName,
-                          spotifyConnected: player.user.spotifyConnected || false,
+                          googleConnected: player.user.googleConnected || false,
+                          avatarUrl: player.user.avatarUrl || undefined,
                           totalScore: player.totalScore || 0,
                         }}
                         isHost={isPlayerHost}
@@ -586,13 +486,13 @@ export default function Lobby() {
                       ? "Oyunu Başlat"
                       : playerCount < 2
                         ? "Başlatmak için en az 2 oyuncu gerekli"
-                        : `${disconnectedCount} oyuncu Spotify bağlamalı`}
+                        : `${disconnectedCount} oyuncu YouTube bağlamalı`}
                   </>
                 )}
               </Button>
-              {!allSpotifyConnected && playerCount >= 2 && (
+              {!allGoogleConnected && playerCount >= 2 && (
                 <p className="text-sm text-center text-muted-foreground">
-                  Tüm oyuncuların Spotify hesabını bağlaması gerekiyor
+                  Tüm oyuncuların YouTube hesabını bağlaması gerekiyor
                 </p>
               )}
             </div>

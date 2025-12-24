@@ -152,7 +152,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           maxPlayers: room.maxPlayers,
           isPublic: room.isPublic,
           status: room.status,
+          hostUserId: room.hostUserId,
         },
+        status: room.status,
+        hostUserId: room.hostUserId,
         requiresPassword: !room.isPublic && !!room.passwordHash,
       });
     } catch (error) {
@@ -842,13 +845,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const sortedPlayers = [...room.players].sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
 
       res.json({
-        room,
+        roomName: room.name,
+        totalRounds: room.totalRounds || 10,
+        hostUserId: room.hostUserId,
         players: sortedPlayers.map((p, index) => ({
           rank: index + 1,
-          oderId: p.userId,
+          id: p.userId,
           displayName: p.user.displayName,
+          uniqueName: p.user.uniqueName,
           avatarUrl: p.user.avatarUrl,
           totalScore: p.totalScore || 0,
+          correctAnswers: 0,
+          partialAnswers: 0,
         })),
       });
     } catch (error) {

@@ -1,16 +1,15 @@
-import { Crown, Check, X, Music } from "lucide-react";
+import { Crown, Check, X, ThumbsUp } from "lucide-react";
+import { SiYoutube } from "react-icons/si";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SpotifyIcon } from "./spotify-icon";
-import type { User } from "@shared/schema";
 
 interface PlayerCardProps {
   player: {
     id: string;
     displayName: string;
     uniqueName: string;
-    spotifyConnected?: boolean;
+    googleConnected?: boolean;
     totalScore?: number;
     avatarUrl?: string | null;
   };
@@ -92,9 +91,9 @@ export function PlayerCard({
             </Badge>
           )}
         </div>
-        {player.spotifyConnected && (
+        {player.googleConnected && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-            <SpotifyIcon size={12} />
+            <SiYoutube className="h-3 w-3 text-red-500" />
             <span>Bağlı</span>
           </div>
         )}
@@ -125,7 +124,7 @@ export function PlayerCard({
           )}
           {resultType === "partial" && (
             <div className="h-8 w-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-              <Music className="h-5 w-5 text-yellow-500" />
+              <ThumbsUp className="h-5 w-5 text-yellow-500" />
             </div>
           )}
         </div>
