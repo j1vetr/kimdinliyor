@@ -222,7 +222,7 @@ export default function Results() {
           <Button 
             className="flex-1" 
             size="lg" 
-            onClick={() => setLocation(`/oyun/${roomCode}/lobby`)}
+            onClick={() => setLocation(`/oyun/${roomCode}/lobi`)}
             data-testid="button-return-lobby"
           >
             <RotateCcw className="h-5 w-5 mr-2" />

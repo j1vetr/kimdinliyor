@@ -18,7 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/oda-olustur" component={CreateRoom} />
       <Route path="/oyun/:code" component={JoinRoom} />
-      <Route path="/oyun/:code/lobby" component={Lobby} />
+      <Route path="/oyun/:code/lobi" component={Lobby} />
       <Route path="/oyun/:code/game" component={Game} />
       <Route path="/oyun/:code/results" component={Results} />
       <Route component={NotFound} />

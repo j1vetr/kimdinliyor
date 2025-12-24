@@ -286,7 +286,7 @@ export async function generateUniqueRoomCode(): Promise<string> {
 
   do {
     const randomNum = Math.floor(100000 + Math.random() * 900000);
-    code = `O${randomNum}`;
+    code = String(randomNum);
     const existing = await storage.getRoomByCode(code);
     if (!existing) break;
     attempts++;

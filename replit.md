@@ -59,7 +59,7 @@ shared/
 - `GET /api/rooms/:code/results` - Final sonuçları
 
 ## Oyun Akışı
-1. Host oda oluşturur (O + 6 haneli kod)
+1. Host oda oluşturur (6 haneli sayı kodu, örn: 533146)
 2. Oyuncular oda kodunu girerek katılır
 3. Herkes Spotify bağlar ve onay verir
 4. Host oyunu başlatır

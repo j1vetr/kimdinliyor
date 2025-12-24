@@ -45,7 +45,7 @@ export default function JoinRoom() {
     onSuccess: (data) => {
       localStorage.setItem("userId", data.userId);
       localStorage.setItem("roomCode", roomCode!);
-      setLocation(`/oyun/${roomCode}/lobby`);
+      setLocation(`/oyun/${roomCode}/lobi`);
     },
     onError: (error: Error) => {
       toast({

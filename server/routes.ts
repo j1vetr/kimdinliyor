@@ -129,7 +129,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.updateUser(userId, { spotifyConnected: true });
 
       if (roomCode) {
-        return res.redirect(`/oyun/${roomCode}/lobby?spotify_connected=true`);
+        return res.redirect(`/oyun/${roomCode}/lobi?spotify_connected=true`);
       }
       return res.redirect("/?spotify_connected=true");
     } catch (error) {
