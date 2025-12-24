@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { TimerRing } from "@/components/timer-ring";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +19,19 @@ interface Content {
   title: string;
   subtitle: string | null;
   thumbnailUrl: string | null;
+  viewCount?: string;
+  subscriberCount?: string;
 }
+
+type GameMode = "who_liked" | "who_subscribed" | "view_count" | "which_more" | "subscriber_count";
+
+const GAME_MODE_QUESTIONS: Record<GameMode, string> = {
+  who_liked: "Bu videoyu kim beğendi?",
+  who_subscribed: "Bu kanala kim abone?",
+  view_count: "Bu videonun izlenme sayısını tahmin et!",
+  which_more: "Hangisi daha popüler?",
+  subscriber_count: "Bu kanalın abone sayısını tahmin et!",
+};
 
 interface RoundResult {
   oderId: string;
@@ -72,6 +85,8 @@ interface WSMessage {
   correctUserIds?: string[];
   results?: RoundResult[];
   oderId?: string;
+  gameMode?: GameMode;
+  correctAnswer?: string;
 }
 
 export default function Game() {
@@ -91,6 +106,9 @@ export default function Game() {
   const [content, setContent] = useState<Content | null>(null);
   const [correctPlayerIds, setCorrectPlayerIds] = useState<string[]>([]);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
+  const [gameMode, setGameMode] = useState<GameMode>("who_liked");
+  const [numericAnswer, setNumericAnswer] = useState("");
+  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   const gameQuery = useQuery<any>({
@@ -105,10 +123,11 @@ export default function Game() {
   });
 
   const answerMutation = useMutation({
-    mutationFn: async (selectedUserIds: string[]) => {
+    mutationFn: async (data: { selectedUserIds?: string[]; numericAnswer?: string }) => {
       const response = await apiRequest("POST", `/api/rooms/${roomCode}/answer`, {
         oderId: userId,
-        selectedUserIds,
+        selectedUserIds: data.selectedUserIds || [],
+        numericAnswer: data.numericAnswer,
       });
       return response.json();
     },
@@ -151,12 +170,16 @@ export default function Game() {
             setSelectedPlayers([]);
             setCorrectPlayerIds([]);
             setRoundResults([]);
+            setGameMode(message.gameMode || "who_liked");
+            setNumericAnswer("");
+            setCorrectAnswer(null);
             break;
             
           case "round_ended":
             setGameStatus("results");
             setCorrectPlayerIds(message.correctUserIds || []);
             setRoundResults(message.results || []);
+            setCorrectAnswer(message.correctAnswer || null);
             break;
             
           case "game_finished":
@@ -214,16 +237,31 @@ export default function Game() {
   }, [hasAnswered]);
 
   const handleSubmitAnswer = useCallback(() => {
-    if (selectedPlayers.length === 0) {
-      toast({
-        title: "Seçim yapın",
-        description: "En az bir oyuncu seçmelisiniz.",
-        variant: "destructive",
-      });
-      return;
+    const currentMode = gameMode;
+    const isNumeric = currentMode === "view_count" || currentMode === "subscriber_count";
+    
+    if (isNumeric) {
+      if (!numericAnswer.trim()) {
+        toast({
+          title: "Cevap girin",
+          description: "Lütfen bir sayı tahmini girin.",
+          variant: "destructive",
+        });
+        return;
+      }
+      answerMutation.mutate({ numericAnswer: numericAnswer.trim() });
+    } else {
+      if (selectedPlayers.length === 0) {
+        toast({
+          title: "Seçim yapın",
+          description: "En az bir oyuncu seçmelisiniz.",
+          variant: "destructive",
+        });
+        return;
+      }
+      answerMutation.mutate({ selectedUserIds: selectedPlayers });
     }
-    answerMutation.mutate(selectedPlayers);
-  }, [selectedPlayers, answerMutation, toast]);
+  }, [selectedPlayers, numericAnswer, gameMode, answerMutation, toast]);
 
   const openYouTubeVideo = () => {
     if (content?.contentType === "video" && content?.contentId) {
@@ -275,13 +313,12 @@ export default function Game() {
   const totalRounds = room?.totalRounds || 10;
 
   const getQuestionText = () => {
-    if (!content) return "Bu içeriği kim beğendi?";
-    if (content.contentType === "video") {
-      return "Bu videoyu kim beğendi?";
-    } else {
-      return "Bu kanala kim abone?";
-    }
+    return GAME_MODE_QUESTIONS[gameMode] || "Bu içeriği kim beğendi?";
   };
+  
+  const isPlayerSelectionMode = gameMode === "who_liked" || gameMode === "who_subscribed";
+  const isNumericMode = gameMode === "view_count" || gameMode === "subscriber_count";
+  const isComparisonMode = gameMode === "which_more";
 
   return (
     <div className="h-screen bg-background flex flex-col">
@@ -404,76 +441,115 @@ export default function Game() {
               }`}>
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                   <Badge className="bg-red-500 text-white px-4 py-1 text-sm font-bold shadow-lg">
-                    <Users className="h-3.5 w-3.5 mr-1.5" />
-                    KİMİ TAHMİN EDİYORSUN?
+                    {isNumericMode ? (
+                      <>
+                        {gameMode === "view_count" ? <Eye className="h-3.5 w-3.5 mr-1.5" /> : <UsersRound className="h-3.5 w-3.5 mr-1.5" />}
+                        SAYI TAHMİNİ
+                      </>
+                    ) : (
+                      <>
+                        <Users className="h-3.5 w-3.5 mr-1.5" />
+                        KİMİ TAHMİN EDİYORSUN?
+                      </>
+                    )}
                   </Badge>
                 </div>
                 <div className="text-center mb-4 mt-3">
                   <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-500 to-red-400 bg-clip-text text-transparent">
                     {getQuestionText()}
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-1">Birden fazla oyuncu seçebilirsin</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isNumericMode ? "Tahmini sayıyı gir" : "Birden fazla oyuncu seçebilirsin"}
+                  </p>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
-                  {allPlayers.map((player: any) => {
-                    const playerId = player.userId || player.user?.id;
-                    const displayName = player.user?.displayName || player.displayName;
-                    const uniqueName = player.user?.uniqueName || player.uniqueName;
-                    const avatarUrl = player.user?.avatarUrl;
-                    const isSelected = selectedPlayers.includes(playerId);
-                    const isSelf = playerId === userId;
-                    
-                    return (
-                      <button
-                        key={playerId}
-                        onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
-                        disabled={hasAnswered}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
-                          hasAnswered 
-                            ? "opacity-60 cursor-not-allowed" 
-                            : "hover-elevate active-elevate-2 cursor-pointer"
-                        } ${
-                          isSelected 
-                            ? "bg-red-500/20 ring-2 ring-red-500 shadow-md" 
-                            : "bg-muted/40 border border-border/50"
-                        }`}
-                        data-testid={`button-player-${playerId}`}
-                      >
-                        {avatarUrl ? (
-                          <img 
-                            src={avatarUrl} 
-                            alt={displayName}
-                            className={`w-11 h-11 rounded-xl object-cover transition-all ${
-                              isSelected ? "ring-2 ring-red-500 scale-105" : ""
-                            }`}
-                          />
-                        ) : (
-                          <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
-                            isSelected ? "bg-red-500 text-white scale-105" : "bg-muted/80"
-                          }`}>
-                            {isSelected ? (
-                              <Check className="h-5 w-5" />
-                            ) : (
-                              displayName?.charAt(0).toUpperCase()
-                            )}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">
-                            {displayName}
-                            {isSelf && <span className="text-muted-foreground font-normal ml-1 text-xs">(Sen)</span>}
-                          </p>
-                          <p className="text-xs text-muted-foreground">@{uniqueName}</p>
+                  {isNumericMode ? (
+                    <div className="flex flex-col items-center justify-center h-full space-y-6 py-8">
+                      <div className="text-center space-y-2">
+                        <div className="text-6xl md:text-7xl font-bold text-red-500">
+                          {gameMode === "view_count" ? <Eye className="h-16 w-16 mx-auto mb-4 opacity-50" /> : <UsersRound className="h-16 w-16 mx-auto mb-4 opacity-50" />}
                         </div>
-                        {isSelected && (
-                          <div className="h-6 w-6 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <Check className="h-3.5 w-3.5 text-red-500" />
+                        <p className="text-muted-foreground text-sm">
+                          {gameMode === "view_count" ? "İzlenme sayısını tahmin et" : "Abone sayısını tahmin et"}
+                        </p>
+                      </div>
+                      <div className="w-full max-w-xs">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Örn: 1500000"
+                          value={numericAnswer}
+                          onChange={(e) => setNumericAnswer(e.target.value.replace(/[^0-9]/g, ''))}
+                          disabled={hasAnswered}
+                          className="text-center text-2xl font-bold h-14 bg-muted/50"
+                          data-testid="input-numeric-answer"
+                        />
+                        <p className="text-xs text-muted-foreground text-center mt-2">
+                          {numericAnswer ? `Tahminin: ${parseInt(numericAnswer).toLocaleString('tr-TR')}` : "Sadece rakam gir"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    allPlayers.map((player: any) => {
+                      const playerId = player.userId || player.user?.id;
+                      const displayName = player.user?.displayName || player.displayName;
+                      const uniqueName = player.user?.uniqueName || player.uniqueName;
+                      const avatarUrl = player.user?.avatarUrl;
+                      const isSelected = selectedPlayers.includes(playerId);
+                      const isSelf = playerId === userId;
+                      
+                      return (
+                        <button
+                          key={playerId}
+                          onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
+                          disabled={hasAnswered}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
+                            hasAnswered 
+                              ? "opacity-60 cursor-not-allowed" 
+                              : "hover-elevate active-elevate-2 cursor-pointer"
+                          } ${
+                            isSelected 
+                              ? "bg-red-500/20 ring-2 ring-red-500 shadow-md" 
+                              : "bg-muted/40 border border-border/50"
+                          }`}
+                          data-testid={`button-player-${playerId}`}
+                        >
+                          {avatarUrl ? (
+                            <img 
+                              src={avatarUrl} 
+                              alt={displayName}
+                              className={`w-11 h-11 rounded-xl object-cover transition-all ${
+                                isSelected ? "ring-2 ring-red-500 scale-105" : ""
+                              }`}
+                            />
+                          ) : (
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
+                              isSelected ? "bg-red-500 text-white scale-105" : "bg-muted/80"
+                            }`}>
+                              {isSelected ? (
+                                <Check className="h-5 w-5" />
+                              ) : (
+                                displayName?.charAt(0).toUpperCase()
+                              )}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold truncate">
+                              {displayName}
+                              {isSelf && <span className="text-muted-foreground font-normal ml-1 text-xs">(Sen)</span>}
+                            </p>
+                            <p className="text-xs text-muted-foreground">@{uniqueName}</p>
                           </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                          {isSelected && (
+                            <div className="h-6 w-6 rounded-full bg-red-500/20 flex items-center justify-center">
+                              <Check className="h-3.5 w-3.5 text-red-500" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-border">
@@ -492,7 +568,7 @@ export default function Game() {
                       className="w-full h-12 text-base font-semibold bg-red-500 hover:bg-red-600"
                       size="lg"
                       onClick={handleSubmitAnswer}
-                      disabled={selectedPlayers.length === 0 || answerMutation.isPending}
+                      disabled={(isNumericMode ? !numericAnswer.trim() : selectedPlayers.length === 0) || answerMutation.isPending}
                       data-testid="button-submit-answer"
                     >
                       {answerMutation.isPending ? (
@@ -503,9 +579,11 @@ export default function Game() {
                       ) : (
                         <>
                           <Send className="h-5 w-5 mr-2" />
-                          {selectedPlayers.length === 0 
-                            ? "Oyuncu Seç" 
-                            : `Tahmin Et (${selectedPlayers.length} seçili)`}
+                          {isNumericMode 
+                            ? (numericAnswer.trim() ? "Tahmini Gönder" : "Sayı Gir")
+                            : (selectedPlayers.length === 0 
+                              ? "Oyuncu Seç" 
+                              : `Tahmin Et (${selectedPlayers.length} seçili)`)}
                         </>
                       )}
                     </Button>

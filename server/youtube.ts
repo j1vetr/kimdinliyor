@@ -195,3 +195,107 @@ export async function getSubscriptions(accessToken: string, maxResults: number =
     return [];
   }
 }
+
+export interface VideoStatistics {
+  viewCount: string;
+  likeCount: string;
+}
+
+export interface ChannelStatistics {
+  subscriberCount: string;
+  viewCount: string;
+}
+
+export async function getVideoStatistics(accessToken: string, videoIds: string[]): Promise<Map<string, VideoStatistics>> {
+  const result = new Map<string, VideoStatistics>();
+  if (videoIds.length === 0) return result;
+
+  try {
+    const idsParam = videoIds.slice(0, 50).join(",");
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${idsParam}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Failed to get video statistics:", await response.text());
+      return result;
+    }
+
+    const data = await response.json();
+    for (const item of data.items || []) {
+      result.set(item.id, {
+        viewCount: item.statistics?.viewCount || "0",
+        likeCount: item.statistics?.likeCount || "0",
+      });
+    }
+    return result;
+  } catch (error) {
+    console.error("Failed to get video statistics:", error);
+    return result;
+  }
+}
+
+export async function getChannelStatistics(accessToken: string, channelIds: string[]): Promise<Map<string, ChannelStatistics>> {
+  const result = new Map<string, ChannelStatistics>();
+  if (channelIds.length === 0) return result;
+
+  try {
+    const idsParam = channelIds.slice(0, 50).join(",");
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${idsParam}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Failed to get channel statistics:", await response.text());
+      return result;
+    }
+
+    const data = await response.json();
+    for (const item of data.items || []) {
+      result.set(item.id, {
+        subscriberCount: item.statistics?.subscriberCount || "0",
+        viewCount: item.statistics?.viewCount || "0",
+      });
+    }
+    return result;
+  } catch (error) {
+    console.error("Failed to get channel statistics:", error);
+    return result;
+  }
+}
+
+export async function getLikedVideosWithStats(accessToken: string, maxResults: number = 50): Promise<(YouTubeVideo & VideoStatistics)[]> {
+  const videos = await getLikedVideos(accessToken, maxResults);
+  if (videos.length === 0) return [];
+
+  const stats = await getVideoStatistics(accessToken, videos.map(v => v.id));
+  
+  return videos.map(video => ({
+    ...video,
+    viewCount: stats.get(video.id)?.viewCount || "0",
+    likeCount: stats.get(video.id)?.likeCount || "0",
+  }));
+}
+
+export async function getSubscriptionsWithStats(accessToken: string, maxResults: number = 50): Promise<(YouTubeChannel & ChannelStatistics)[]> {
+  const channels = await getSubscriptions(accessToken, maxResults);
+  if (channels.length === 0) return [];
+
+  const stats = await getChannelStatistics(accessToken, channels.map(c => c.id));
+  
+  return channels.map(channel => ({
+    ...channel,
+    subscriberCount: stats.get(channel.id)?.subscriberCount || "0",
+    viewCount: stats.get(channel.id)?.viewCount || "0",
+  }));
+}

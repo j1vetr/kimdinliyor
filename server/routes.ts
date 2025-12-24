@@ -21,6 +21,8 @@ interface GameState {
   lastOwnerIndex: number;
   isLightningRound: boolean;
   playerStreaks: Map<string, number>;
+  gameModes: string[];
+  currentGameMode: string | null;
 }
 
 const gameStates = new Map<string, GameState>();
@@ -182,7 +184,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Create room
   app.post("/api/rooms", async (req, res) => {
     try {
-      const { name, maxPlayers, totalRounds, roundDuration, isPublic, password } = req.body;
+      const { name, maxPlayers, totalRounds, roundDuration, isPublic, password, gameModes } = req.body;
 
       if (!name || name.trim().length === 0) {
         return res.status(400).json({ error: "Oda adı gerekli" });
@@ -190,6 +192,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const code = await generateUniqueRoomCode();
       const passwordHash = password ? await hashPassword(password) : null;
+
+      // Validate game modes
+      const validModes = ["who_liked", "who_subscribed", "view_count", "which_more", "subscriber_count"];
+      const selectedModes = Array.isArray(gameModes) && gameModes.length > 0
+        ? gameModes.filter((m: string) => validModes.includes(m))
+        : ["who_liked", "who_subscribed"];
 
       const room = await storage.createRoom({
         code,
@@ -200,6 +208,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         hostUserId: null,
         totalRounds: totalRounds || 10,
         roundDuration: roundDuration || 20,
+        gameModes: selectedModes,
       });
 
       res.json({ id: room.id, code: room.code, name: room.name });
@@ -480,7 +489,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
-      // Initialize game state
+      // Initialize game state with game modes from room
+      const roomModes = room.gameModes || ["who_liked", "who_subscribed"];
       gameStates.set(code.toUpperCase(), {
         status: "waiting",
         currentRound: 0,
@@ -493,6 +503,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         lastOwnerIndex: -1,
         isLightningRound: false,
         playerStreaks: new Map(),
+        gameModes: roomModes,
+        currentGameMode: null,
       });
 
       // Update room status
@@ -576,6 +588,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const lightning = isLightningRound(nextRound);
     const roundDuration = lightning ? 10 : (room.roundDuration || 20);
 
+    // Select random game mode from enabled modes
+    // Filter modes based on content type
+    const contentType = content.contentType;
+    let availableModes = gameState.gameModes.filter(mode => {
+      if (mode === "who_liked" || mode === "view_count") return contentType === "video";
+      if (mode === "who_subscribed" || mode === "subscriber_count") return contentType === "channel";
+      if (mode === "which_more") return true; // Works with both
+      return true;
+    });
+    
+    // Fallback to basic modes if no modes available for this content type
+    if (availableModes.length === 0) {
+      availableModes = contentType === "video" ? ["who_liked"] : ["who_subscribed"];
+    }
+    
+    // Select random mode
+    const selectedMode = availableModes[Math.floor(Math.random() * availableModes.length)];
+
     // Update game state
     gameState.currentRound = nextRound;
     gameState.status = "question";
@@ -584,13 +614,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     gameState.roundStartTime = Date.now();
     gameState.answeredUsers = new Set();
     gameState.isLightningRound = lightning;
+    gameState.currentGameMode = selectedMode;
 
     // Create round in database
     await storage.createRound({
       roomId: room.id,
       roundNumber: nextRound,
+      gameMode: selectedMode,
       contentId: selectedContentId,
       correctUserIds: content.sourceUserIds,
+      correctAnswer: content.viewCount || content.subscriberCount || null,
       startedAt: new Date(),
     });
 
@@ -602,6 +635,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       type: "round_started",
       round: nextRound,
       totalRounds,
+      gameMode: selectedMode,
       content: {
         id: content.id,
         contentId: content.contentId,
@@ -609,6 +643,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         title: content.title,
         subtitle: content.subtitle,
         thumbnailUrl: content.thumbnailUrl,
+        viewCount: content.viewCount,
+        subscriberCount: content.subscriberCount,
       },
       timeLimit: roundDuration,
       isLightningRound: lightning,
@@ -738,9 +774,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/rooms/:code/answer", async (req, res) => {
     try {
       const { code } = req.params;
-      const { oderId, selectedUserIds } = req.body;
+      const { oderId, selectedUserIds, numericAnswer } = req.body;
 
-      if (!oderId || !selectedUserIds) {
+      if (!oderId) {
         return res.status(400).json({ error: "Gerekli bilgiler eksik" });
       }
 
@@ -763,11 +799,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Aktif tur bulunamadı" });
       }
 
-      // Save answer
+      // Save answer with support for numeric answers
       await storage.createAnswer({
         roundId: currentRound.id,
         oderId,
-        selectedUserIds,
+        selectedUserIds: selectedUserIds || [],
+        numericAnswer: numericAnswer || null,
       });
 
       gameState.answeredUsers.add(oderId);

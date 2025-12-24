@@ -1,16 +1,24 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap } from "lucide-react";
+import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+const GAME_MODE_OPTIONS = [
+  { id: "who_liked", label: "Kim Beğenmiş?", description: "Bu videoyu kim beğendi?", icon: ThumbsUp, enabled: true },
+  { id: "who_subscribed", label: "Kim Abone?", description: "Bu kanala kim abone?", icon: UserPlus, enabled: true },
+  { id: "view_count", label: "Sayı Tahmini", description: "İzlenme sayısını tahmin et", icon: Eye, enabled: true },
+  { id: "subscriber_count", label: "Abone Sayısı", description: "Abone sayısını tahmin et", icon: UsersRound, enabled: true },
+] as const;
 
 export default function CreateRoom() {
   const [, setLocation] = useLocation();
@@ -22,6 +30,24 @@ export default function CreateRoom() {
   const [roundDuration, setRoundDuration] = useState(20);
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState("");
+  const [gameModes, setGameModes] = useState<string[]>(["who_liked", "who_subscribed"]);
+
+  const toggleGameMode = (modeId: string) => {
+    setGameModes((prev) => {
+      if (prev.includes(modeId)) {
+        if (prev.length === 1) {
+          toast({
+            title: "En az bir mod seçili olmalı",
+            description: "Oyun için en az bir oyun modu seçmeniz gerekiyor.",
+            variant: "destructive",
+          });
+          return prev;
+        }
+        return prev.filter((id) => id !== modeId);
+      }
+      return [...prev, modeId];
+    });
+  };
 
   const createRoomMutation = useMutation({
     mutationFn: async (data: {
@@ -31,6 +57,7 @@ export default function CreateRoom() {
       roundDuration: number;
       isPublic: boolean;
       password?: string;
+      gameModes: string[];
     }) => {
       const response = await apiRequest("POST", "/api/rooms", data);
       return response.json();
@@ -75,6 +102,7 @@ export default function CreateRoom() {
       roundDuration,
       isPublic,
       password: isPublic ? undefined : password,
+      gameModes,
     });
   };
 
@@ -177,6 +205,49 @@ export default function CreateRoom() {
                   <span>10s</span>
                   <span>30s</span>
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Oyun Modları
+                </Label>
+                <div className="space-y-2">
+                  {GAME_MODE_OPTIONS.map((mode) => {
+                    const Icon = mode.icon;
+                    const isSelected = gameModes.includes(mode.id);
+                    return (
+                      <div
+                        key={mode.id}
+                        onClick={() => toggleGameMode(mode.id)}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-primary/10 border border-primary/30"
+                            : "bg-muted/50 border border-transparent hover-elevate"
+                        }`}
+                        data-testid={`checkbox-mode-${mode.id}`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleGameMode(mode.id)}
+                          className="pointer-events-none"
+                        />
+                        <Icon className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                            {mode.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {mode.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Seçili modlar rastgele oynanır ({gameModes.length} seçili)
+                </p>
               </div>
 
               <div className="space-y-4">
