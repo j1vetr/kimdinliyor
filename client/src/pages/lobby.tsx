@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,30 @@ export default function Lobby() {
       toast({
         title: "Hata",
         description: error.message || "Oyun başlatılamadı.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const kickPlayerMutation = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      const response = await apiRequest("POST", `/api/rooms/${roomCode}/kick`, {
+        requesterId: userId,
+        targetUserId,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+      toast({
+        title: "Oyuncu atıldı",
+        description: "Oyuncu odadan çıkarıldı.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Hata",
+        description: error.message || "Oyuncu atılamadı.",
         variant: "destructive",
       });
     },
@@ -272,25 +296,44 @@ export default function Lobby() {
                 </p>
               </Card>
             ) : (
-              players.map((player, index) => (
-                <div
-                  key={player.id}
-                  className={`animate-slide-up stagger-${Math.min(index + 1, 5)}`}
-                  style={{ animationFillMode: "backwards" }}
-                >
-                  <PlayerCard
-                    player={{
-                      id: player.user.id,
-                      displayName: player.user.displayName,
-                      uniqueName: player.user.uniqueName,
-                      spotifyConnected: player.user.spotifyConnected || false,
-                      totalScore: player.totalScore || 0,
-                    }}
-                    isHost={player.userId === room.hostUserId}
-                    showScore={false}
-                  />
-                </div>
-              ))
+              players.map((player, index) => {
+                const isPlayerHost = player.userId === room.hostUserId;
+                const canKick = isHost && !isPlayerHost && room.status !== "playing";
+                
+                return (
+                  <div
+                    key={player.id}
+                    className={`animate-slide-up stagger-${Math.min(index + 1, 5)} flex items-center gap-2`}
+                    style={{ animationFillMode: "backwards" }}
+                  >
+                    <div className="flex-1">
+                      <PlayerCard
+                        player={{
+                          id: player.user.id,
+                          displayName: player.user.displayName,
+                          uniqueName: player.user.uniqueName,
+                          spotifyConnected: player.user.spotifyConnected || false,
+                          totalScore: player.totalScore || 0,
+                        }}
+                        isHost={isPlayerHost}
+                        showScore={false}
+                      />
+                    </div>
+                    {canKick && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive shrink-0"
+                        onClick={() => kickPlayerMutation.mutate(player.userId)}
+                        disabled={kickPlayerMutation.isPending}
+                        data-testid={`button-kick-${player.userId}`}
+                      >
+                        <UserX className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

@@ -257,6 +257,62 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Kick player from room (host only)
+  app.post("/api/rooms/:code/kick", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const { requesterId, targetUserId } = req.body;
+
+      if (!requesterId || !targetUserId) {
+        return res.status(400).json({ error: "Gerekli bilgiler eksik" });
+      }
+
+      const room = await storage.getRoomByCode(code.toUpperCase());
+      if (!room) {
+        return res.status(404).json({ error: "Oda bulunamadı" });
+      }
+
+      // Verify the requester is actually in the room
+      const players = await storage.getRoomPlayers(room.id);
+      const requesterInRoom = players.some(p => p.userId === requesterId);
+      if (!requesterInRoom) {
+        return res.status(403).json({ error: "Bu odada değilsiniz" });
+      }
+
+      // Verify the requester is the host (server-side verification)
+      if (room.hostUserId !== requesterId) {
+        return res.status(403).json({ error: "Sadece host oyuncu atabilir" });
+      }
+
+      // Cannot kick yourself
+      if (requesterId === targetUserId) {
+        return res.status(400).json({ error: "Kendinizi atamazsınız" });
+      }
+
+      // Cannot kick during game
+      if (room.status === "playing") {
+        return res.status(400).json({ error: "Oyun sırasında oyuncu atılamaz" });
+      }
+
+      // Verify target is in the room
+      const targetInRoom = players.some(p => p.userId === targetUserId);
+      if (!targetInRoom) {
+        return res.status(404).json({ error: "Oyuncu bulunamadı" });
+      }
+
+      // Remove player from room
+      await storage.removePlayerFromRoom(room.id, targetUserId);
+
+      // Broadcast update
+      broadcastToRoom(code.toUpperCase(), { type: "player_kicked", userId: targetUserId });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Kick player error:", error);
+      res.status(500).json({ error: "Oyuncu atılamadı" });
+    }
+  });
+
   // Start game
   app.post("/api/rooms/:code/start", async (req, res) => {
     try {

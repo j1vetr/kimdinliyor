@@ -221,10 +221,10 @@ export default function Results() {
               Ana Sayfa
             </Button>
           </Link>
-          <Link href={`/oyun/${roomCode}`} className="flex-1">
-            <Button className="w-full" size="lg" data-testid="button-play-again">
+          <Link href={`/oyun/${roomCode}/lobby`} className="flex-1">
+            <Button className="w-full" size="lg" data-testid="button-return-lobby">
               <RotateCcw className="h-5 w-5 mr-2" />
-              Tekrar Oyna
+              Lobiye Dön
             </Button>
           </Link>
         </div>
