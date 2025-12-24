@@ -705,9 +705,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const newTotalScore = (player.totalScore || 0) + score;
       await storage.updatePlayerScore(player.id, newTotalScore);
 
+      const playerAnswer = answers.find(a => a.oderId === player.userId);
       roundResults.push({
         oderId: player.userId,
         displayName: player.user.displayName,
+        avatarUrl: player.user.avatarUrl,
+        selectedUserIds: playerAnswer?.selectedUserIds || [],
         score,
         isCorrect,
         isPartialCorrect,

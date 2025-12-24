@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Trophy, User, Zap, Flame, Play, ThumbsUp } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +18,18 @@ interface Content {
   title: string;
   subtitle: string | null;
   thumbnailUrl: string | null;
+}
+
+interface RoundResult {
+  oderId: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  selectedUserIds: string[];
+  score: number;
+  isCorrect: boolean;
+  isPartialCorrect: boolean;
+  totalScore: number;
+  streak: number;
 }
 
 interface GameState {
@@ -58,7 +70,7 @@ interface WSMessage {
   timeLimit?: number;
   isLightningRound?: boolean;
   correctUserIds?: string[];
-  results?: any[];
+  results?: RoundResult[];
   oderId?: string;
 }
 
@@ -78,6 +90,7 @@ export default function Game() {
   const [isLightningRound, setIsLightningRound] = useState(false);
   const [content, setContent] = useState<Content | null>(null);
   const [correctPlayerIds, setCorrectPlayerIds] = useState<string[]>([]);
+  const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
   const gameQuery = useQuery<any>({
@@ -115,7 +128,6 @@ export default function Game() {
     },
   });
 
-  // WebSocket connection
   useEffect(() => {
     if (!roomCode) return;
 
@@ -138,11 +150,13 @@ export default function Game() {
             setHasAnswered(false);
             setSelectedPlayers([]);
             setCorrectPlayerIds([]);
+            setRoundResults([]);
             break;
             
           case "round_ended":
             setGameStatus("results");
             setCorrectPlayerIds(message.correctUserIds || []);
+            setRoundResults(message.results || []);
             break;
             
           case "game_finished":
@@ -162,7 +176,6 @@ export default function Game() {
     };
   }, [roomCode, setLocation]);
 
-  // Timer countdown
   useEffect(() => {
     if (gameStatus !== "question") return;
     
@@ -173,7 +186,6 @@ export default function Game() {
     return () => clearInterval(timer);
   }, [gameStatus]);
 
-  // Sync with server state on initial load
   useEffect(() => {
     if (gameQuery.data) {
       const data = gameQuery.data;
@@ -213,6 +225,24 @@ export default function Game() {
     answerMutation.mutate(selectedPlayers);
   }, [selectedPlayers, answerMutation, toast]);
 
+  const openYouTubeVideo = () => {
+    if (content?.contentType === "video" && content?.contentId) {
+      window.open(`https://www.youtube.com/watch?v=${content.contentId}`, "_blank");
+    } else if (content?.contentType === "channel" && content?.contentId) {
+      window.open(`https://www.youtube.com/channel/${content.contentId}`, "_blank");
+    }
+  };
+
+  const getPlayerName = (playerId: string) => {
+    const player = allPlayers.find((p: any) => (p.userId || p.user?.id) === playerId);
+    return player?.user?.displayName || player?.displayName || "Bilinmeyen";
+  };
+
+  const getPlayerAvatar = (playerId: string) => {
+    const player = allPlayers.find((p: any) => (p.userId || p.user?.id) === playerId);
+    return player?.user?.avatarUrl || player?.avatarUrl || null;
+  };
+
   if (gameQuery.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -244,7 +274,6 @@ export default function Game() {
   const allPlayers = room?.players || [];
   const totalRounds = room?.totalRounds || 10;
 
-  // Get content type question text
   const getQuestionText = () => {
     if (!content) return "Bu içeriği kim beğendi?";
     if (content.contentType === "video") {
@@ -306,14 +335,17 @@ export default function Game() {
               <TimerRing timeLeft={timeLeft} totalTime={totalTime} size={140} className="hidden md:block" />
               
               <div className="flex flex-col items-center gap-2 md:gap-3 text-center">
-                <div 
-                  className="w-32 h-24 md:w-64 md:h-48 lg:w-80 lg:h-60 rounded-xl overflow-hidden shadow-2xl ring-4 ring-red-500/20"
+                <button 
+                  type="button"
+                  className="relative w-32 h-24 md:w-64 md:h-48 lg:w-80 lg:h-60 rounded-xl overflow-hidden shadow-2xl ring-4 ring-red-500/20 group cursor-pointer"
+                  onClick={openYouTubeVideo}
+                  data-testid="button-open-youtube"
                 >
                   {content.thumbnailUrl ? (
                     <img
                       src={content.thumbnailUrl}
                       alt={content.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
                       data-testid="img-content-thumbnail"
                     />
                   ) : (
@@ -321,7 +353,18 @@ export default function Game() {
                       <SiYoutube className="w-1/3 h-1/3 text-red-500" />
                     </div>
                   )}
-                </div>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+                      <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white ml-1" />
+                    </div>
+                  </div>
+                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Badge className="bg-black/70 text-white text-xs gap-1">
+                      <ExternalLink className="h-3 w-3" />
+                      YouTube'da Aç
+                    </Badge>
+                  </div>
+                </button>
                 
                 <div className="max-w-xs md:max-w-sm">
                   <h2 className="text-lg md:text-xl lg:text-2xl font-bold truncate" data-testid="text-content-title">
@@ -467,71 +510,219 @@ export default function Game() {
 
       {gameStatus === "results" && content && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-sm">
+          <header className="flex items-center justify-between p-3 md:p-4 border-b border-border bg-background/80 backdrop-blur-sm">
             <div className="flex items-center gap-2">
-              <Logo height={40} />
-              <span className="font-semibold">Tur Sonucu</span>
+              <Logo height={36} />
+              <Badge variant="outline" className="font-semibold">
+                Tur {currentRound}/{totalRounds} Sonucu
+              </Badge>
             </div>
-            <Badge variant="secondary">
-              Tur {currentRound}/{totalRounds}
-            </Badge>
+            {isLightningRound && (
+              <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30">
+                <Zap className="h-3 w-3 mr-1" />
+                2x Puan
+              </Badge>
+            )}
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-2xl mx-auto space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
-                <div className="w-16 h-12 rounded-lg overflow-hidden shrink-0">
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+              <button 
+                type="button"
+                className="w-full flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-card border border-border cursor-pointer group text-left"
+                onClick={openYouTubeVideo}
+                data-testid="button-results-open-youtube"
+              >
+                <div className="relative w-24 h-18 sm:w-32 sm:h-24 rounded-xl overflow-hidden shrink-0 ring-2 ring-red-500/20">
                   {content.thumbnailUrl ? (
-                    <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
+                    <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <SiYoutube className="w-6 h-6 text-red-500" />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
+                      <SiYoutube className="w-8 h-8 text-red-500" />
                     </div>
                   )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Play className="h-8 w-8 text-white fill-white" />
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-bold text-sm truncate">{content.title}</h3>
-                  <p className="text-xs text-muted-foreground truncate">{content.subtitle}</p>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                    <Badge variant="secondary" className="gap-1">
+                      {content.contentType === "video" ? (
+                        <>
+                          <ThumbsUp className="h-3 w-3" />
+                          Video
+                        </>
+                      ) : (
+                        <>
+                          <SiYoutube className="h-3 w-3" />
+                          Kanal
+                        </>
+                      )}
+                    </Badge>
+                    <Badge variant="outline" className="gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="h-3 w-3" />
+                      YouTube'da Aç
+                    </Badge>
+                  </div>
+                  <h3 className="font-bold text-base md:text-lg truncate">{content.title}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{content.subtitle}</p>
                 </div>
-                <Badge variant="secondary" className="gap-1 shrink-0">
-                  {content.contentType === "video" ? (
-                    <>
-                      <ThumbsUp className="h-3 w-3" />
-                      Video
-                    </>
-                  ) : (
-                    <>
-                      <SiYoutube className="h-3 w-3" />
-                      Kanal
-                    </>
-                  )}
-                </Badge>
-              </div>
+              </button>
 
-              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                <h3 className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2 flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5" />
+              <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/30">
+                <h3 className="text-sm font-semibold text-green-600 dark:text-green-400 mb-3 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Check className="h-4 w-4" />
+                  </div>
                   Doğru Cevap
                 </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {allPlayers
-                    .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
-                    .map((player: any) => (
-                      <span key={player.userId || player.user?.id} className="text-sm font-medium text-green-700 dark:text-green-300">
-                        {player.user?.displayName || player.displayName}
-                      </span>
-                    ))}
-                  {correctPlayerIds.length === 0 && (
-                    <span className="text-sm text-muted-foreground">
-                      {content.contentType === "video" ? "Kimse beğenmemiş" : "Kimse abone değil"}
-                    </span>
-                  )}
+                {correctPlayerIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {allPlayers
+                      .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
+                      .map((player: any) => {
+                        const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
+                        const displayName = player.user?.displayName || player.displayName;
+                        return (
+                          <div key={player.userId || player.user?.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/20">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt={displayName} className="w-7 h-7 rounded-lg object-cover" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-lg bg-green-500/30 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-300">
+                                {displayName?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-300">{displayName}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {content.contentType === "video" ? "Kimse beğenmemiş" : "Kimse abone değil"}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Kim Kimi Tahmin Etti?
+                </h3>
+                
+                <div className="grid gap-3">
+                  {roundResults.map((result) => {
+                    const isSelf = result.oderId === userId;
+                    
+                    return (
+                      <div 
+                        key={result.oderId} 
+                        className={`p-4 rounded-2xl border transition-all ${
+                          result.isCorrect 
+                            ? "bg-green-500/10 border-green-500/30" 
+                            : result.isPartialCorrect 
+                              ? "bg-yellow-500/10 border-yellow-500/30"
+                              : "bg-card border-border"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            {result.avatarUrl ? (
+                              <img 
+                                src={result.avatarUrl} 
+                                alt={result.displayName} 
+                                className="w-10 h-10 rounded-xl object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-sm font-bold shrink-0">
+                                {result.displayName?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold truncate">
+                                  {result.displayName}
+                                </span>
+                                {isSelf && (
+                                  <Badge variant="secondary" className="text-xs">Sen</Badge>
+                                )}
+                                {result.streak >= 3 && (
+                                  <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30 gap-1 text-xs">
+                                    <Flame className="h-3 w-3" />
+                                    {result.streak} Seri
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                                <span>Tahmin:</span>
+                                {result.selectedUserIds.length > 0 ? (
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    {result.selectedUserIds.map((selectedId, idx) => {
+                                      const isCorrectSelection = correctPlayerIds.includes(selectedId);
+                                      const selectedName = getPlayerName(selectedId);
+                                      const selectedAvatar = getPlayerAvatar(selectedId);
+                                      
+                                      return (
+                                        <span key={selectedId} className="inline-flex items-center">
+                                          {idx > 0 && <span className="mx-1">,</span>}
+                                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md ${
+                                            isCorrectSelection 
+                                              ? "bg-green-500/20 text-green-700 dark:text-green-300" 
+                                              : "bg-red-500/20 text-red-700 dark:text-red-300"
+                                          }`}>
+                                            {selectedAvatar ? (
+                                              <img src={selectedAvatar} alt={selectedName} className="w-4 h-4 rounded-sm object-cover" />
+                                            ) : null}
+                                            {selectedName}
+                                            {isCorrectSelection ? (
+                                              <Check className="h-3 w-3" />
+                                            ) : (
+                                              <X className="h-3 w-3" />
+                                            )}
+                                          </span>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground italic">Cevap vermedi</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between sm:justify-end gap-4 sm:shrink-0">
+                            <div className={`text-right ${
+                              result.score > 0 
+                                ? "text-green-600 dark:text-green-400" 
+                                : result.score < 0 
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-muted-foreground"
+                            }`}>
+                              <div className="text-lg font-bold flex items-center gap-1">
+                                {result.score > 0 && "+"}
+                                {result.score}
+                                <span className="text-xs font-normal">puan</span>
+                              </div>
+                            </div>
+                            
+                            <div className="text-right">
+                              <div className="text-xs text-muted-foreground">Toplam</div>
+                              <div className="font-bold text-base">{result.totalScore}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="text-center p-6 rounded-xl bg-muted/30">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Sonraki tur başlıyor...</p>
+              <div className="flex items-center justify-center gap-2 py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Sonraki tur 5 saniye içinde başlıyor...</span>
               </div>
             </div>
           </main>
