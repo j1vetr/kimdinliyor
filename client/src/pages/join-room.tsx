@@ -176,7 +176,7 @@ export default function JoinRoom() {
                   data-testid="checkbox-consent"
                 />
                 <Label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
-                  Dinleme geçmişim ve playlist verilerimin bu oda oyununda kullanılacağını kabul ediyorum.
+                  YouTube hesabımdaki beğendiğim videolar ve abone olduğum kanalların bu oyunda kullanılmasını kabul ediyorum.
                 </Label>
               </div>
 
