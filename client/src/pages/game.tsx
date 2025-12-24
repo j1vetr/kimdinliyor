@@ -287,13 +287,14 @@ export default function Game() {
             </div>
           </header>
 
-          <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-6 min-h-0 overflow-y-auto lg:overflow-hidden">
-            <div className="flex flex-col items-center justify-center lg:flex-1 gap-4">
-              <TimerRing timeLeft={timeLeft} totalTime={20} size={140} />
+          <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-4 p-3 md:p-6 min-h-0 overflow-y-auto">
+            <div className="flex flex-col items-center lg:justify-center lg:flex-1 gap-3 md:gap-4">
+              <TimerRing timeLeft={timeLeft} totalTime={20} size={100} className="md:hidden" />
+              <TimerRing timeLeft={timeLeft} totalTime={20} size={140} className="hidden md:block" />
               
-              <div className="flex flex-col items-center gap-3 text-center">
+              <div className="flex flex-col items-center gap-2 md:gap-3 text-center">
                 <div 
-                  className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-xl overflow-hidden shadow-2xl ring-4 ring-primary/20"
+                  className="w-24 h-24 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-xl overflow-hidden shadow-2xl ring-4 ring-primary/20"
                 >
                   {game.track.albumArt ? (
                     <img
@@ -327,7 +328,7 @@ export default function Game() {
                   Bu şarkıyı kim dinliyor?
                 </h3>
                 
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0 max-h-[40vh] lg:max-h-none">
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
                   {allPlayers.map((player) => {
                     const isSelected = selectedPlayers.includes(player.id);
                     const isSelf = player.id === userId;

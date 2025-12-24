@@ -56,7 +56,11 @@ export default function Home() {
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
-      setLocation(`/oyun/${roomCode.trim().toUpperCase()}`);
+      let code = roomCode.trim().toUpperCase();
+      if (/^\d+$/.test(code)) {
+        code = "O" + code;
+      }
+      setLocation(`/oyun/${code}`);
     }
   };
 

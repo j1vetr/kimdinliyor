@@ -2,9 +2,10 @@ interface TimerRingProps {
   timeLeft: number;
   totalTime: number;
   size?: number;
+  className?: string;
 }
 
-export function TimerRing({ timeLeft, totalTime, size = 120 }: TimerRingProps) {
+export function TimerRing({ timeLeft, totalTime, size = 120, className }: TimerRingProps) {
   const radius = (size - 12) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = (timeLeft / totalTime) * circumference;
@@ -13,7 +14,7 @@ export function TimerRing({ timeLeft, totalTime, size = 120 }: TimerRingProps) {
 
   return (
     <div 
-      className={`relative ${isCritical ? "animate-pulse" : ""}`} 
+      className={`relative ${isCritical ? "animate-pulse" : ""} ${className || ""}`} 
       style={{ width: size, height: size }}
     >
       <svg
@@ -59,7 +60,9 @@ export function TimerRing({ timeLeft, totalTime, size = 120 }: TimerRingProps) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span 
-          className={`text-4xl font-bold tabular-nums ${
+          className={`font-bold tabular-nums ${
+            size <= 100 ? "text-2xl" : "text-4xl"
+          } ${
             isCritical 
               ? "text-destructive scale-110" 
               : isUrgent 
@@ -70,7 +73,7 @@ export function TimerRing({ timeLeft, totalTime, size = 120 }: TimerRingProps) {
         >
           {timeLeft}
         </span>
-        <span className="text-xs text-muted-foreground uppercase tracking-wider">saniye</span>
+        <span className={`text-muted-foreground uppercase tracking-wider ${size <= 100 ? "text-[10px]" : "text-xs"}`}>saniye</span>
       </div>
     </div>
   );
