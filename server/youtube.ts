@@ -137,7 +137,12 @@ export interface YouTubeChannel {
   subscriberCount: string;
 }
 
-export async function getLikedVideos(accessToken: string, maxResults: number = 50): Promise<YouTubeVideo[]> {
+export interface YouTubeResult<T> {
+  data: T[];
+  scopeError: boolean;
+}
+
+export async function getLikedVideos(accessToken: string, maxResults: number = 50): Promise<YouTubeResult<YouTubeVideo>> {
   try {
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=${maxResults}`,
@@ -149,25 +154,30 @@ export async function getLikedVideos(accessToken: string, maxResults: number = 5
     );
 
     if (!response.ok) {
-      console.error("Failed to get liked videos:", await response.text());
-      return [];
+      const errorText = await response.text();
+      console.error("Failed to get liked videos:", errorText);
+      if (response.status === 403 && errorText.includes("insufficientPermissions")) {
+        return { data: [], scopeError: true };
+      }
+      return { data: [], scopeError: false };
     }
 
     const data = await response.json();
-    return (data.items || []).map((item: any) => ({
+    const videos = (data.items || []).map((item: any) => ({
       id: item.id,
       title: item.snippet.title,
       channelTitle: item.snippet.channelTitle,
       thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
       description: item.snippet.description?.slice(0, 200) || "",
     }));
+    return { data: videos, scopeError: false };
   } catch (error) {
     console.error("Failed to get liked videos:", error);
-    return [];
+    return { data: [], scopeError: false };
   }
 }
 
-export async function getSubscriptions(accessToken: string, maxResults: number = 50): Promise<YouTubeChannel[]> {
+export async function getSubscriptions(accessToken: string, maxResults: number = 50): Promise<YouTubeResult<YouTubeChannel>> {
   try {
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=${maxResults}`,
@@ -179,19 +189,24 @@ export async function getSubscriptions(accessToken: string, maxResults: number =
     );
 
     if (!response.ok) {
-      console.error("Failed to get subscriptions:", await response.text());
-      return [];
+      const errorText = await response.text();
+      console.error("Failed to get subscriptions:", errorText);
+      if (response.status === 403 && errorText.includes("insufficientPermissions")) {
+        return { data: [], scopeError: true };
+      }
+      return { data: [], scopeError: false };
     }
 
     const data = await response.json();
-    return (data.items || []).map((item: any) => ({
+    const channels = (data.items || []).map((item: any) => ({
       id: item.snippet.resourceId.channelId,
       title: item.snippet.title,
       thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
       subscriberCount: "",
     }));
+    return { data: channels, scopeError: false };
   } catch (error) {
     console.error("Failed to get subscriptions:", error);
-    return [];
+    return { data: [], scopeError: false };
   }
 }
