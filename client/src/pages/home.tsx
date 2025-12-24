@@ -78,10 +78,10 @@ export default function Home() {
         <div className="max-w-lg w-full space-y-10">
           <div className="text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Kim <span className="text-primary">Begendi?</span>
+              Kim <span className="text-primary">Dinliyor?</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-sm mx-auto leading-relaxed">
-              YouTube hesabini bagla, arkadaslarinla oyna ve kimin hangi videoyu begendigi tahmin et!
+              YouTube hesabini bagla, arkadaslarinla oyna! Kimin hangi kanala abone oldugunu veya hangi videoyu begendigi tahmin et!
             </p>
           </div>
 
