@@ -335,36 +335,51 @@ export default function Game() {
               <TimerRing timeLeft={timeLeft} totalTime={totalTime} size={140} className="hidden md:block" />
               
               <div className="flex flex-col items-center gap-2 md:gap-3 text-center">
-                <button 
-                  type="button"
-                  className="relative w-32 h-24 md:w-64 md:h-48 lg:w-80 lg:h-60 rounded-xl overflow-hidden shadow-2xl ring-4 ring-red-500/20 group cursor-pointer"
-                  onClick={openYouTubeVideo}
-                  data-testid="button-open-youtube"
-                >
-                  {content.thumbnailUrl ? (
-                    <img
-                      src={content.thumbnailUrl}
-                      alt={content.title}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      data-testid="img-content-thumbnail"
+                {content.contentType === "video" ? (
+                  <div 
+                    className="w-48 h-28 md:w-80 md:h-48 lg:w-96 lg:h-56 rounded-xl overflow-hidden shadow-2xl ring-4 ring-red-500/20"
+                    data-testid="video-player-container"
+                  >
+                    <iframe
+                      src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0`}
+                      title={content.title}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/30 to-red-500/10">
-                      <SiYoutube className="w-1/3 h-1/3 text-red-500" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                      <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white ml-1" />
-                    </div>
                   </div>
-                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Badge className="bg-black/70 text-white text-xs gap-1">
-                      <ExternalLink className="h-3 w-3" />
-                      YouTube'da Aç
-                    </Badge>
-                  </div>
-                </button>
+                ) : (
+                  <button 
+                    type="button"
+                    className="relative w-32 h-24 md:w-64 md:h-48 lg:w-80 lg:h-60 rounded-xl overflow-hidden shadow-2xl ring-4 ring-red-500/20 group cursor-pointer"
+                    onClick={openYouTubeVideo}
+                    data-testid="button-open-youtube"
+                  >
+                    {content.thumbnailUrl ? (
+                      <img
+                        src={content.thumbnailUrl}
+                        alt={content.title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        data-testid="img-content-thumbnail"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/30 to-red-500/10">
+                        <SiYoutube className="w-1/3 h-1/3 text-red-500" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+                        <Play className="h-6 w-6 md:h-8 md:w-8 text-white fill-white ml-1" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Badge className="bg-black/70 text-white text-xs gap-1">
+                        <ExternalLink className="h-3 w-3" />
+                        YouTube'da Aç
+                      </Badge>
+                    </div>
+                  </button>
+                )}
                 
                 <div className="max-w-xs md:max-w-sm">
                   <h2 className="text-lg md:text-xl lg:text-2xl font-bold truncate" data-testid="text-content-title">
