@@ -498,8 +498,8 @@ export default function Lobby() {
                     {canStart
                       ? "Oyunu Başlat"
                       : playerCount < 2
-                        ? "Başlatmak için en az 2 oyuncu gerekli"
-                        : `${disconnectedCount} oyuncu YouTube bağlamalı`}
+                        ? "En az 2 oyuncu gerekli"
+                        : `${disconnectedCount} oyuncu YouTube'a bağlanmalı`}
                   </>
                 )}
               </Button>
