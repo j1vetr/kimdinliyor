@@ -1,0 +1,55 @@
+21|kimdinliyor  | [GAME START] Fetched 49 liked videos and 50 subscriptions for player 191a657b-9681-4ef5-be5c-1ff92fda75dc
+21|kimdinliyor  | [GAME START] Token found for player 20647794-caeb-4927-84c3-7747e4497e4a, expires at: Thu Dec 25 2025 03:19:30 GMT+0300 (GMT+03:00)
+21|kimdinliyor  | Failed to get liked videos: {
+21|kimdinliyor  |   "error": {
+21|kimdinliyor  |     "code": 403,
+21|kimdinliyor  |     "message": "Request had insufficient authentication scopes.",
+21|kimdinliyor  |     "errors": [
+21|kimdinliyor  |       {
+21|kimdinliyor  |         "message": "Insufficient Permission",
+21|kimdinliyor  |         "domain": "global",
+21|kimdinliyor  |         "reason": "insufficientPermissions"
+21|kimdinliyor  |       }
+21|kimdinliyor  |     ],
+21|kimdinliyor  |     "status": "PERMISSION_DENIED",
+21|kimdinliyor  |     "details": [
+21|kimdinliyor  |       {
+21|kimdinliyor  |         "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+21|kimdinliyor  |         "reason": "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+21|kimdinliyor  |         "domain": "googleapis.com",
+21|kimdinliyor  |         "metadata": {
+21|kimdinliyor  |           "method": "youtube.api.v3.V3DataVideoService.List",
+21|kimdinliyor  |           "service": "youtube.googleapis.com"
+21|kimdinliyor  |         }
+21|kimdinliyor  |       }
+21|kimdinliyor  |     ]
+21|kimdinliyor  |   }
+21|kimdinliyor  | }
+21|kimdinliyor  | Failed to get subscriptions: {
+21|kimdinliyor  |   "error": {
+21|kimdinliyor  |     "code": 403,
+21|kimdinliyor  |     "message": "Request had insufficient authentication scopes.",
+21|kimdinliyor  |     "errors": [
+21|kimdinliyor  |       {
+21|kimdinliyor  |         "message": "Insufficient Permission",
+21|kimdinliyor  |         "domain": "global",
+21|kimdinliyor  |         "reason": "insufficientPermissions"
+21|kimdinliyor  |       }
+21|kimdinliyor  |     ],
+21|kimdinliyor  |     "status": "PERMISSION_DENIED",
+21|kimdinliyor  |     "details": [
+21|kimdinliyor  |       {
+21|kimdinliyor  |         "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+21|kimdinliyor  |         "reason": "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+21|kimdinliyor  |         "domain": "googleapis.com",
+21|kimdinliyor  |         "metadata": {
+21|kimdinliyor  |           "service": "youtube.googleapis.com",
+21|kimdinliyor  |           "method": "youtube.api.v3.V3DataSubscriptionService.List"
+21|kimdinliyor  |         }
+21|kimdinliyor  |       }
+21|kimdinliyor  |     ]
+21|kimdinliyor  |   }
+21|kimdinliyor  | }
+21|kimdinliyor  | [GAME START] Fetched 0 liked videos and 0 subscriptions for player 20647794-caeb-4927-84c3-7747e4497e4a
+21|kimdinliyor  | [GAME START] Total unique content in pool: 99
+21|kimdinliyor  | 2:19:39 AM [express] POST /api/rooms/558718/start 200 in 319ms :: {"success":true}
