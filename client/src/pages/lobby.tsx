@@ -396,7 +396,7 @@ export default function Lobby() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>Giriş bilgileriniz Google tarafindan guvenli sekilde islenir. Sifreniz veya kisisel verileriniz tarafimizca kaydedilmez.</p>
+                  <p>Giriş işlemi Google üzerinden güvenli şekilde gerçekleşir. Şifrenizi veya kişisel bilgilerinizi kaydetmiyoruz.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
