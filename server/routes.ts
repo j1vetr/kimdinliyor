@@ -809,44 +809,39 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return;
     }
 
-    // Get track with fair distribution - rotate between owners
-    const owners = Array.from(gameState.tracksByOwner.keys());
+    // Get all tracks for this room
+    const allTracks = await storage.getTracksByRoom(room.id);
     let track: Track | null = null;
     
-    if (owners.length > 0) {
-      // Try to get a track from the next owner in rotation
-      for (let attempts = 0; attempts < owners.length; attempts++) {
-        gameState.lastOwnerIndex = (gameState.lastOwnerIndex + 1) % owners.length;
-        const currentOwner = owners[gameState.lastOwnerIndex];
-        const ownerTracks = gameState.tracksByOwner.get(currentOwner) || [];
-        
-        // Find an unused track from this owner
-        const unusedTrack = ownerTracks.find(trackId => !gameState.usedTrackIds.has(trackId));
-        
-        if (unusedTrack) {
-          const allTracks = await storage.getTracksByRoom(room.id);
-          track = allTracks.find(t => t.id === unusedTrack) || null;
-          if (track) {
-            gameState.usedTrackIds.add(track.id);
-            break;
-          }
+    // Filter unused tracks
+    let availableTracks = allTracks.filter(t => !gameState.usedTrackIds.has(t.id));
+    
+    // If all tracks used, reset
+    if (availableTracks.length === 0) {
+      gameState.usedTrackIds.clear();
+      availableTracks = allTracks;
+    }
+    
+    if (availableTracks.length > 0) {
+      // Every 2 rounds (rounds 2, 4, 6, 8, 10), prefer multi-owner songs
+      const preferMultiOwner = newRoundNumber % 2 === 0;
+      
+      if (preferMultiOwner) {
+        // Find tracks with multiple owners
+        const multiOwnerTracks = availableTracks.filter(t => t.sourceUserIds.length > 1);
+        if (multiOwnerTracks.length > 0) {
+          // Random selection from multi-owner tracks
+          track = multiOwnerTracks[Math.floor(Math.random() * multiOwnerTracks.length)];
         }
       }
       
-      // If no unused tracks found, reset and get any random track
+      // If no multi-owner track found or odd round, pick random
       if (!track) {
-        gameState.usedTrackIds.clear();
-        const randomTrack = await storage.getRandomTrack(room.id);
-        if (randomTrack) {
-          track = randomTrack;
-          gameState.usedTrackIds.add(track.id);
-        }
+        track = availableTracks[Math.floor(Math.random() * availableTracks.length)];
       }
-    } else {
-      // Fallback to random track
-      const randomTrack = await storage.getRandomTrack(room.id);
-      if (randomTrack) {
-        track = randomTrack;
+      
+      if (track) {
+        gameState.usedTrackIds.add(track.id);
       }
     }
     
@@ -910,22 +905,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const players = await storage.getRoomPlayers(room.id);
 
     for (const answer of answers) {
-      const selected = new Set(answer.selectedUserIds);
+      const selected = answer.selectedUserIds || [];
       const correct = new Set(correctUserIds);
 
-      let isCorrect = false;
-      let isPartialCorrect = false;
-      let score = 0;
+      let correctCount = 0;
+      let wrongCount = 0;
 
-      if (selected.size === correct.size && Array.from(selected).every(id => correct.has(id))) {
-        isCorrect = true;
-        score = 10;
-      } else if (Array.from(selected).some(id => correct.has(id))) {
-        isPartialCorrect = true;
-        score = 5;
-      } else {
-        score = -2;
+      for (const selectedId of selected) {
+        if (correct.has(selectedId)) {
+          correctCount++;
+        } else {
+          wrongCount++;
+        }
       }
+
+      const score = (correctCount * 5) - (wrongCount * 5);
+      const isCorrect = correctCount === correct.size && wrongCount === 0;
+      const isPartialCorrect = correctCount > 0 && !isCorrect;
 
       await storage.updateAnswer(answer.id, { isCorrect, isPartialCorrect, score });
 
