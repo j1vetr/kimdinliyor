@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, UserX, Smartphone, Speaker, Laptop, RefreshCw } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, UserX, Smartphone, Speaker, Laptop, RefreshCw, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
@@ -34,7 +35,9 @@ export default function Lobby() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const roomCode = params.code?.toUpperCase();
-  const userId = localStorage.getItem("userId");
+  const [userId, setUserId] = useState<string | null>(localStorage.getItem("userId"));
+  const [joinName, setJoinName] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
   const roomQuery = useQuery<RoomWithPlayers>({
     queryKey: ["/api/rooms", roomCode],
@@ -131,6 +134,36 @@ export default function Lobby() {
       });
     },
   });
+
+  const handleQuickJoin = async () => {
+    if (!joinName.trim() || !roomCode) return;
+    
+    setIsJoining(true);
+    try {
+      const response = await apiRequest("POST", `/api/rooms/${roomCode}/join`, {
+        displayName: joinName.trim(),
+      });
+      const data = await response.json();
+      
+      localStorage.setItem("userId", data.userId);
+      setUserId(data.userId);
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+      
+      toast({
+        title: "Lobiye katıldın!",
+        description: "Spotify hesabını bağlamayı unutma.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Hata",
+        description: error.message || "Lobiye katılınamadı.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   const connectSpotify = useCallback(async () => {
     try {
@@ -261,6 +294,96 @@ export default function Lobby() {
   const disconnectedCount = players.filter(p => !p.user.spotifyConnected).length;
   const hasSelectedDevice = !!devicesQuery.data?.selectedDeviceId;
   const canStart = isHost && playerCount >= 2 && allSpotifyConnected;
+  
+  const isUserInRoom = userId && players.some(p => p.userId === userId);
+  const isFull = playerCount >= maxPlayers;
+
+  if (!isUserInRoom) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="flex items-center justify-center p-4 border-b border-border">
+          <Logo height={56} />
+        </header>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">{room.name}</CardTitle>
+              <p className="text-muted-foreground">
+                {isFull ? "Bu lobi dolu" : "Lobiye katılmak için ismini gir"}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-center gap-4 p-4 rounded-lg bg-muted/50">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Oda Kodu</p>
+                  <p className="font-mono text-xl font-bold text-primary">{roomCode}</p>
+                </div>
+                <div className="h-10 w-px bg-border" />
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Oyuncular</p>
+                  <p className="text-xl font-bold">{playerCount}/{maxPlayers}</p>
+                </div>
+              </div>
+              
+              {!isFull && (
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Adını gir..."
+                    value={joinName}
+                    onChange={(e) => setJoinName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
+                    disabled={isJoining}
+                    data-testid="input-join-name"
+                  />
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleQuickJoin}
+                    disabled={!joinName.trim() || isJoining}
+                    data-testid="button-quick-join"
+                  >
+                    {isJoining ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Katılınıyor...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Lobiye Katıl
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              
+              {isFull && (
+                <div className="text-center">
+                  <Link href="/">
+                    <Button variant="outline">Ana Sayfaya Dön</Button>
+                  </Link>
+                </div>
+              )}
+              
+              {players.length > 0 && (
+                <div className="pt-4 border-t border-border">
+                  <p className="text-sm text-muted-foreground mb-2">Lobideki oyuncular:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {players.map((p) => (
+                      <Badge key={p.id} variant="secondary">
+                        {p.userId === room.hostUserId && <Crown className="h-3 w-3 mr-1" />}
+                        {p.user.displayName}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
