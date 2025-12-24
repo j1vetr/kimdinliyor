@@ -1,16 +1,16 @@
 import { Link } from "wouter";
-import { Users, Plus, Music2, Music, Headphones, Disc3, ArrowRight, Sparkles } from "lucide-react";
+import { Users, Plus, Video, Play, Film, Tv, ArrowRight, Sparkles } from "lucide-react";
+import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { SpotifyIcon } from "@/components/spotify-icon";
 import { Logo } from "@/components/logo";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 
 function FloatingIcons() {
   const icons = useMemo(() => {
-    const iconTypes = [Music, Music2, Headphones, Disc3, "spotify"];
+    const iconTypes = [Video, Play, Film, Tv, "youtube"];
     return Array.from({ length: 10 }, (_, i) => ({
       id: i,
       type: iconTypes[i % iconTypes.length],
@@ -36,12 +36,12 @@ function FloatingIcons() {
             opacity: icon.opacity,
           }}
         >
-          {icon.type === "spotify" ? (
-            <SpotifyIcon size={icon.size} />
+          {icon.type === "youtube" ? (
+            <SiYoutube size={icon.size} className="text-red-500" />
           ) : (
             <icon.type
               size={icon.size}
-              className="text-[#1DB954]"
+              className="text-red-500"
             />
           )}
         </div>
@@ -78,10 +78,10 @@ export default function Home() {
         <div className="max-w-lg w-full space-y-10">
           <div className="text-center space-y-4 animate-fade-in">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Kim <span className="text-primary">Dinliyor?</span>
+              Kim <span className="text-primary">Begendi?</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-sm mx-auto leading-relaxed">
-              Spotify hesabını bağla, arkadaşlarınla oyna ve kimin hangi şarkıyı dinlediğini tahmin et!
+              YouTube hesabini bagla, arkadaslarinla oyna ve kimin hangi videoyu begendigi tahmin et!
             </p>
           </div>
 
@@ -101,10 +101,10 @@ export default function Home() {
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors">
-                        Yeni Oda Oluştur
+                        Yeni Oda Olustur
                       </h2>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Kendi oyun odanı aç, arkadaşlarına oda kodunu gönder ve birlikte eğlenmeye başla.
+                        Kendi oyun odani ac, arkadaslarina oda kodunu gonder ve birlikte eglenmeye basla.
                       </p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
@@ -123,9 +123,9 @@ export default function Home() {
                     <Users className="h-8 w-8 text-foreground" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold mb-1">Odaya Katıl</h2>
+                    <h2 className="text-xl font-bold mb-1">Odaya Katil</h2>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                      Arkadaşından aldığın oda kodunu gir ve oyuna hemen katıl.
+                      Arkadasindan aldigin oda kodunu gir ve oyuna hemen katil.
                     </p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export default function Home() {
                     className="h-12 px-6"
                     data-testid="button-join-room"
                   >
-                    Katıl
+                    Katil
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
@@ -164,21 +164,21 @@ export default function Home() {
           <div className="text-center space-y-3 animate-fade-in" style={{ animationDelay: "0.3s" }}>
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <div className="h-px w-12 bg-border" />
-              <span>Nasıl Oynanır?</span>
+              <span>Nasil Oynanir?</span>
               <div className="h-px w-12 bg-border" />
             </div>
             <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">1</div>
-                <span>Odaya Katıl</span>
+                <span>Odaya Katil</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">2</div>
-                <span>Spotify Bağla</span>
+                <span>YouTube Bagla</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">3</div>
-                <span>Şarkıyı Tahmin Et</span>
+                <span>Videoyu Tahmin Et</span>
               </div>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function Home() {
       <footer className="p-4 border-t border-border relative z-10">
         <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
-            <span>Geliştirici:</span>
+            <span>Gelistirici:</span>
             <a
               href="https://toov.com.tr"
               target="_blank"
@@ -203,14 +203,14 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <span>Powered by</span>
             <a
-              href="https://spotify.com"
+              href="https://youtube.com"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 hover:opacity-80 transition-opacity"
-              data-testid="link-spotify"
+              data-testid="link-youtube"
             >
-              <SpotifyIcon size={20} />
-              <span className="font-semibold text-[#1DB954]">Spotify</span>
+              <SiYoutube size={20} className="text-red-500" />
+              <span className="font-semibold text-red-500">YouTube</span>
             </a>
           </div>
         </div>

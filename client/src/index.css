@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE - Spotify Oda Oyunu */
+/* LIGHT MODE - YouTube Oda Oyunu */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -18,28 +18,28 @@
   --sidebar: 0 0% 94%;
   --sidebar-foreground: 0 0% 12%;
   --sidebar-border: 0 0% 88%;
-  --sidebar-primary: 142 76% 36%;
+  --sidebar-primary: 0 72% 51%;
   --sidebar-primary-foreground: 0 0% 98%;
   --sidebar-accent: 0 0% 90%;
   --sidebar-accent-foreground: 0 0% 12%;
-  --sidebar-ring: 142 76% 36%;
+  --sidebar-ring: 0 72% 51%;
   --popover: 0 0% 92%;
   --popover-foreground: 0 0% 12%;
   --popover-border: 0 0% 86%;
-  --primary: 142 76% 36%;
+  --primary: 0 72% 51%;
   --primary-foreground: 0 0% 98%;
   --secondary: 0 0% 88%;
   --secondary-foreground: 0 0% 12%;
   --muted: 0 0% 90%;
   --muted-foreground: 0 0% 32%;
-  --accent: 142 8% 92%;
+  --accent: 0 8% 92%;
   --accent-foreground: 0 0% 12%;
   --destructive: 0 84% 42%;
   --destructive-foreground: 0 0% 98%;
   --input: 0 0% 76%;
-  --ring: 142 76% 36%;
-  --chart-1: 142 76% 36%;
-  --chart-2: 171 80% 32%;
+  --ring: 0 72% 51%;
+  --chart-1: 0 72% 51%;
+  --chart-2: 15 80% 45%;
   --chart-3: 200 76% 38%;
   --chart-4: 280 72% 42%;
   --chart-5: 340 82% 44%;
@@ -57,7 +57,7 @@
   --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-  --spotify-green: 142 76% 46%;
+  --youtube-red: 0 72% 51%;
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -75,7 +75,7 @@
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
 
-/* DARK MODE - Antrasit/Kömür Gri Tema (Spotify Tarzı) */
+/* DARK MODE - Antrasit/Kömür Gri Tema (YouTube Tarzı) */
 .dark {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
@@ -91,32 +91,32 @@
   --sidebar: 0 0% 9%;
   --sidebar-foreground: 0 0% 95%;
   --sidebar-border: 0 0% 14%;
-  --sidebar-primary: 142 70% 45%;
-  --sidebar-primary-foreground: 0 0% 5%;
+  --sidebar-primary: 0 72% 51%;
+  --sidebar-primary-foreground: 0 0% 98%;
   --sidebar-accent: 0 0% 14%;
   --sidebar-accent-foreground: 0 0% 95%;
-  --sidebar-ring: 142 70% 45%;
+  --sidebar-ring: 0 72% 51%;
   --popover: 0 0% 12%;
   --popover-foreground: 0 0% 95%;
   --popover-border: 0 0% 16%;
-  --primary: 142 70% 45%;
-  --primary-foreground: 0 0% 5%;
+  --primary: 0 72% 51%;
+  --primary-foreground: 0 0% 98%;
   --secondary: 0 0% 16%;
   --secondary-foreground: 0 0% 95%;
   --muted: 0 0% 14%;
   --muted-foreground: 0 0% 60%;
-  --accent: 142 6% 16%;
+  --accent: 0 6% 16%;
   --accent-foreground: 0 0% 95%;
   --destructive: 0 72% 50%;
   --destructive-foreground: 0 0% 98%;
   --input: 0 0% 22%;
-  --ring: 142 70% 45%;
-  --chart-1: 142 70% 50%;
-  --chart-2: 171 75% 45%;
+  --ring: 0 72% 51%;
+  --chart-1: 0 72% 55%;
+  --chart-2: 15 75% 50%;
   --chart-3: 200 70% 50%;
   --chart-4: 280 65% 55%;
   --chart-5: 340 75% 55%;
-  --spotify-green: 142 70% 45%;
+  --youtube-red: 0 72% 51%;
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -214,7 +214,7 @@
     inset: -1px;
   }
 
-  /* Custom animations for Spotify Oda Oyunu */
+  /* Custom animations for YouTube Oda Oyunu */
   @keyframes pulse-ring {
     0% {
       transform: scale(0.95);
@@ -298,8 +298,8 @@
   .stagger-5 { animation-delay: 0.5s; }
 
   /* Gradient backgrounds */
-  .bg-gradient-spotify {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(142 50% 25%) 100%);
+  .bg-gradient-youtube {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(0 50% 35%) 100%);
   }
 
   .bg-gradient-dark {
@@ -342,8 +342,8 @@
     animation-fill-mode: backwards;
   }
 
-  /* Spotify wave animation */
-  @keyframes spotify-wave {
+  /* YouTube wave animation */
+  @keyframes youtube-wave {
     0%, 100% {
       transform: scaleY(0.5);
     }
@@ -352,16 +352,16 @@
     }
   }
 
-  @keyframes spotify-pulse {
+  @keyframes youtube-pulse {
     0%, 100% {
-      box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4);
+      box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4);
     }
     50% {
-      box-shadow: 0 0 0 20px rgba(29, 185, 84, 0);
+      box-shadow: 0 0 0 20px rgba(255, 0, 0, 0);
     }
   }
 
-  @keyframes spotify-glow {
+  @keyframes youtube-glow {
     0%, 100% {
       opacity: 0.5;
       transform: scale(1);
@@ -381,12 +381,12 @@
     }
   }
 
-  .animate-spotify-pulse {
-    animation: spotify-pulse 2s ease-in-out infinite;
+  .animate-youtube-pulse {
+    animation: youtube-pulse 2s ease-in-out infinite;
   }
 
-  .animate-spotify-glow {
-    animation: spotify-glow 2s ease-in-out infinite;
+  .animate-youtube-glow {
+    animation: youtube-glow 2s ease-in-out infinite;
   }
 
   .animate-wave-bar {
