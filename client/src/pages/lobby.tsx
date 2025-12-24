@@ -108,7 +108,11 @@ export default function Lobby() {
       return response.json();
     },
     enabled: !!userId && spotifyStatusQuery.data?.connected,
-    refetchInterval: 5000,
+    refetchInterval: (query) => {
+      const deviceCount = query.state.data?.devices?.length ?? 0;
+      const hasDevices = deviceCount > 0;
+      return hasDevices ? 10000 : 3000;
+    },
   });
 
   const selectDeviceMutation = useMutation({
@@ -466,7 +470,7 @@ export default function Lobby() {
               {devicesQuery.isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               ) : devicesQuery.data?.devices.length === 0 ? (
-                <span className="text-xs text-muted-foreground">Cihaz yok</span>
+                <span className="text-xs text-muted-foreground" title="Spotify'ı aç ve bir şeyler çal">Spotify'ı aç</span>
               ) : (
                 <div className="flex items-center gap-1">
                   {devicesQuery.data?.devices.slice(0, 3).map((device) => {

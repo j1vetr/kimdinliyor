@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks, getAvailableDevices, playTrackOnDevice, pausePlayback, getUserProfile } from "./spotify";
+import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks, getUserPlaylists, getPlaylistTracks, getAvailableDevices, playTrackOnDevice, pausePlayback, getUserProfile } from "./spotify";
 import type { Room, RoomPlayer, Track } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -522,13 +522,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       
       const tracksByUser = new Map<string, { track: any; userId: string }[]>();
       
+      console.log(`[GAME START] Fetching tracks for ${players.length} players`);
+      
       for (const player of players) {
         try {
           let token = await storage.getSpotifyToken(player.userId);
-          if (!token) continue;
+          if (!token) {
+            console.log(`[GAME START] No token found for player ${player.userId}`);
+            continue;
+          }
+
+          console.log(`[GAME START] Token found for player ${player.userId}, expires at: ${token.expiresAt}`);
 
           // Refresh token if expired
           if (token.expiresAt < new Date()) {
+            console.log(`[GAME START] Token expired for player ${player.userId}, refreshing...`);
             const refreshed = await refreshAccessToken(token.refreshToken);
             if (refreshed) {
               const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
@@ -538,13 +546,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 expiresAt: newExpiresAt,
               });
               token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
+              console.log(`[GAME START] Token refreshed for player ${player.userId}`);
+            } else {
+              console.log(`[GAME START] Token refresh FAILED for player ${player.userId}`);
+              continue;
             }
           }
 
-          const recentTracks = await getRecentlyPlayedTracks(token.accessToken, 20);
-          const topTracks = await getTopTracks(token.accessToken, 15);
+          // Fetch top tracks, recent tracks, and playlist tracks
+          const recentTracks = await getRecentlyPlayedTracks(token.accessToken, 30);
+          const topTracks = await getTopTracks(token.accessToken, 30);
           
-          const allTracks = [...recentTracks, ...topTracks];
+          // Also fetch from playlists for more variety
+          let playlistTracks: any[] = [];
+          try {
+            const playlists = await getUserPlaylists(token.accessToken);
+            // Get tracks from up to 3 random playlists
+            const shuffledPlaylists = [...playlists].sort(() => Math.random() - 0.5).slice(0, 3);
+            for (const playlist of shuffledPlaylists) {
+              const tracks = await getPlaylistTracks(token.accessToken, playlist.id);
+              playlistTracks.push(...tracks.slice(0, 10)); // Take 10 random tracks per playlist
+            }
+          } catch (playlistError) {
+            console.log(`[GAME START] Could not fetch playlists for player ${player.userId}:`, playlistError);
+          }
+          
+          const allTracks = [...recentTracks, ...topTracks, ...playlistTracks];
+          console.log(`[GAME START] Fetched ${allTracks.length} tracks for player ${player.userId} (${recentTracks.length} recent, ${topTracks.length} top, ${playlistTracks.length} playlist)`);
+          
           for (const track of allTracks) {
             if (!tracksByUser.has(track.id)) {
               tracksByUser.set(track.id, []);
@@ -555,9 +584,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             }
           }
         } catch (error) {
-          console.error(`Failed to fetch tracks for user ${player.userId}:`, error);
+          console.error(`[GAME START] Failed to fetch tracks for user ${player.userId}:`, error);
         }
       }
+      
+      console.log(`[GAME START] Total unique tracks in pool: ${tracksByUser.size}`);
 
       // Add tracks to cache with actual listeners
       if (tracksByUser.size > 0) {
