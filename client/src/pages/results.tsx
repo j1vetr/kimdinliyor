@@ -1,7 +1,7 @@
 import { useParams, Link } from "wouter";
-import { Trophy, Medal, Home, RotateCcw, Loader2 } from "lucide-react";
+import { Trophy, Medal, Crown, Home, RotateCcw, Loader2, Star, Target, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -62,35 +62,44 @@ export default function Results() {
 
   const results = resultsQuery.data;
   const sortedPlayers = [...results.players].sort((a, b) => b.totalScore - a.totalScore);
-  const winner = sortedPlayers[0];
-  const podium = sortedPlayers.slice(0, 3);
-  const restPlayers = sortedPlayers.slice(3);
-  const myResult = sortedPlayers.find((p) => p.id === userId);
   const myRank = sortedPlayers.findIndex((p) => p.id === userId) + 1;
 
-  const getMedalColor = (rank: number) => {
+  const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return "text-yellow-400";
+        return <Crown className="h-6 w-6 text-yellow-400" />;
       case 2:
-        return "text-gray-300";
+        return <Medal className="h-5 w-5 text-gray-300" />;
       case 3:
-        return "text-amber-600";
+        return <Medal className="h-5 w-5 text-amber-600" />;
       default:
-        return "text-muted-foreground";
+        return null;
     }
   };
 
-  const getPodiumHeight = (rank: number) => {
+  const getRankStyle = (rank: number) => {
     switch (rank) {
       case 1:
-        return "h-32";
+        return "bg-gradient-to-r from-yellow-500/20 via-yellow-400/10 to-yellow-500/20 border-yellow-400/50 ring-2 ring-yellow-400/30";
       case 2:
-        return "h-24";
+        return "bg-gradient-to-r from-gray-400/20 via-gray-300/10 to-gray-400/20 border-gray-300/50";
       case 3:
-        return "h-16";
+        return "bg-gradient-to-r from-amber-600/20 via-amber-500/10 to-amber-600/20 border-amber-600/50";
       default:
-        return "h-12";
+        return "bg-muted/30";
+    }
+  };
+
+  const getRankBadge = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Badge className="bg-yellow-400 text-yellow-950 font-bold text-base px-3 py-1">1.</Badge>;
+      case 2:
+        return <Badge className="bg-gray-300 text-gray-800 font-bold text-base px-3 py-1">2.</Badge>;
+      case 3:
+        return <Badge className="bg-amber-600 text-white font-bold text-base px-3 py-1">3.</Badge>;
+      default:
+        return <span className="text-lg font-bold text-muted-foreground w-10 text-center">{rank}.</span>;
     }
   };
 
@@ -104,137 +113,108 @@ export default function Results() {
         <ThemeToggle />
       </header>
 
-      <main className="flex-1 flex flex-col p-4 md:p-8 gap-8 max-w-4xl mx-auto w-full">
-        <div className="text-center space-y-4 animate-fade-in">
-          <h1 className="text-3xl md:text-4xl font-bold">{results.roomName}</h1>
+      <main className="flex-1 flex flex-col p-4 md:p-6 gap-6 max-w-2xl mx-auto w-full">
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <Trophy className="h-8 w-8 text-yellow-400" />
+            <h1 className="text-2xl md:text-3xl font-bold">Sonuçlar</h1>
+            <Trophy className="h-8 w-8 text-yellow-400" />
+          </div>
           <p className="text-muted-foreground">
-            {results.totalRounds} Tur Tamamlandı
+            {results.roomName} - {results.totalRounds} Tur
           </p>
         </div>
 
-        {winner && (
-          <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/30 animate-scale-in">
-            <CardContent className="p-6 text-center">
-              <Trophy className="h-16 w-16 text-yellow-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Kazanan</h2>
-              <p className="text-3xl font-bold text-primary" data-testid="text-winner-name">
-                {winner.displayName}
-              </p>
-              <p className="text-4xl font-bold mt-2" data-testid="text-winner-score">
-                {winner.totalScore} Puan
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex items-end justify-center gap-4 h-48 animate-slide-up">
-          {podium.length >= 2 && (
-            <div className="flex flex-col items-center">
-              <Avatar className="h-16 w-16 border-4 border-gray-300 mb-2">
-                <AvatarFallback className="bg-muted font-bold">
-                  {podium[1].displayName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <p className="font-medium text-sm truncate max-w-[80px]">
-                {podium[1].displayName}
-              </p>
-              <p className="font-bold">{podium[1].totalScore}</p>
-              <div className={`${getPodiumHeight(2)} w-20 bg-gray-300/20 rounded-t-lg flex items-end justify-center pb-2`}>
-                <Medal className={`h-8 w-8 ${getMedalColor(2)}`} />
-              </div>
-              <Badge variant="secondary">2.</Badge>
-            </div>
-          )}
-
-          {podium.length >= 1 && (
-            <div className="flex flex-col items-center">
-              <Avatar className="h-20 w-20 border-4 border-yellow-400 mb-2">
-                <AvatarFallback className="bg-muted font-bold text-lg">
-                  {podium[0].displayName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <p className="font-medium truncate max-w-[100px]">
-                {podium[0].displayName}
-              </p>
-              <p className="font-bold text-lg">{podium[0].totalScore}</p>
-              <div className={`${getPodiumHeight(1)} w-24 bg-yellow-400/20 rounded-t-lg flex items-end justify-center pb-2`}>
-                <Trophy className={`h-10 w-10 ${getMedalColor(1)}`} />
-              </div>
-              <Badge className="bg-yellow-400/20 text-yellow-400 border-yellow-400/50">1.</Badge>
-            </div>
-          )}
-
-          {podium.length >= 3 && (
-            <div className="flex flex-col items-center">
-              <Avatar className="h-14 w-14 border-4 border-amber-600 mb-2">
-                <AvatarFallback className="bg-muted font-bold text-sm">
-                  {podium[2].displayName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <p className="font-medium text-sm truncate max-w-[70px]">
-                {podium[2].displayName}
-              </p>
-              <p className="font-bold">{podium[2].totalScore}</p>
-              <div className={`${getPodiumHeight(3)} w-16 bg-amber-600/20 rounded-t-lg flex items-end justify-center pb-2`}>
-                <Medal className={`h-6 w-6 ${getMedalColor(3)}`} />
-              </div>
-              <Badge variant="secondary">3.</Badge>
-            </div>
-          )}
-        </div>
-
-        {restPlayers.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Diğer Oyuncular</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {restPlayers.map((player, index) => (
-                <div
-                  key={player.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-bold text-muted-foreground w-8">
-                      {index + 4}.
-                    </span>
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-muted font-medium">
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 p-4 border-b border-border">
+            <h2 className="text-lg font-bold text-center flex items-center justify-center gap-2">
+              <Star className="h-5 w-5 text-primary" />
+              Skor Tablosu
+              <Star className="h-5 w-5 text-primary" />
+            </h2>
+          </div>
+          
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {sortedPlayers.map((player, index) => {
+                const rank = index + 1;
+                const isSelf = player.id === userId;
+                
+                return (
+                  <div
+                    key={player.id}
+                    className={`flex items-center gap-3 p-4 transition-all ${getRankStyle(rank)} ${
+                      isSelf ? "ring-2 ring-primary/50" : ""
+                    }`}
+                    data-testid={`scoreboard-row-${rank}`}
+                  >
+                    <div className="flex items-center gap-2 w-16 shrink-0">
+                      {getRankBadge(rank)}
+                      {getRankIcon(rank)}
+                    </div>
+                    
+                    <Avatar className={`h-12 w-12 shrink-0 ${
+                      rank === 1 ? "ring-2 ring-yellow-400" : 
+                      rank === 2 ? "ring-2 ring-gray-300" : 
+                      rank === 3 ? "ring-2 ring-amber-600" : ""
+                    }`}>
+                      <AvatarFallback className={`font-bold ${
+                        rank === 1 ? "bg-yellow-400/20 text-yellow-600 dark:text-yellow-400" :
+                        rank === 2 ? "bg-gray-300/20" :
+                        rank === 3 ? "bg-amber-600/20 text-amber-600" :
+                        "bg-muted"
+                      }`}>
                         {player.displayName.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="font-medium">{player.displayName}</span>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold truncate ${rank === 1 ? "text-lg" : ""}`}>
+                        {player.displayName}
+                        {isSelf && (
+                          <Badge variant="outline" className="ml-2 text-xs">Sen</Badge>
+                        )}
+                      </p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                        <span className="flex items-center gap-1">
+                          <Target className="h-3 w-3 text-green-500" />
+                          {player.correctAnswers} tam doğru
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Zap className="h-3 w-3 text-yellow-500" />
+                          {player.partialAnswers} kısmi
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right shrink-0">
+                      <p className={`font-bold ${
+                        rank === 1 ? "text-2xl text-yellow-500" :
+                        rank === 2 ? "text-xl text-gray-400" :
+                        rank === 3 ? "text-xl text-amber-600" :
+                        "text-lg"
+                      }`}>
+                        {player.totalScore}
+                      </p>
+                      <p className="text-xs text-muted-foreground">puan</p>
+                    </div>
                   </div>
-                  <span className="font-bold">{player.totalScore}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {myRank > 0 && (
+          <div className="text-center p-4 rounded-xl bg-primary/10 border border-primary/30">
+            <p className="text-sm text-muted-foreground mb-1">Senin sıralaman</p>
+            <p className="text-3xl font-bold text-primary">
+              {myRank}. / {sortedPlayers.length}
+            </p>
+          </div>
         )}
 
-        {myResult && (
-          <Card className="border-primary/30">
-            <CardContent className="p-6">
-              <h3 className="font-semibold mb-4">Senin Sonucun</h3>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-3xl font-bold text-primary">{myRank}.</p>
-                  <p className="text-sm text-muted-foreground">Sıralama</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold">{myResult.totalScore}</p>
-                  <p className="text-sm text-muted-foreground">Toplam Puan</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold text-primary">{myResult.correctAnswers}</p>
-                  <p className="text-sm text-muted-foreground">Doğru Cevap</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex flex-col sm:flex-row gap-4 mt-auto pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-4">
           <Link href="/" className="flex-1">
             <Button variant="outline" className="w-full" size="lg">
               <Home className="h-5 w-5 mr-2" />
