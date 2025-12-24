@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Users, Send, Volume2, VolumeX, Music, Check, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { PlayerCard } from "@/components/player-card";
-import { TrackCard } from "@/components/track-card";
 import { TimerRing } from "@/components/timer-ring";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -81,7 +80,7 @@ export default function Game() {
       setHasAnswered(true);
       toast({
         title: "Cevap gönderildi",
-        description: "Cevabınız kaydedildi. Diğer oyuncular bekleniyor...",
+        description: "Diğer oyuncular bekleniyor...",
       });
     },
     onError: (error: Error) => {
@@ -111,11 +110,9 @@ export default function Game() {
     }
   }, [gameQuery.data?.status, roomCode, setLocation]);
 
-  // Audio preview playback
   useEffect(() => {
     const game = gameQuery.data;
     
-    // Stop audio on results, finished, or waiting status
     if (!game || game.status === "results" || game.status === "finished" || game.status === "waiting") {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -125,11 +122,8 @@ export default function Game() {
       return;
     }
     
-    // Only play audio during question phase
     if (game.status === "question" && game.track) {
-      // Only start new audio if track changed
       if (game.track.id !== currentTrackIdRef.current) {
-        // Stop previous audio first
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current = null;
@@ -137,7 +131,6 @@ export default function Game() {
         
         currentTrackIdRef.current = game.track.id;
         
-        // Only create audio if preview URL exists
         if (game.track.previewUrl) {
           const audio = new Audio(game.track.previewUrl);
           audio.volume = isMuted ? 0 : 0.7;
@@ -148,14 +141,12 @@ export default function Game() {
     }
   }, [gameQuery.data?.status, gameQuery.data?.track?.id, gameQuery.data?.track?.previewUrl]);
 
-  // Handle mute state changes
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : 0.7;
     }
   }, [isMuted]);
 
-  // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -212,191 +203,281 @@ export default function Game() {
   }
 
   const game = gameQuery.data;
-  const allPlayers = game.players; // Include self for voting
+  const allPlayers = game.players;
   const isShowingResults = game.status === "results";
+  const answeredCount = allPlayers.filter(p => p.answered).length;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <SpotifyIcon size={24} />
-          <span className="font-semibold truncate max-w-[150px] md:max-w-none">
-            {game.roomName}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">
-            Tur {game.currentRound}/{game.totalRounds}
-          </Badge>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMuted(!isMuted)}
-            data-testid="button-mute"
-          >
-            {isMuted ? (
-              <VolumeX className="h-5 w-5" />
-            ) : (
-              <Volume2 className="h-5 w-5" />
-            )}
-          </Button>
-          <ThemeToggle />
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col p-4 md:p-8 gap-6 max-w-4xl mx-auto w-full">
-        {game.status === "waiting" && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-4 animate-pulse-ring">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-              <p className="text-xl font-medium">Sonraki tur hazırlanıyor...</p>
-            </div>
-          </div>
-        )}
-
-        {game.status === "question" && game.track && (
-          <>
-            <div className="flex justify-center">
-              <TimerRing timeLeft={timeLeft} totalTime={20} size={100} />
-            </div>
-
-            <TrackCard
-              trackName={game.track.name}
-              artistName={game.track.artist}
-              albumArtUrl={game.track.albumArt}
-              size="lg"
+    <div className="h-screen bg-background flex flex-col">
+      {game.status === "question" && game.track && (
+        <>
+          {game.track.albumArt && (
+            <div 
+              className="fixed inset-0 z-0 opacity-20 dark:opacity-10"
+              style={{
+                backgroundImage: `url(${game.track.albumArt})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "blur(60px)",
+              }}
             />
+          )}
+          
+          <header className="relative z-10 flex items-center justify-between p-3 md:p-4 bg-background/80 backdrop-blur-sm border-b border-border">
+            <div className="flex items-center gap-2">
+              <SpotifyIcon size={20} />
+              <Badge variant="outline" className="font-medium">
+                Tur {game.currentRound}/{game.totalRounds}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs">
+                {answeredCount}/{allPlayers.length} cevapladı
+              </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMuted(!isMuted)}
+                data-testid="button-mute"
+              >
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
+              <ThemeToggle />
+            </div>
+          </header>
 
-            <Card className="animate-slide-up">
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold text-center mb-6">
-                  Bu şarkıyı kim/kimler dinliyor?
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {allPlayers.map((player) => (
-                    <PlayerCard
-                      key={player.id}
-                      player={player}
-                      isSelectable={!hasAnswered}
-                      isSelected={selectedPlayers.includes(player.id)}
-                      onSelect={(selected) => handlePlayerToggle(player.id, selected)}
-                      isSelf={player.id === userId}
+          <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-4 p-4 md:p-6 min-h-0 overflow-y-auto lg:overflow-hidden">
+            <div className="flex flex-col items-center justify-center lg:flex-1 gap-4">
+              <TimerRing timeLeft={timeLeft} totalTime={20} size={140} />
+              
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div 
+                  className="w-32 h-32 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-xl overflow-hidden shadow-2xl ring-4 ring-primary/20"
+                >
+                  {game.track.albumArt ? (
+                    <img
+                      src={game.track.albumArt}
+                      alt={game.track.name}
+                      className="w-full h-full object-cover"
+                      data-testid="img-album-art"
                     />
-                  ))}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/30 to-primary/10">
+                      <Music className="w-1/3 h-1/3 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-
-            <div className="mt-auto">
-              {hasAnswered ? (
-                <div className="text-center p-4 rounded-lg bg-primary/10 border border-primary/30">
-                  <p className="text-primary font-medium">
-                    Cevabınız gönderildi. Diğer oyuncular bekleniyor...
+                
+                <div className="max-w-xs md:max-w-sm">
+                  <h2 className="text-lg md:text-xl lg:text-2xl font-bold truncate" data-testid="text-track-name">
+                    {game.track.name}
+                  </h2>
+                  <p className="text-sm md:text-base text-muted-foreground truncate" data-testid="text-artist-name">
+                    {game.track.artist}
                   </p>
                 </div>
-              ) : (
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleSubmitAnswer}
-                  disabled={selectedPlayers.length === 0 || answerMutation.isPending}
-                  data-testid="button-submit-answer"
-                >
-                  {answerMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Gönderiliyor...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-5 w-5 mr-2" />
-                      Cevapla ({selectedPlayers.length} seçili)
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </>
-        )}
-
-        {isShowingResults && game.track && (
-          <>
-            <div className="text-center space-y-2 animate-fade-in">
-              <h2 className="text-2xl font-bold">Tur Sonuçları</h2>
-              <p className="text-muted-foreground">Tur {game.currentRound}/{game.totalRounds}</p>
-            </div>
-
-            <TrackCard
-              trackName={game.track.name}
-              artistName={game.track.artist}
-              albumArtUrl={game.track.albumArt}
-              size="md"
-            />
-
-            <Card className="animate-slide-up">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Doğru Cevap:</h3>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {game.players
-                    .filter((p) => game.correctPlayerIds.includes(p.id))
-                    .map((player) => (
-                      <PlayerCard
-                        key={player.id}
-                        player={player}
-                        resultType="correct"
-                      />
-                    ))}
-                  {game.correctPlayerIds.length === 0 && (
-                    <p className="text-muted-foreground col-span-2 text-center py-4">
-                      Bu şarkıyı kimse dinlemiyor
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-3">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Skor Tablosu
-              </h3>
-              <div className="grid gap-2">
-                {game.players
-                  .sort((a, b) => b.totalScore - a.totalScore)
-                  .map((player, index) => {
-                    const answer = player.lastAnswer;
-                    let resultType: "correct" | "incorrect" | "partial" | null = null;
-                    if (answer) {
-                      if (answer.isCorrect) resultType = "correct";
-                      else if (answer.isPartialCorrect) resultType = "partial";
-                      else resultType = "incorrect";
-                    }
-                    return (
-                      <div
-                        key={player.id}
-                        className={`animate-slide-up stagger-${Math.min(index + 1, 5)}`}
-                        style={{ animationFillMode: "backwards" }}
-                      >
-                        <PlayerCard
-                          player={player}
-                          showScore
-                          resultType={resultType}
-                          scoreGained={answer?.score}
-                        />
-                      </div>
-                    );
-                  })}
               </div>
             </div>
 
-            <div className="mt-auto pt-4 text-center">
-              <p className="text-muted-foreground animate-pulse">
-                Sonraki tur hazırlanıyor...
-              </p>
+            <div className="flex flex-col lg:w-[400px] xl:w-[480px] lg:min-h-0 lg:flex-1 lg:max-h-full">
+              <div className="bg-card/80 backdrop-blur-sm rounded-xl border border-border p-4 flex flex-col lg:flex-1 lg:min-h-0 lg:max-h-full">
+                <h3 className="text-base md:text-lg font-semibold text-center mb-3 flex items-center justify-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Bu şarkıyı kim dinliyor?
+                </h3>
+                
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0 max-h-[40vh] lg:max-h-none">
+                  {allPlayers.map((player) => {
+                    const isSelected = selectedPlayers.includes(player.id);
+                    const isSelf = player.id === userId;
+                    return (
+                      <button
+                        key={player.id}
+                        onClick={() => !hasAnswered && handlePlayerToggle(player.id, !isSelected)}
+                        disabled={hasAnswered}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 text-left ${
+                          hasAnswered 
+                            ? "opacity-60 cursor-not-allowed" 
+                            : "hover-elevate active-elevate-2 cursor-pointer"
+                        } ${
+                          isSelected 
+                            ? "bg-primary/20 ring-2 ring-primary" 
+                            : "bg-muted/50"
+                        }`}
+                        data-testid={`button-player-${player.id}`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                          isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                        }`}>
+                          {isSelected ? (
+                            <Check className="h-5 w-5" />
+                          ) : (
+                            player.displayName.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">
+                            {player.displayName}
+                            {isSelf && <span className="text-muted-foreground ml-1">(Sen)</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground">@{player.uniqueName}</p>
+                        </div>
+                        {player.answered && (
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            Cevapladı
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border">
+                  {hasAnswered ? (
+                    <div className="text-center p-3 rounded-lg bg-primary/10 border border-primary/30">
+                      <p className="text-primary font-medium text-sm">
+                        Cevabınız gönderildi. Bekleniyor...
+                      </p>
+                    </div>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={handleSubmitAnswer}
+                      disabled={selectedPlayers.length === 0 || answerMutation.isPending}
+                      data-testid="button-submit-answer"
+                    >
+                      {answerMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Gönderiliyor...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Cevapla ({selectedPlayers.length} seçili)
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-          </>
-        )}
-      </main>
+          </main>
+        </>
+      )}
+
+      {game.status === "waiting" && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-6">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              </div>
+              <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+            </div>
+            <div>
+              <p className="text-xl font-semibold">Sonraki tur hazırlanıyor...</p>
+              <p className="text-muted-foreground">Birazdan başlıyor</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isShowingResults && game.track && (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <header className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <SpotifyIcon size={20} />
+              <span className="font-semibold">Tur Sonuçları</span>
+            </div>
+            <Badge variant="secondary">
+              Tur {game.currentRound}/{game.totalRounds}
+            </Badge>
+          </header>
+
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
+                <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                  {game.track.albumArt ? (
+                    <img src={game.track.albumArt} alt={game.track.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <Music className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold truncate">{game.track.name}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{game.track.artist}</p>
+                </div>
+              </div>
+
+              <Card>
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    Doğru Cevap
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {game.players
+                      .filter((p) => game.correctPlayerIds.includes(p.id))
+                      .map((player) => (
+                        <Badge key={player.id} variant="default" className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30">
+                          {player.displayName}
+                        </Badge>
+                      ))}
+                    {game.correctPlayerIds.length === 0 && (
+                      <p className="text-muted-foreground text-sm">Bu şarkıyı kimse dinlemiyor</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  Skor Tablosu
+                </h3>
+                <div className="space-y-2">
+                  {game.players
+                    .sort((a, b) => b.totalScore - a.totalScore)
+                    .map((player, index) => {
+                      const answer = player.lastAnswer;
+                      let resultType: "correct" | "incorrect" | "partial" | null = null;
+                      if (answer) {
+                        if (answer.isCorrect) resultType = "correct";
+                        else if (answer.isPartialCorrect) resultType = "partial";
+                        else resultType = "incorrect";
+                      }
+                      return (
+                        <div
+                          key={player.id}
+                          className={`animate-slide-up stagger-${Math.min(index + 1, 5)}`}
+                          style={{ animationFillMode: "backwards" }}
+                        >
+                          <PlayerCard
+                            player={player}
+                            showScore
+                            resultType={resultType}
+                            scoreGained={answer?.score}
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              <div className="text-center py-4">
+                <p className="text-muted-foreground animate-pulse">
+                  Sonraki tur hazırlanıyor...
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+      )}
     </div>
   );
 }
