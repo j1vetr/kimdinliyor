@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Users, Plus, Music2, Music, Headphones, Disc3 } from "lucide-react";
+import { Users, Plus, Music2, Music, Headphones, Disc3, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,6 +61,12 @@ export default function Home() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && roomCode.trim()) {
+      handleJoinRoom();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
       <FloatingIcons />
@@ -70,71 +76,118 @@ export default function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative z-10">
-        <div className="max-w-md w-full space-y-8 animate-fade-in">
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center gap-3">
-              <SpotifyIcon size={48} />
-              <Music2 className="h-10 w-10 text-primary animate-pulse-ring" />
+        <div className="max-w-lg w-full space-y-10">
+          <div className="text-center space-y-4 animate-fade-in">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="relative">
+                <SpotifyIcon size={56} />
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full animate-ping" />
+              </div>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Spotify <span className="text-primary">Oda Oyunu</span>
+              Kim <span className="text-primary">Dinliyor?</span>
             </h1>
-            <p className="text-muted-foreground text-lg">
-              Arkadaşlarınla müzik bilgini test et! Kim hangi şarkıyı dinliyor?
+            <p className="text-muted-foreground text-lg max-w-sm mx-auto leading-relaxed">
+              Spotify hesabını bağla, arkadaşlarınla oyna ve kimin hangi şarkıyı dinlediğini tahmin et!
             </p>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid gap-6">
             <Link href="/oda-olustur">
-              <Card className="hover-elevate cursor-pointer transition-transform duration-200 group">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <Plus className="h-7 w-7 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold">Oda Oluştur</h2>
-                    <p className="text-muted-foreground text-sm">
-                      Yeni bir oyun odası oluştur ve arkadaşlarını davet et
-                    </p>
+              <Card 
+                className="hover-elevate active-elevate-2 cursor-pointer group overflow-visible border-2 border-transparent hover:border-primary/30 transition-all duration-300"
+                style={{ animationDelay: "0.1s" }}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-5">
+                    <div className="relative">
+                      <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Plus className="h-8 w-8 text-primary" />
+                      </div>
+                      <Sparkles className="absolute -top-1 -right-1 h-5 w-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors">
+                        Yeni Oda Oluştur
+                      </h2>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        Kendi oyun odanı aç, arkadaşlarına oda kodunu gönder ve birlikte eğlenmeye başla
+                      </p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </div>
                 </CardContent>
               </Card>
             </Link>
 
-            <Card className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="h-14 w-14 rounded-lg bg-secondary flex items-center justify-center">
-                  <Users className="h-7 w-7 text-foreground" />
+            <Card 
+              className="overflow-visible border-2 border-transparent"
+              style={{ animationDelay: "0.2s" }}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-center gap-5 mb-5">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center">
+                    <Users className="h-8 w-8 text-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold mb-1">Odaya Katıl</h2>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Arkadaşından aldığın oda kodunu gir ve oyuna hemen katıl
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold">Odaya Katıl</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Oda kodunu girerek mevcut bir oyuna katıl
-                  </p>
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <Input
+                      placeholder="Oda kodunu gir"
+                      value={roomCode}
+                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                      onKeyDown={handleKeyDown}
+                      maxLength={7}
+                      className="uppercase text-center font-mono text-lg tracking-widest h-12 pr-12"
+                      data-testid="input-room-code"
+                    />
+                    {roomCode && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        {roomCode.length}/7
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleJoinRoom}
+                    disabled={!roomCode.trim()}
+                    size="lg"
+                    className="h-12 px-6"
+                    data-testid="button-join-room"
+                  >
+                    Katıl
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Oda kodu (örn: O123456)"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  maxLength={7}
-                  className="uppercase text-center font-mono text-lg tracking-widest"
-                  data-testid="input-room-code"
-                />
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={!roomCode.trim()}
-                  data-testid="button-join-room"
-                >
-                  Katıl
-                </Button>
-              </div>
+              </CardContent>
             </Card>
           </div>
 
-          <div className="text-center text-sm text-muted-foreground">
-            <p>Spotify hesabını bağla ve arkadaşlarınla eğlen!</p>
+          <div className="text-center space-y-3 animate-fade-in" style={{ animationDelay: "0.3s" }}>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="h-px w-12 bg-border" />
+              <span>Nasıl Oynanır?</span>
+              <div className="h-px w-12 bg-border" />
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">1</div>
+                <span>Spotify bağla</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">2</div>
+                <span>Odaya katıl</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">3</div>
+                <span>Şarkıyı tahmin et</span>
+              </div>
+            </div>
           </div>
         </div>
       </main>
