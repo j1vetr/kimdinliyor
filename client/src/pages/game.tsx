@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +38,10 @@ interface RoundResult {
   displayName: string;
   avatarUrl?: string | null;
   selectedUserIds: string[];
+  numericAnswer?: string | null;
+  percentageError?: number | null;
+  tier?: string | null;
+  isBestGuess?: boolean;
   score: number;
   isCorrect: boolean;
   isPartialCorrect: boolean;
@@ -681,7 +685,20 @@ export default function Game() {
                   </div>
                   Doğru Cevap
                 </h3>
-                {correctPlayerIds.length > 0 ? (
+                {isNumericMode && correctAnswer !== null ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="text-3xl md:text-4xl font-bold text-green-700 dark:text-green-300">
+                      {Number(correctAnswer).toLocaleString('tr-TR')}
+                    </div>
+                    <Badge variant="secondary" className="gap-1">
+                      {gameMode === "view_count" ? (
+                        <><Eye className="h-3 w-3" /> İzlenme</>
+                      ) : (
+                        <><UsersRound className="h-3 w-3" /> Abone</>
+                      )}
+                    </Badge>
+                  </div>
+                ) : correctPlayerIds.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {allPlayers
                       .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
@@ -711,8 +728,8 @@ export default function Game() {
 
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Kim Kimi Tahmin Etti?
+                  {isNumericMode ? <Eye className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  {isNumericMode ? "Tahminler" : "Kim Kimi Tahmin Etti?"}
                 </h3>
                 
                 <div className="grid gap-3">
@@ -761,7 +778,42 @@ export default function Game() {
                               
                               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                                 <span>Tahmin:</span>
-                                {result.selectedUserIds.length > 0 ? (
+                                {isNumericMode ? (
+                                  result.numericAnswer ? (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold ${
+                                        result.tier === "perfect" || result.tier === "excellent" || result.tier === "good"
+                                          ? "bg-green-500/20 text-green-700 dark:text-green-300"
+                                          : result.tier === "close" || result.tier === "far"
+                                            ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
+                                            : "bg-red-500/20 text-red-700 dark:text-red-300"
+                                      }`}>
+                                        {parseInt(result.numericAnswer).toLocaleString('tr-TR')}
+                                      </span>
+                                      <Badge variant="outline" className={`text-[10px] ${
+                                        (result.percentageError ?? 100) <= 15 ? "border-green-500/50 text-green-600" :
+                                        (result.percentageError ?? 100) <= 60 ? "border-yellow-500/50 text-yellow-600" :
+                                        "border-red-500/50 text-red-600"
+                                      }`}>
+                                        {(result.percentageError ?? 100) <= 1 ? "Mükemmel!" :
+                                         (result.percentageError ?? 100) <= 5 ? "Çok iyi!" :
+                                         (result.percentageError ?? 100) <= 15 ? "İyi!" :
+                                         (result.percentageError ?? 100) <= 35 ? "Yakın" :
+                                         (result.percentageError ?? 100) <= 60 ? "Uzak" :
+                                         (result.percentageError ?? 100) <= 200 ? "Kaçırdı" : "Çok uzak"}
+                                        {result.percentageError != null && ` (%${result.percentageError.toFixed(1)})`}
+                                      </Badge>
+                                      {result.isBestGuess && (
+                                        <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-[10px] gap-0.5">
+                                          <Trophy className="h-2.5 w-2.5" />
+                                          En Yakın
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground italic">Cevap vermedi</span>
+                                  )
+                                ) : result.selectedUserIds.length > 0 ? (
                                   <div className="flex items-center gap-1 flex-wrap">
                                     {result.selectedUserIds.map((selectedId, idx) => {
                                       const isCorrectSelection = correctPlayerIds.includes(selectedId);

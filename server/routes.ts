@@ -32,6 +32,58 @@ function isLightningRound(roundNumber: number): boolean {
   return roundNumber % 5 === 0 && roundNumber > 0;
 }
 
+// Scoring tiers for numeric modes based on percentage error
+interface NumericScoreResult {
+  basePoints: number;
+  percentageError: number;
+  tier: string;
+  isCorrectForStreak: boolean;
+}
+
+function scoreNumericGuess(actual: number, guess: number): NumericScoreResult {
+  if (actual <= 0) {
+    return { basePoints: 0, percentageError: 100, tier: "invalid", isCorrectForStreak: false };
+  }
+  
+  const percentageError = Math.abs(guess - actual) / actual * 100;
+  
+  let basePoints: number;
+  let tier: string;
+  let isCorrectForStreak: boolean;
+  
+  if (percentageError <= 1) {
+    basePoints = 5;
+    tier = "perfect";
+    isCorrectForStreak = true;
+  } else if (percentageError <= 5) {
+    basePoints = 4;
+    tier = "excellent";
+    isCorrectForStreak = true;
+  } else if (percentageError <= 15) {
+    basePoints = 3;
+    tier = "good";
+    isCorrectForStreak = true;
+  } else if (percentageError <= 35) {
+    basePoints = 2;
+    tier = "close";
+    isCorrectForStreak = false;
+  } else if (percentageError <= 60) {
+    basePoints = 1;
+    tier = "far";
+    isCorrectForStreak = false;
+  } else if (percentageError <= 200) {
+    basePoints = 0;
+    tier = "miss";
+    isCorrectForStreak = false;
+  } else {
+    basePoints = -2;
+    tier = "wildMiss";
+    isCorrectForStreak = false;
+  }
+  
+  return { basePoints, percentageError, tier, isCorrectForStreak };
+}
+
 function broadcastToRoom(roomCode: string, message: any) {
   const connections = roomConnections.get(roomCode);
   if (connections) {
@@ -688,46 +740,101 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const scoreMultiplier = gameState.isLightningRound ? 2 : 1;
 
     const roundResults: any[] = [];
+    const isNumericMode = gameState.currentGameMode === "view_count" || gameState.currentGameMode === "subscriber_count";
+
+    // For numeric modes, get the correct answer value
+    let correctAnswer: number | null = null;
+    if (isNumericMode && content) {
+      if (gameState.currentGameMode === "view_count") {
+        correctAnswer = typeof content.viewCount === 'string' ? parseInt(content.viewCount) : (content.viewCount || 0);
+      } else if (gameState.currentGameMode === "subscriber_count") {
+        correctAnswer = typeof content.subscriberCount === 'string' ? parseInt(content.subscriberCount) : (content.subscriberCount || 0);
+      }
+    }
+
+    // For numeric modes, find the best guess to award bonus
+    let bestGuessOderId: string | null = null;
+    let bestPercentageError = Infinity;
+    if (isNumericMode && correctAnswer !== null && correctAnswer > 0) {
+      for (const answer of answers) {
+        if (answer.numericAnswer) {
+          const guess = parseInt(answer.numericAnswer);
+          if (!isNaN(guess)) {
+            const percentageError = Math.abs(guess - correctAnswer) / correctAnswer * 100;
+            if (percentageError < bestPercentageError) {
+              bestPercentageError = percentageError;
+              bestGuessOderId = answer.oderId;
+            }
+          }
+        }
+      }
+    }
 
     for (const player of players) {
       const answer = answers.find(a => a.oderId === player.userId);
       let score = 0;
       let isCorrect = false;
       let isPartialCorrect = false;
+      let percentageError: number | null = null;
+      let tier: string | null = null;
 
       if (answer) {
-        const selectedIds = answer.selectedUserIds || [];
-        const correctSet = new Set(correctUserIds);
-        const selectedSet = new Set(selectedIds);
-
-        // Count correct and incorrect selections
-        let correctCount = 0;
-        let incorrectCount = 0;
-        for (const id of selectedIds) {
-          if (correctSet.has(id)) {
-            correctCount++;
-          } else {
-            incorrectCount++;
+        if (isNumericMode && correctAnswer !== null) {
+          // Numeric mode scoring
+          const guess = answer.numericAnswer ? parseInt(answer.numericAnswer) : 0;
+          const scoreResult = scoreNumericGuess(correctAnswer, guess);
+          
+          score = scoreResult.basePoints * scoreMultiplier;
+          percentageError = scoreResult.percentageError;
+          tier = scoreResult.tier;
+          isCorrect = scoreResult.isCorrectForStreak;
+          
+          // Best guess bonus (+1)
+          if (player.userId === bestGuessOderId && answers.length > 1) {
+            score += 1 * scoreMultiplier;
           }
-        }
-
-        // Calculate score
-        score = (correctCount * 5 - incorrectCount * 5) * scoreMultiplier;
-        
-        // Check if fully correct (all correct users selected, no wrong ones)
-        isCorrect = correctCount === correctUserIds.length && incorrectCount === 0;
-        isPartialCorrect = correctCount > 0 && !isCorrect;
-
-        // Streak bonus
-        const currentStreak = gameState.playerStreaks.get(player.userId) || 0;
-        if (isCorrect || isPartialCorrect) {
-          const newStreak = currentStreak + 1;
-          gameState.playerStreaks.set(player.userId, newStreak);
-          if (newStreak >= 3) {
-            score += 10 * scoreMultiplier; // Streak bonus
+          
+          // Streak bonus
+          const currentStreak = gameState.playerStreaks.get(player.userId) || 0;
+          if (isCorrect) {
+            const newStreak = currentStreak + 1;
+            gameState.playerStreaks.set(player.userId, newStreak);
+            if (newStreak >= 3) {
+              score += 10 * scoreMultiplier;
+            }
+          } else {
+            gameState.playerStreaks.set(player.userId, 0);
           }
         } else {
-          gameState.playerStreaks.set(player.userId, 0);
+          // Player selection mode scoring
+          const selectedIds = answer.selectedUserIds || [];
+          const correctSet = new Set(correctUserIds);
+
+          let correctCount = 0;
+          let incorrectCount = 0;
+          for (const id of selectedIds) {
+            if (correctSet.has(id)) {
+              correctCount++;
+            } else {
+              incorrectCount++;
+            }
+          }
+
+          score = (correctCount * 5 - incorrectCount * 5) * scoreMultiplier;
+          isCorrect = correctCount === correctUserIds.length && incorrectCount === 0;
+          isPartialCorrect = correctCount > 0 && !isCorrect;
+
+          // Streak bonus
+          const currentStreak = gameState.playerStreaks.get(player.userId) || 0;
+          if (isCorrect || isPartialCorrect) {
+            const newStreak = currentStreak + 1;
+            gameState.playerStreaks.set(player.userId, newStreak);
+            if (newStreak >= 3) {
+              score += 10 * scoreMultiplier;
+            }
+          } else {
+            gameState.playerStreaks.set(player.userId, 0);
+          }
         }
 
         // Update answer
@@ -747,6 +854,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         displayName: player.user.displayName,
         avatarUrl: player.user.avatarUrl,
         selectedUserIds: playerAnswer?.selectedUserIds || [],
+        numericAnswer: playerAnswer?.numericAnswer || null,
+        percentageError,
+        tier,
+        isBestGuess: player.userId === bestGuessOderId,
         score,
         isCorrect,
         isPartialCorrect,
@@ -762,6 +873,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     broadcastToRoom(roomCode, {
       type: "round_ended",
       correctUserIds,
+      correctAnswer: isNumericMode ? correctAnswer : null,
+      gameMode: gameState.currentGameMode,
       results: roundResults,
       isLightningRound: gameState.isLightningRound,
     });
