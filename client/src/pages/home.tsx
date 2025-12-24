@@ -109,7 +109,7 @@ export default function Home() {
                         Yeni Oda Oluştur
                       </h2>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Kendi oyun odanı aç, arkadaşlarına oda kodunu gönder ve birlikte eğlenmeye başla
+                        Kendi oyun odanı aç, arkadaşlarına oda kodunu gönder ve birlikte eğlenmeye başla.
                       </p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
@@ -130,7 +130,7 @@ export default function Home() {
                   <div className="flex-1">
                     <h2 className="text-xl font-bold mb-1">Odaya Katıl</h2>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                      Arkadaşından aldığın oda kodunu gir ve oyuna hemen katıl
+                      Arkadaşından aldığın oda kodunu gir ve oyuna hemen katıl.
                     </p>
                   </div>
                 </div>
@@ -175,15 +175,15 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">1</div>
-                <span>Spotify bağla</span>
+                <span>Spotify Bağla</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">2</div>
-                <span>Odaya katıl</span>
+                <span>Odaya Katıl</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">3</div>
-                <span>Şarkıyı tahmin et</span>
+                <span>Şarkıyı Tahmin Et</span>
               </div>
             </div>
           </div>
