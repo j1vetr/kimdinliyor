@@ -13,6 +13,17 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Game Modes - Oyun modları
+export const GAME_MODES = {
+  WHO_LIKED: "who_liked",           // Kim Beğenmiş?
+  WHO_SUBSCRIBED: "who_subscribed", // Kim Abone?
+  VIEW_COUNT: "view_count",         // Sayı Tahmini (izlenme)
+  WHICH_MORE: "which_more",         // Hangisi Daha...
+  SUBSCRIBER_COUNT: "subscriber_count", // Abone Sayısı
+} as const;
+
+export type GameMode = typeof GAME_MODES[keyof typeof GAME_MODES];
+
 // Rooms - Oyun odaları
 export const rooms = pgTable("rooms", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -26,6 +37,7 @@ export const rooms = pgTable("rooms", {
   currentRound: integer("current_round").default(0),
   totalRounds: integer("total_rounds").default(10),
   roundDuration: integer("round_duration").default(20), // seconds per round
+  gameModes: text("game_modes").array().default(["who_liked", "who_subscribed"]), // Aktif oyun modları
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -59,6 +71,9 @@ export const contentCache = pgTable("content_cache", {
   subtitle: text("subtitle"), // Video için kanal adı, kanal için abone sayısı
   thumbnailUrl: text("thumbnail_url"),
   sourceUserIds: text("source_user_ids").array().notNull(), // Bu içeriği beğenen/abone olan kullanıcılar
+  viewCount: text("view_count"), // Video izlenme sayısı
+  likeCount: text("like_count"), // Video beğeni sayısı
+  subscriberCount: text("subscriber_count"), // Kanal abone sayısı
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -67,8 +82,11 @@ export const rounds = pgTable("rounds", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   roomId: varchar("room_id").references(() => rooms.id).notNull(),
   roundNumber: integer("round_number").notNull(),
+  gameMode: text("game_mode").notNull().default("who_liked"), // Aktif oyun modu
   contentId: varchar("content_id").references(() => contentCache.id),
+  contentId2: varchar("content_id_2").references(() => contentCache.id), // "Hangisi Daha" modu için ikinci içerik
   correctUserIds: text("correct_user_ids").array(),
+  correctAnswer: text("correct_answer"), // Sayı tahmini modları için doğru cevap
   startedAt: timestamp("started_at"),
   endedAt: timestamp("ended_at"),
 });
@@ -79,6 +97,8 @@ export const answers = pgTable("answers", {
   roundId: varchar("round_id").references(() => rounds.id).notNull(),
   oderId: varchar("user_id").references(() => users.id).notNull(),
   selectedUserIds: text("selected_user_ids").array().notNull(),
+  numericAnswer: text("numeric_answer"), // Sayı tahmini modları için cevap
+  selectedContentId: varchar("selected_content_id"), // "Hangisi Daha" modu için seçilen içerik
   isCorrect: boolean("is_correct"),
   isPartialCorrect: boolean("is_partial_correct"),
   score: integer("score").default(0),
