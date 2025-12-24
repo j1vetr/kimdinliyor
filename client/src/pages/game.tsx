@@ -120,6 +120,11 @@ export default function Game() {
   useEffect(() => {
     if (gameQuery.data) {
       setTimeLeft(gameQuery.data.timeLeft);
+    }
+  }, [gameQuery.data?.timeLeft]);
+
+  useEffect(() => {
+    if (gameQuery.data) {
       if (gameQuery.data.status === "question" && !hasAnswered) {
         setSelectedPlayers([]);
       }
