@@ -344,11 +344,14 @@ export default function Game() {
             </div>
 
             <div className="flex flex-col lg:w-[400px] xl:w-[480px] lg:min-h-0 lg:flex-1 lg:max-h-full gap-4">
-              <div className="bg-card/80 backdrop-blur-sm rounded-xl border border-border p-4 flex flex-col lg:flex-1 lg:min-h-0 lg:max-h-full">
-                <h3 className="text-base md:text-lg font-semibold text-center mb-3 flex items-center justify-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Bu şarkıyı kim dinliyor?
-                </h3>
+              <div className="bg-card/90 backdrop-blur-md rounded-2xl border border-border shadow-lg p-4 flex flex-col lg:flex-1 lg:min-h-0 lg:max-h-full">
+                <div className="text-center mb-4">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Tahmin Et</p>
+                  <h3 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Bu şarkıyı kim dinliyor?
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">Birden fazla oyuncu seçebilirsin</p>
+                </div>
                 
                 <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
                   {allPlayers.map((player) => {
@@ -359,19 +362,19 @@ export default function Game() {
                         key={player.id}
                         onClick={() => !hasAnswered && handlePlayerToggle(player.id, !isSelected)}
                         disabled={hasAnswered}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 text-left ${
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 text-left ${
                           hasAnswered 
                             ? "opacity-60 cursor-not-allowed" 
                             : "hover-elevate active-elevate-2 cursor-pointer"
                         } ${
                           isSelected 
-                            ? "bg-primary/20 ring-2 ring-primary" 
-                            : "bg-muted/50"
+                            ? "bg-primary/20 ring-2 ring-primary shadow-md" 
+                            : "bg-muted/40 border border-border/50"
                         }`}
                         data-testid={`button-player-${player.id}`}
                       >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                          isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
+                          isSelected ? "bg-primary text-primary-foreground scale-105" : "bg-muted/80"
                         }`}>
                           {isSelected ? (
                             <Check className="h-5 w-5" />
@@ -380,12 +383,17 @@ export default function Game() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
+                          <p className="font-semibold truncate">
                             {player.displayName}
-                            {isSelf && <span className="text-muted-foreground ml-1">(Sen)</span>}
+                            {isSelf && <span className="text-muted-foreground font-normal ml-1 text-xs">(Sen)</span>}
                           </p>
                           <p className="text-xs text-muted-foreground">@{player.uniqueName}</p>
                         </div>
+                        {isSelected && (
+                          <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Check className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -393,14 +401,18 @@ export default function Game() {
 
                 <div className="mt-4 pt-4 border-t border-border">
                   {hasAnswered ? (
-                    <div className="text-center p-3 rounded-lg bg-primary/10 border border-primary/30">
-                      <p className="text-primary font-medium text-sm">
-                        Cevabınız gönderildi. Bekleniyor...
-                      </p>
+                    <div className="text-center p-4 rounded-xl bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        <p className="text-primary font-semibold text-sm">
+                          Cevabın gönderildi!
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Diğer oyuncular bekleniyor...</p>
                     </div>
                   ) : (
                     <Button
-                      className="w-full"
+                      className="w-full h-12 text-base font-semibold"
                       size="lg"
                       onClick={handleSubmitAnswer}
                       disabled={selectedPlayers.length === 0 || answerMutation.isPending}
@@ -408,13 +420,15 @@ export default function Game() {
                     >
                       {answerMutation.isPending ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <Loader2 className="h-5 w-5 animate-spin mr-2" />
                           Gönderiliyor...
                         </>
                       ) : (
                         <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Cevapla ({selectedPlayers.length} seçili)
+                          <Send className="h-5 w-5 mr-2" />
+                          {selectedPlayers.length === 0 
+                            ? "Oyuncu Seç" 
+                            : `Tahmin Et (${selectedPlayers.length} seçili)`}
                         </>
                       )}
                     </Button>
@@ -515,54 +529,90 @@ export default function Game() {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Kim Kimi Seçti
+                  Tahminler
                 </h3>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {game.players.map((player) => {
                     const answer = player.lastAnswer;
-                    const selectedNames = answer?.selectedUserIds
-                      .map(id => game.players.find(p => p.id === id)?.displayName || "?")
-                      .join(", ");
+                    const selectedPlayers = answer?.selectedUserIds
+                      .map(id => game.players.find(p => p.id === id))
+                      .filter(Boolean) || [];
                     
-                    let bgColor = "bg-muted/50";
+                    let borderColor = "border-muted";
+                    let bgColor = "bg-muted/30";
                     let scoreColor = "text-muted-foreground";
+                    let statusIcon = null;
+                    
                     if (answer?.isCorrect) {
+                      borderColor = "border-green-500/50";
                       bgColor = "bg-green-500/10";
-                      scoreColor = "text-green-600 dark:text-green-400";
+                      scoreColor = "text-green-500";
+                      statusIcon = <Check className="h-4 w-4 text-green-500" />;
                     } else if (answer?.isPartialCorrect) {
+                      borderColor = "border-yellow-500/50";
                       bgColor = "bg-yellow-500/10";
-                      scoreColor = "text-yellow-600 dark:text-yellow-400";
+                      scoreColor = "text-yellow-500";
+                      statusIcon = <Zap className="h-4 w-4 text-yellow-500" />;
                     } else if (answer && !answer.isCorrect && !answer.isPartialCorrect) {
+                      borderColor = "border-red-500/50";
                       bgColor = "bg-red-500/10";
-                      scoreColor = "text-red-600 dark:text-red-400";
+                      scoreColor = "text-red-500";
                     }
 
                     return (
                       <div
                         key={player.id}
-                        className={`flex items-center gap-2 p-2 rounded-lg ${bgColor}`}
+                        className={`rounded-xl border ${borderColor} ${bgColor} p-3 transition-all`}
                       >
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                          {player.displayName.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {player.displayName}
-                            {player.id === currentUserId && <span className="text-muted-foreground ml-1">(Sen)</span>}
-                          </p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <ArrowRight className="h-3 w-3" />
-                            <span className="truncate">{selectedNames || "Cevap vermedi"}</span>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">
+                              {player.displayName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold">
+                                {player.displayName}
+                                {player.id === currentUserId && <span className="text-muted-foreground ml-1 text-xs">(Sen)</span>}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{player.totalScore} puan</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {statusIcon}
+                            <span className={`text-lg font-bold ${scoreColor}`}>
+                              {answer?.score !== undefined ? (answer.score > 0 ? `+${answer.score}` : answer.score) : "-"}
+                            </span>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className={`text-sm font-bold ${scoreColor}`}>
-                            {answer?.score !== undefined ? (answer.score > 0 ? `+${answer.score}` : answer.score) : "-"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{player.totalScore} puan</p>
+                        
+                        {/* Selected players visualization */}
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border/50">
+                          <span className="text-xs text-muted-foreground shrink-0">Seçti:</span>
+                          {selectedPlayers.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {selectedPlayers.map((p) => {
+                                const isCorrectChoice = game.correctPlayerIds.includes(p!.id);
+                                return (
+                                  <span
+                                    key={p!.id}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      isCorrectChoice 
+                                        ? "bg-green-500/20 text-green-600 dark:text-green-400" 
+                                        : "bg-red-500/20 text-red-600 dark:text-red-400"
+                                    }`}
+                                  >
+                                    {isCorrectChoice && <Check className="h-2.5 w-2.5" />}
+                                    {p!.displayName}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Cevap vermedi</span>
+                          )}
                         </div>
                       </div>
                     );

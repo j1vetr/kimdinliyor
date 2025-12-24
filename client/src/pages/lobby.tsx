@@ -403,60 +403,110 @@ export default function Lobby() {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col p-4 md:p-8 gap-6 max-w-4xl mx-auto w-full">
-        <Card className="animate-fade-in">
-          <CardHeader className="pb-2">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-2xl">{room.name}</CardTitle>
-                <p className="text-muted-foreground mt-1">
-                  Oyuncular toplanıyor...
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={copyRoomCode}
-                  data-testid="button-copy-code"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={shareRoom}
-                  data-testid="button-share"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </div>
+      <main className="flex-1 flex flex-col p-4 md:p-6 gap-4 max-w-4xl mx-auto w-full overflow-y-auto">
+        {/* Room Info Header - Compact */}
+        <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-4">
+            <div className="font-mono text-2xl font-bold text-primary">{roomCode}</div>
+            <div className="h-6 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold" data-testid="text-player-count">{playerCount}/{maxPlayers}</span>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium">Oda Kodu</p>
-                  <p className="font-mono text-lg font-bold text-primary">{roomCode}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Oyuncular</p>
-                <p className="text-2xl font-bold" data-testid="text-player-count">
-                  {playerCount}/{maxPlayers}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={copyRoomCode} data-testid="button-copy-code">
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" onClick={shareRoom} data-testid="button-share">
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-        <div className="space-y-3">
-          <h3 className="font-semibold text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
+        {/* Spotify Status - Compact & Always Visible */}
+        {!spotifyStatusQuery.data?.connected ? (
+          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-[#1DB954]/10 border border-[#1DB954]/30">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-[#1DB954]/20 flex items-center justify-center shrink-0">
+                <SpotifyIcon size={20} />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Spotify Bağlanmadı</p>
+                <p className="text-xs text-muted-foreground">Oyuna katılmak için bağla</p>
+              </div>
+            </div>
+            <Button
+              onClick={connectSpotify}
+              className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold gap-2 shrink-0"
+              data-testid="button-connect-spotify"
+            >
+              <SpotifyIcon size={16} />
+              Bağla
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-[#1DB954]/10 border border-[#1DB954]/30">
+            <div className="flex items-center gap-3">
+              <div className="relative shrink-0">
+                <div className="h-8 w-8 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
+                  <SpotifyIcon size={16} />
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-[#1DB954] rounded-full flex items-center justify-center">
+                  <svg className="w-2 h-2 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <span className="text-sm font-medium text-[#1DB954]">Bağlı</span>
+            </div>
+            
+            {/* Inline Device Selector */}
+            <div className="flex items-center gap-2">
+              {devicesQuery.isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : devicesQuery.data?.devices.length === 0 ? (
+                <span className="text-xs text-muted-foreground">Cihaz yok</span>
+              ) : (
+                <div className="flex items-center gap-1">
+                  {devicesQuery.data?.devices.slice(0, 3).map((device) => {
+                    const isSelected = devicesQuery.data?.selectedDeviceId === device.id;
+                    return (
+                      <button
+                        key={device.id}
+                        onClick={() => selectDeviceMutation.mutate(device.id)}
+                        disabled={selectDeviceMutation.isPending}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                          isSelected
+                            ? "bg-[#1DB954] text-black"
+                            : "bg-muted/60 hover:bg-muted"
+                        }`}
+                        data-testid={`button-device-${device.id}`}
+                      >
+                        {getDeviceIcon(device.type)}
+                        <span className="max-w-[80px] truncate">{device.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/spotify/devices", userId] })}
+                disabled={devicesQuery.isFetching}
+                data-testid="button-refresh-devices"
+              >
+                <RefreshCw className={`h-4 w-4 ${devicesQuery.isFetching ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Players List */}
+        <div className="flex-1 min-h-0 space-y-3">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4" />
             Oyuncular
           </h3>
           <div className="grid gap-2">
@@ -509,156 +559,7 @@ export default function Lobby() {
           </div>
         </div>
 
-        {!spotifyStatusQuery.data?.connected && (
-          <Card className="border-[#1DB954]/40 bg-gradient-to-br from-[#1DB954]/10 via-[#1DB954]/5 to-transparent animate-fade-in overflow-visible">
-            <CardContent className="p-6 md:p-8">
-              <div className="flex flex-col items-center gap-6">
-                <div className="relative">
-                  <div className="h-20 w-20 rounded-full bg-[#1DB954]/20 flex items-center justify-center animate-spotify-pulse">
-                    <SpotifyIcon size={40} />
-                  </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-1">
-                    {[0, 0.2, 0.1, 0.3, 0.15].map((delay, i) => (
-                      <div
-                        key={i}
-                        className="w-1 bg-[#1DB954] rounded-full animate-wave-bar"
-                        style={{ 
-                          animationDelay: `${delay}s`,
-                          height: '8px'
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="text-center space-y-2">
-                  <h3 className="font-bold text-xl">Spotify'ı Bağla</h3>
-                  <p className="text-muted-foreground">
-                    Oyuna katılmak için Spotify hesabını bağlamalısın
-                  </p>
-                </div>
-                <Button
-                  onClick={connectSpotify}
-                  size="lg"
-                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold gap-2 px-8 animate-spotify-glow"
-                  data-testid="button-connect-spotify"
-                >
-                  <SpotifyIcon size={20} />
-                  Spotify ile Bağlan
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {spotifyStatusQuery.data?.connected && (
-          <div className="space-y-4">
-            <Card className="border-[#1DB954]/30 bg-gradient-to-r from-[#1DB954]/15 to-[#1DB954]/5 animate-fade-in">
-              <CardContent className="p-5 flex items-center gap-4">
-                <div className="relative">
-                  <div className="h-12 w-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
-                    <SpotifyIcon size={24} />
-                  </div>
-                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-[#1DB954] rounded-full flex items-center justify-center">
-                    <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-[#1DB954]">Spotify Bağlı</p>
-                  <p className="text-muted-foreground text-sm">
-                    {hasSelectedDevice ? "Cihaz seçildi, oyuna hazırsın!" : "Şarkıların çalacağı cihazı seç"}
-                  </p>
-                </div>
-                <div className="flex items-end gap-0.5">
-                  {[0, 0.15, 0.05, 0.2, 0.1].map((delay, i) => (
-                    <div
-                      key={i}
-                      className="w-0.5 bg-[#1DB954]/60 rounded-full animate-wave-bar"
-                      style={{ 
-                        animationDelay: `${delay}s`,
-                        height: '6px'
-                      }}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="animate-fade-in">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Speaker className="h-4 w-4" />
-                    Cihaz Seç
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/spotify/devices", userId] })}
-                    disabled={devicesQuery.isFetching}
-                    data-testid="button-refresh-devices"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${devicesQuery.isFetching ? "animate-spin" : ""}`} />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {devicesQuery.isLoading ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : devicesQuery.data?.devices.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <p className="text-sm">Aktif cihaz bulunamadı</p>
-                    <p className="text-xs mt-1">Spotify uygulamasını bir cihazda aç</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {devicesQuery.data?.devices.map((device) => {
-                      const isSelected = devicesQuery.data?.selectedDeviceId === device.id;
-                      return (
-                        <button
-                          key={device.id}
-                          onClick={() => selectDeviceMutation.mutate(device.id)}
-                          disabled={selectDeviceMutation.isPending}
-                          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                            isSelected
-                              ? "bg-[#1DB954]/20 ring-2 ring-[#1DB954]"
-                              : "bg-muted/50 hover-elevate active-elevate-2"
-                          }`}
-                          data-testid={`button-device-${device.id}`}
-                        >
-                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                            isSelected ? "bg-[#1DB954] text-black" : "bg-muted"
-                          }`}>
-                            {getDeviceIcon(device.type)}
-                          </div>
-                          <div className="flex-1 text-left">
-                            <p className="font-medium">{device.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">{device.type}</p>
-                          </div>
-                          {device.isActive && (
-                            <Badge variant="secondary" className="text-xs">Aktif</Badge>
-                          )}
-                          {isSelected && (
-                            <div className="h-5 w-5 rounded-full bg-[#1DB954] flex items-center justify-center">
-                              <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
+        {/* Start Game Button - Fixed at bottom */}
         <div className="mt-auto pt-4 border-t border-border">
           {isHost ? (
             <div className="space-y-2">
