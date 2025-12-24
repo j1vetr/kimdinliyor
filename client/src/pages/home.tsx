@@ -81,7 +81,7 @@ export default function Home() {
               Kim <span className="text-primary">Dinliyor?</span>
             </h1>
             <p className="text-muted-foreground text-lg max-w-sm mx-auto leading-relaxed">
-              YouTube hesabini bagla, arkadaslarinla oyna! Kimin hangi kanala abone oldugunu veya hangi videoyu begendigi tahmin et!
+              YouTube hesabını bağla ve arkadaşlarınla oyna! Hangi videoyu kim beğendi veya hangi kanala kim abone oldu tahmin et!
             </p>
           </div>
 
@@ -101,10 +101,10 @@ export default function Home() {
                     </div>
                     <div className="flex-1">
                       <h2 className="text-xl font-bold mb-1 group-hover:text-primary transition-colors">
-                        Yeni Oda Olustur
+                        Yeni Oda Oluştur
                       </h2>
                       <p className="text-muted-foreground text-sm leading-relaxed">
-                        Kendi oyun odani ac, arkadaslarina oda kodunu gonder ve birlikte eglenmeye basla.
+                        Kendi oyun odanı aç, arkadaşlarına oda kodunu gönder ve birlikte eğlenmeye başla.
                       </p>
                     </div>
                     <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
@@ -123,9 +123,9 @@ export default function Home() {
                     <Users className="h-8 w-8 text-foreground" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold mb-1">Odaya Katil</h2>
+                    <h2 className="text-xl font-bold mb-1">Odaya Katıl</h2>
                     <p className="text-muted-foreground text-sm leading-relaxed">
-                      Arkadasindan aldigin oda kodunu gir ve oyuna hemen katil.
+                      Arkadaşından aldığın oda kodunu gir ve oyuna hemen katıl.
                     </p>
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export default function Home() {
                     className="h-12 px-6"
                     data-testid="button-join-room"
                   >
-                    Katil
+                    Katıl
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </div>
@@ -164,21 +164,21 @@ export default function Home() {
           <div className="text-center space-y-3 animate-fade-in" style={{ animationDelay: "0.3s" }}>
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <div className="h-px w-12 bg-border" />
-              <span>Nasil Oynanir?</span>
+              <span>Nasıl Oynanır?</span>
               <div className="h-px w-12 bg-border" />
             </div>
             <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">1</div>
-                <span>Odaya Katil</span>
+                <span>Odaya Katıl</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">2</div>
-                <span>YouTube Bagla</span>
+                <span>YouTube Bağla</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">3</div>
-                <span>Videoyu Tahmin Et</span>
+                <span>Tahmin Et</span>
               </div>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function Home() {
       <footer className="p-4 border-t border-border relative z-10">
         <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
-            <span>Gelistirici:</span>
+            <span>Geliştirici:</span>
             <a
               href="https://toov.com.tr"
               target="_blank"
