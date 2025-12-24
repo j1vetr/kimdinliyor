@@ -1,4 +1,5 @@
 import { useParams, useLocation } from "wouter";
+import { useEffect } from "react";
 import { Trophy, Medal, Crown, Home, RotateCcw, Loader2, Star, Target, Zap, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 interface FinalResults {
   roomName: string;
   totalRounds: number;
+  hostUserId?: string;
   players: Array<{
     id: string;
     displayName: string;
@@ -23,12 +25,34 @@ interface FinalResults {
   }>;
 }
 
+interface RoomInfo {
+  status: string;
+  hostUserId: string;
+}
+
 export default function Results() {
   const params = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const roomCode = params.code?.toUpperCase();
   const userId = localStorage.getItem("userId");
+
+  const roomStatusQuery = useQuery<RoomInfo>({
+    queryKey: ["/api/rooms", roomCode, "info"],
+    queryFn: async () => {
+      const response = await fetch(`/api/rooms/${roomCode}/info`);
+      if (!response.ok) throw new Error("Oda bilgisi alınamadı");
+      return response.json();
+    },
+    enabled: !!roomCode,
+    refetchInterval: 2000,
+  });
+
+  useEffect(() => {
+    if (roomStatusQuery.data?.status === "waiting") {
+      setLocation(`/oyun/${roomCode}/lobi`);
+    }
+  }, [roomStatusQuery.data?.status, roomCode, setLocation]);
 
   const resultsQuery = useQuery<FinalResults>({
     queryKey: ["/api/rooms", roomCode, "results"],
@@ -39,6 +63,8 @@ export default function Results() {
     },
     enabled: !!roomCode,
   });
+
+  const isHost = roomStatusQuery.data?.hostUserId === userId;
 
   const rematchMutation = useMutation({
     mutationFn: async () => {
@@ -258,20 +284,26 @@ export default function Results() {
             <RotateCcw className="h-5 w-5 mr-2" />
             Lobiye Dön
           </Button>
-          <Button 
-            className="flex-1" 
-            size="lg" 
-            onClick={() => rematchMutation.mutate()}
-            disabled={rematchMutation.isPending}
-            data-testid="button-rematch"
-          >
-            {rematchMutation.isPending ? (
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            ) : (
-              <Play className="h-5 w-5 mr-2" />
-            )}
-            Tekrar Oyna
-          </Button>
+          {isHost ? (
+            <Button 
+              className="flex-1" 
+              size="lg" 
+              onClick={() => rematchMutation.mutate()}
+              disabled={rematchMutation.isPending}
+              data-testid="button-rematch"
+            >
+              {rematchMutation.isPending ? (
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Play className="h-5 w-5 mr-2" />
+              )}
+              Tekrar Oyna
+            </Button>
+          ) : (
+            <div className="flex-1 text-center text-sm text-muted-foreground p-3 rounded-lg bg-muted/50">
+              Host yeni oyun başlatabilir
+            </div>
+          )}
         </div>
       </main>
     </div>
