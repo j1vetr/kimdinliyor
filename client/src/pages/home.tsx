@@ -76,12 +76,6 @@ export default function Home() {
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative z-10">
         <div className="max-w-lg w-full space-y-10">
           <div className="text-center space-y-4 animate-fade-in">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <div className="relative">
-                <SpotifyIcon size={56} />
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full animate-ping" />
-              </div>
-            </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Kim <span className="text-primary">Dinliyor?</span>
             </h1>
@@ -175,11 +169,11 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">1</div>
-                <span>Spotify Bağla</span>
+                <span>Odaya Katıl</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">2</div>
-                <span>Odaya Katıl</span>
+                <span>Spotify Bağla</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">3</div>
