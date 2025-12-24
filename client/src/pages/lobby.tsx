@@ -328,24 +328,39 @@ export default function Lobby() {
         </div>
 
         {!spotifyStatusQuery.data?.connected && (
-          <Card className="border-primary/30 bg-primary/5 animate-fade-in">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
-                  <SpotifyIcon size={28} />
+          <Card className="border-[#1DB954]/40 bg-gradient-to-br from-[#1DB954]/10 via-[#1DB954]/5 to-transparent animate-fade-in overflow-visible">
+            <CardContent className="p-6 md:p-8">
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative">
+                  <div className="h-20 w-20 rounded-full bg-[#1DB954]/20 flex items-center justify-center animate-spotify-pulse">
+                    <SpotifyIcon size={40} />
+                  </div>
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-1">
+                    {[0, 0.2, 0.1, 0.3, 0.15].map((delay, i) => (
+                      <div
+                        key={i}
+                        className="w-1 bg-[#1DB954] rounded-full animate-wave-bar"
+                        style={{ 
+                          animationDelay: `${delay}s`,
+                          height: '8px'
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="font-semibold text-lg">Spotify'ı Bağla</h3>
-                  <p className="text-muted-foreground text-sm">
+                <div className="text-center space-y-2">
+                  <h3 className="font-bold text-xl">Spotify'ı Bağla</h3>
+                  <p className="text-muted-foreground">
                     Oyuna katılmak için Spotify hesabını bağlamalısın
                   </p>
                 </div>
                 <Button
                   onClick={connectSpotify}
-                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-semibold gap-2"
+                  size="lg"
+                  className="bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold gap-2 px-8 animate-spotify-glow"
                   data-testid="button-connect-spotify"
                 >
-                  <SpotifyIcon size={18} />
+                  <SpotifyIcon size={20} />
                   Spotify ile Bağlan
                   <ExternalLink className="h-4 w-4" />
                 </Button>
@@ -355,14 +370,33 @@ export default function Lobby() {
         )}
 
         {spotifyStatusQuery.data?.connected && (
-          <Card className="border-primary/30 bg-primary/10 animate-fade-in">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
-                <SpotifyIcon size={20} />
+          <Card className="border-[#1DB954]/30 bg-gradient-to-r from-[#1DB954]/15 to-[#1DB954]/5 animate-fade-in">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="relative">
+                <div className="h-12 w-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
+                  <SpotifyIcon size={24} />
+                </div>
+                <div className="absolute -top-1 -right-1 h-4 w-4 bg-[#1DB954] rounded-full flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
               </div>
               <div className="flex-1">
-                <p className="font-medium text-primary">Spotify Bağlı</p>
+                <p className="font-semibold text-[#1DB954]">Spotify Bağlı</p>
                 <p className="text-muted-foreground text-sm">Oyuna hazırsın!</p>
+              </div>
+              <div className="flex items-end gap-0.5">
+                {[0, 0.15, 0.05, 0.2, 0.1].map((delay, i) => (
+                  <div
+                    key={i}
+                    className="w-0.5 bg-[#1DB954]/60 rounded-full animate-wave-bar"
+                    style={{ 
+                      animationDelay: `${delay}s`,
+                      height: '6px'
+                    }}
+                  />
+                ))}
               </div>
             </CardContent>
           </Card>

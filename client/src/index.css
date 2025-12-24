@@ -341,4 +341,55 @@
     animation: float-up linear infinite;
     animation-fill-mode: backwards;
   }
+
+  /* Spotify wave animation */
+  @keyframes spotify-wave {
+    0%, 100% {
+      transform: scaleY(0.5);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes spotify-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 20px rgba(29, 185, 84, 0);
+    }
+  }
+
+  @keyframes spotify-glow {
+    0%, 100% {
+      opacity: 0.5;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes wave-bar {
+    0%, 100% {
+      height: 8px;
+    }
+    50% {
+      height: 24px;
+    }
+  }
+
+  .animate-spotify-pulse {
+    animation: spotify-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-spotify-glow {
+    animation: spotify-glow 2s ease-in-out infinite;
+  }
+
+  .animate-wave-bar {
+    animation: wave-bar 0.8s ease-in-out infinite;
+  }
 }
