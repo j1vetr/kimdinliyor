@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, UserX } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, UserX, Smartphone, Speaker, Laptop, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,19 @@ import type { RoomWithPlayers } from "@shared/schema";
 
 interface SpotifyStatus {
   connected: boolean;
+}
+
+interface SpotifyDevice {
+  id: string;
+  name: string;
+  type: string;
+  isActive: boolean;
+  volumePercent: number | null;
+}
+
+interface DevicesResponse {
+  devices: SpotifyDevice[];
+  selectedDeviceId: string | null;
 }
 
 export default function Lobby() {
@@ -83,6 +96,40 @@ export default function Lobby() {
     },
     enabled: !!userId,
     refetchInterval: 3000,
+  });
+
+  const devicesQuery = useQuery<DevicesResponse>({
+    queryKey: ["/api/spotify/devices", userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/spotify/devices?userId=${userId}`);
+      return response.json();
+    },
+    enabled: !!userId && spotifyStatusQuery.data?.connected,
+    refetchInterval: 5000,
+  });
+
+  const selectDeviceMutation = useMutation({
+    mutationFn: async (deviceId: string) => {
+      const response = await apiRequest("POST", "/api/spotify/select-device", {
+        userId,
+        deviceId,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/spotify/devices", userId] });
+      toast({
+        title: "Cihaz seçildi",
+        description: "Şarkılar bu cihazda çalacak.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Hata",
+        description: "Cihaz seçilemedi.",
+        variant: "destructive",
+      });
+    },
   });
 
   const connectSpotify = useCallback(async () => {
@@ -165,6 +212,17 @@ export default function Lobby() {
     }
   }, [roomCode, roomQuery.data?.name, toast]);
 
+  const getDeviceIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "smartphone":
+        return <Smartphone className="h-4 w-4" />;
+      case "speaker":
+        return <Speaker className="h-4 w-4" />;
+      default:
+        return <Laptop className="h-4 w-4" />;
+    }
+  };
+
   if (roomQuery.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -201,6 +259,7 @@ export default function Lobby() {
   const maxPlayers = room.maxPlayers || 8;
   const allSpotifyConnected = players.every(p => p.user.spotifyConnected);
   const disconnectedCount = players.filter(p => !p.user.spotifyConnected).length;
+  const hasSelectedDevice = !!devicesQuery.data?.selectedDeviceId;
   const canStart = isHost && playerCount >= 2 && allSpotifyConnected;
 
   return (
@@ -370,36 +429,111 @@ export default function Lobby() {
         )}
 
         {spotifyStatusQuery.data?.connected && (
-          <Card className="border-[#1DB954]/30 bg-gradient-to-r from-[#1DB954]/15 to-[#1DB954]/5 animate-fade-in">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="relative">
-                <div className="h-12 w-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
-                  <SpotifyIcon size={24} />
+          <div className="space-y-4">
+            <Card className="border-[#1DB954]/30 bg-gradient-to-r from-[#1DB954]/15 to-[#1DB954]/5 animate-fade-in">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className="relative">
+                  <div className="h-12 w-12 rounded-full bg-[#1DB954]/20 flex items-center justify-center">
+                    <SpotifyIcon size={24} />
+                  </div>
+                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-[#1DB954] rounded-full flex items-center justify-center">
+                    <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
                 </div>
-                <div className="absolute -top-1 -right-1 h-4 w-4 bg-[#1DB954] rounded-full flex items-center justify-center">
-                  <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
+                <div className="flex-1">
+                  <p className="font-semibold text-[#1DB954]">Spotify Bağlı</p>
+                  <p className="text-muted-foreground text-sm">
+                    {hasSelectedDevice ? "Cihaz seçildi, oyuna hazırsın!" : "Şarkıların çalacağı cihazı seç"}
+                  </p>
                 </div>
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-[#1DB954]">Spotify Bağlı</p>
-                <p className="text-muted-foreground text-sm">Oyuna hazırsın!</p>
-              </div>
-              <div className="flex items-end gap-0.5">
-                {[0, 0.15, 0.05, 0.2, 0.1].map((delay, i) => (
-                  <div
-                    key={i}
-                    className="w-0.5 bg-[#1DB954]/60 rounded-full animate-wave-bar"
-                    style={{ 
-                      animationDelay: `${delay}s`,
-                      height: '6px'
-                    }}
-                  />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-end gap-0.5">
+                  {[0, 0.15, 0.05, 0.2, 0.1].map((delay, i) => (
+                    <div
+                      key={i}
+                      className="w-0.5 bg-[#1DB954]/60 rounded-full animate-wave-bar"
+                      style={{ 
+                        animationDelay: `${delay}s`,
+                        height: '6px'
+                      }}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="animate-fade-in">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Speaker className="h-4 w-4" />
+                    Cihaz Seç
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/spotify/devices", userId] })}
+                    disabled={devicesQuery.isFetching}
+                    data-testid="button-refresh-devices"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${devicesQuery.isFetching ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {devicesQuery.isLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : devicesQuery.data?.devices.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="text-sm">Aktif cihaz bulunamadı</p>
+                    <p className="text-xs mt-1">Spotify uygulamasını bir cihazda aç</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {devicesQuery.data?.devices.map((device) => {
+                      const isSelected = devicesQuery.data?.selectedDeviceId === device.id;
+                      return (
+                        <button
+                          key={device.id}
+                          onClick={() => selectDeviceMutation.mutate(device.id)}
+                          disabled={selectDeviceMutation.isPending}
+                          className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                            isSelected
+                              ? "bg-[#1DB954]/20 ring-2 ring-[#1DB954]"
+                              : "bg-muted/50 hover-elevate active-elevate-2"
+                          }`}
+                          data-testid={`button-device-${device.id}`}
+                        >
+                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                            isSelected ? "bg-[#1DB954] text-black" : "bg-muted"
+                          }`}>
+                            {getDeviceIcon(device.type)}
+                          </div>
+                          <div className="flex-1 text-left">
+                            <p className="font-medium">{device.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{device.type}</p>
+                          </div>
+                          {device.isActive && (
+                            <Badge variant="secondary" className="text-xs">Aktif</Badge>
+                          )}
+                          {isSelected && (
+                            <div className="h-5 w-5 rounded-full bg-[#1DB954] flex items-center justify-center">
+                              <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         <div className="mt-auto pt-4 border-t border-border">

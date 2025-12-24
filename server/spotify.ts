@@ -9,6 +9,9 @@ const SPOTIFY_SCOPES = [
   "user-top-read",
   "playlist-read-private",
   "playlist-read-collaborative",
+  "user-read-playback-state",
+  "user-modify-playback-state",
+  "streaming",
 ].join(" ");
 
 export function getSpotifyAuthUrl(state: string): string {
@@ -176,5 +179,93 @@ export async function getPlaylistTracks(accessToken: string, playlistId: string)
   } catch (error) {
     console.error("Failed to get playlist tracks:", error);
     return [];
+  }
+}
+
+export interface SpotifyDevice {
+  id: string;
+  name: string;
+  type: string;
+  isActive: boolean;
+  volumePercent: number | null;
+}
+
+export async function getAvailableDevices(accessToken: string): Promise<SpotifyDevice[]> {
+  try {
+    const response = await fetch("https://api.spotify.com/v1/me/player/devices", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Failed to get devices:", await response.text());
+      return [];
+    }
+
+    const data = await response.json();
+    return (data.devices || []).map((device: any) => ({
+      id: device.id,
+      name: device.name,
+      type: device.type,
+      isActive: device.is_active,
+      volumePercent: device.volume_percent,
+    }));
+  } catch (error) {
+    console.error("Failed to get available devices:", error);
+    return [];
+  }
+}
+
+export async function playTrackOnDevice(
+  accessToken: string,
+  trackId: string,
+  deviceId: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        uris: [`spotify:track:${trackId}`],
+      }),
+    });
+
+    if (!response.ok && response.status !== 204) {
+      console.error("Failed to play track:", await response.text());
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Failed to play track on device:", error);
+    return false;
+  }
+}
+
+export async function pausePlayback(accessToken: string, deviceId?: string): Promise<boolean> {
+  try {
+    const url = deviceId
+      ? `https://api.spotify.com/v1/me/player/pause?device_id=${deviceId}`
+      : "https://api.spotify.com/v1/me/player/pause";
+      
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok && response.status !== 204) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Failed to pause playback:", error);
+    return false;
   }
 }

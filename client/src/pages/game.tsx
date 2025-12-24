@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Volume2, VolumeX, Music, Check, Trophy } from "lucide-react";
+import { Loader2, Users, Send, Volume2, VolumeX, Music, Check, Trophy, User, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
-import { PlayerCard } from "@/components/player-card";
 import { TimerRing } from "@/components/timer-ring";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -20,6 +19,7 @@ interface GameState {
   timeLeft: number;
   track: {
     id: string;
+    spotifyTrackId: string;
     name: string;
     artist: string;
     albumArt: string | null;
@@ -53,8 +53,9 @@ export default function Game() {
   const [hasAnswered, setHasAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20);
   const [isMuted, setIsMuted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlayingOnDevice, setIsPlayingOnDevice] = useState(false);
   const currentTrackIdRef = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const gameQuery = useQuery<GameState>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -91,6 +92,31 @@ export default function Game() {
     },
   });
 
+  const playOnDeviceMutation = useMutation({
+    mutationFn: async (trackId: string) => {
+      const response = await apiRequest("POST", "/api/spotify/play", {
+        userId,
+        trackId,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setIsPlayingOnDevice(true);
+    },
+    onError: () => {
+      setIsPlayingOnDevice(false);
+    },
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/spotify/pause", {
+        userId,
+      });
+      return response.json();
+    },
+  });
+
   useEffect(() => {
     if (gameQuery.data) {
       setTimeLeft(gameQuery.data.timeLeft);
@@ -118,19 +144,38 @@ export default function Game() {
         audioRef.current = null;
         currentTrackIdRef.current = null;
       }
+      if (isPlayingOnDevice) {
+        pauseMutation.mutate();
+        setIsPlayingOnDevice(false);
+      }
       return;
     }
     
     if (game.status === "question" && game.track) {
-      if (game.track.id !== currentTrackIdRef.current) {
+      if (game.track.spotifyTrackId !== currentTrackIdRef.current) {
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current = null;
         }
         
-        currentTrackIdRef.current = game.track.id;
+        currentTrackIdRef.current = game.track.spotifyTrackId;
         
-        if (game.track.previewUrl) {
+        const isValidSpotifyId = game.track.spotifyTrackId && 
+          !game.track.spotifyTrackId.startsWith("demo-") &&
+          game.track.spotifyTrackId.length === 22;
+        
+        if (!isMuted && isValidSpotifyId) {
+          playOnDeviceMutation.mutate(game.track.spotifyTrackId, {
+            onError: () => {
+              if (game.track?.previewUrl) {
+                const audio = new Audio(game.track.previewUrl);
+                audio.volume = 0.7;
+                audio.play().catch(console.error);
+                audioRef.current = audio;
+              }
+            }
+          });
+        } else if (game.track.previewUrl) {
           const audio = new Audio(game.track.previewUrl);
           audio.volume = isMuted ? 0 : 0.7;
           audio.play().catch(console.error);
@@ -138,7 +183,7 @@ export default function Game() {
         }
       }
     }
-  }, [gameQuery.data?.status, gameQuery.data?.track?.id, gameQuery.data?.track?.previewUrl]);
+  }, [gameQuery.data?.status, gameQuery.data?.track?.spotifyTrackId]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -205,6 +250,7 @@ export default function Game() {
   const allPlayers = game.players;
   const isShowingResults = game.status === "results";
   const answeredCount = allPlayers.filter(p => p.answered).length;
+  const currentUserId = userId;
 
   return (
     <div className="h-screen bg-background flex flex-col">
@@ -230,9 +276,6 @@ export default function Game() {
               </Badge>
             </div>
             <div className="flex items-center gap-1">
-              <Badge variant="secondary" className="text-xs">
-                {answeredCount}/{allPlayers.length} cevapladı
-              </Badge>
               <Button
                 variant="ghost"
                 size="icon"
@@ -277,7 +320,7 @@ export default function Game() {
               </div>
             </div>
 
-            <div className="flex flex-col lg:w-[400px] xl:w-[480px] lg:min-h-0 lg:flex-1 lg:max-h-full">
+            <div className="flex flex-col lg:w-[400px] xl:w-[480px] lg:min-h-0 lg:flex-1 lg:max-h-full gap-4">
               <div className="bg-card/80 backdrop-blur-sm rounded-xl border border-border p-4 flex flex-col lg:flex-1 lg:min-h-0 lg:max-h-full">
                 <h3 className="text-base md:text-lg font-semibold text-center mb-3 flex items-center justify-center gap-2">
                   <Users className="h-4 w-4" />
@@ -320,11 +363,6 @@ export default function Game() {
                           </p>
                           <p className="text-xs text-muted-foreground">@{player.uniqueName}</p>
                         </div>
-                        {player.answered && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            Cevapladı
-                          </Badge>
-                        )}
                       </button>
                     );
                   })}
@@ -360,6 +398,29 @@ export default function Game() {
                   )}
                 </div>
               </div>
+
+              <Card className="shrink-0">
+                <CardContent className="p-3">
+                  <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Tahmin Durumu</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {allPlayers.map((player) => (
+                      <div
+                        key={player.id}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                          player.answered
+                            ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                            : "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${
+                          player.answered ? "bg-green-500" : "bg-yellow-500 animate-pulse"
+                        }`} />
+                        {player.displayName}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </main>
         </>
@@ -387,7 +448,7 @@ export default function Game() {
           <header className="flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <Logo height={40} />
-              <span className="font-semibold">Tur Sonuçları</span>
+              <span className="font-semibold">Tur Sonucu</span>
             </div>
             <Badge variant="secondary">
               Tur {game.currentRound}/{game.totalRounds}
@@ -395,80 +456,99 @@ export default function Game() {
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-2xl mx-auto space-y-6">
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border">
-                <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+            <div className="max-w-2xl mx-auto space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
+                <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
                   {game.track.albumArt ? (
                     <img src={game.track.albumArt} alt={game.track.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <Music className="w-8 h-8 text-muted-foreground" />
+                      <Music className="w-6 h-6 text-muted-foreground" />
                     </div>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-bold truncate">{game.track.name}</h3>
-                  <p className="text-sm text-muted-foreground truncate">{game.track.artist}</p>
+                  <h3 className="font-bold text-sm truncate">{game.track.name}</h3>
+                  <p className="text-xs text-muted-foreground truncate">{game.track.artist}</p>
                 </div>
               </div>
 
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    Doğru Cevap
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {game.players
-                      .filter((p) => game.correctPlayerIds.includes(p.id))
-                      .map((player) => (
-                        <Badge key={player.id} variant="default" className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30">
-                          {player.displayName}
-                        </Badge>
-                      ))}
-                    {game.correctPlayerIds.length === 0 && (
-                      <p className="text-muted-foreground text-sm">Bu şarkıyı kimse dinlemiyor</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="space-y-3">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
-                  Skor Tablosu
+              <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                <h3 className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2 flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" />
+                  Doğru Cevap
                 </h3>
-                <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
                   {game.players
-                    .sort((a, b) => b.totalScore - a.totalScore)
-                    .map((player, index) => {
-                      const answer = player.lastAnswer;
-                      let resultType: "correct" | "incorrect" | "partial" | null = null;
-                      if (answer) {
-                        if (answer.isCorrect) resultType = "correct";
-                        else if (answer.isPartialCorrect) resultType = "partial";
-                        else resultType = "incorrect";
-                      }
-                      return (
-                        <div
-                          key={player.id}
-                          className={`animate-slide-up stagger-${Math.min(index + 1, 5)}`}
-                          style={{ animationFillMode: "backwards" }}
-                        >
-                          <PlayerCard
-                            player={player}
-                            showScore
-                            resultType={resultType}
-                            scoreGained={answer?.score}
-                          />
-                        </div>
-                      );
-                    })}
+                    .filter((p) => game.correctPlayerIds.includes(p.id))
+                    .map((player) => (
+                      <span key={player.id} className="text-sm font-medium text-green-700 dark:text-green-300">
+                        {player.displayName}
+                      </span>
+                    ))}
+                  {game.correctPlayerIds.length === 0 && (
+                    <span className="text-sm text-muted-foreground">Kimse dinlemiyor</span>
+                  )}
                 </div>
               </div>
 
-              <div className="text-center py-4">
-                <p className="text-muted-foreground animate-pulse">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Kim Kimi Seçti
+                </h3>
+                <div className="space-y-1.5">
+                  {game.players.map((player) => {
+                    const answer = player.lastAnswer;
+                    const selectedNames = answer?.selectedUserIds
+                      .map(id => game.players.find(p => p.id === id)?.displayName || "?")
+                      .join(", ");
+                    
+                    let bgColor = "bg-muted/50";
+                    let scoreColor = "text-muted-foreground";
+                    if (answer?.isCorrect) {
+                      bgColor = "bg-green-500/10";
+                      scoreColor = "text-green-600 dark:text-green-400";
+                    } else if (answer?.isPartialCorrect) {
+                      bgColor = "bg-yellow-500/10";
+                      scoreColor = "text-yellow-600 dark:text-yellow-400";
+                    } else if (answer && !answer.isCorrect && !answer.isPartialCorrect) {
+                      bgColor = "bg-red-500/10";
+                      scoreColor = "text-red-600 dark:text-red-400";
+                    }
+
+                    return (
+                      <div
+                        key={player.id}
+                        className={`flex items-center gap-2 p-2 rounded-lg ${bgColor}`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                          {player.displayName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {player.displayName}
+                            {player.id === currentUserId && <span className="text-muted-foreground ml-1">(Sen)</span>}
+                          </p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <ArrowRight className="h-3 w-3" />
+                            <span className="truncate">{selectedNames || "Cevap vermedi"}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-sm font-bold ${scoreColor}`}>
+                            {answer?.score !== undefined ? (answer.score > 0 ? `+${answer.score}` : answer.score) : "-"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{player.totalScore} puan</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="text-center py-2">
+                <p className="text-muted-foreground text-sm animate-pulse">
                   Sonraki tur hazırlanıyor...
                 </p>
               </div>

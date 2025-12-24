@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks } from "./spotify";
+import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks, getAvailableDevices, playTrackOnDevice, pausePlayback } from "./spotify";
 import type { Room, RoomPlayer, Track } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -16,9 +16,15 @@ interface GameState {
   trackId: string | null;
   roundStartTime: number | null;
   answeredUsers: Set<string>;
+  usedTrackIds: Set<string>;
+  tracksByOwner: Map<string, string[]>;
+  lastOwnerIndex: number;
 }
 
 const gameStates = new Map<string, GameState>();
+
+// User selected devices
+const userDevices = new Map<string, string>();
 
 function broadcastToRoom(roomCode: string, message: any) {
   const connections = roomConnections.get(roomCode);
@@ -117,6 +123,156 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error("Spotify callback error:", error);
       res.redirect("/?spotify_error=callback_failed");
+    }
+  });
+
+  // Get user's available Spotify devices
+  app.get("/api/spotify/devices", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      if (!userId || typeof userId !== "string") {
+        return res.status(400).json({ error: "userId gerekli" });
+      }
+
+      let token = await storage.getSpotifyToken(userId);
+      if (!token) {
+        return res.status(401).json({ error: "Spotify bağlantısı gerekli" });
+      }
+
+      // Refresh token if expired
+      if (token.expiresAt < new Date()) {
+        const refreshed = await refreshAccessToken(token.refreshToken);
+        if (refreshed) {
+          const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+          await storage.saveSpotifyToken(userId, {
+            accessToken: refreshed.accessToken,
+            refreshToken: token.refreshToken,
+            expiresAt: newExpiresAt,
+          });
+          token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
+        }
+      }
+
+      const devices = await getAvailableDevices(token.accessToken);
+      const selectedDeviceId = userDevices.get(userId);
+      
+      res.json({ 
+        devices,
+        selectedDeviceId: selectedDeviceId || null
+      });
+    } catch (error) {
+      console.error("Get devices error:", error);
+      res.status(500).json({ error: "Cihazlar alınamadı" });
+    }
+  });
+
+  // Select a device for playback
+  app.post("/api/spotify/select-device", async (req, res) => {
+    try {
+      const { userId, deviceId } = req.body;
+      if (!userId || !deviceId) {
+        return res.status(400).json({ error: "userId ve deviceId gerekli" });
+      }
+
+      userDevices.set(userId, deviceId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Select device error:", error);
+      res.status(500).json({ error: "Cihaz seçilemedi" });
+    }
+  });
+
+  // Play track on user's device
+  app.post("/api/spotify/play", async (req, res) => {
+    try {
+      const { userId, trackId } = req.body;
+      if (!userId || !trackId) {
+        return res.status(400).json({ error: "userId ve trackId gerekli" });
+      }
+
+      let token = await storage.getSpotifyToken(userId);
+      if (!token) {
+        return res.status(401).json({ error: "Spotify bağlantısı gerekli" });
+      }
+
+      // Refresh token if expired
+      if (token.expiresAt < new Date()) {
+        const refreshed = await refreshAccessToken(token.refreshToken);
+        if (refreshed) {
+          const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+          await storage.saveSpotifyToken(userId, {
+            accessToken: refreshed.accessToken,
+            refreshToken: token.refreshToken,
+            expiresAt: newExpiresAt,
+          });
+          token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
+        }
+      }
+
+      let deviceId = userDevices.get(userId);
+      
+      // If no device selected, try to get an active device
+      if (!deviceId) {
+        const devices = await getAvailableDevices(token.accessToken);
+        const activeDevice = devices.find(d => d.isActive);
+        if (activeDevice) {
+          deviceId = activeDevice.id;
+          userDevices.set(userId, deviceId);
+        } else if (devices.length > 0) {
+          deviceId = devices[0].id;
+          userDevices.set(userId, deviceId);
+        }
+      }
+      
+      if (!deviceId) {
+        return res.status(400).json({ error: "Cihaz bulunamadı", fallbackToPreview: true });
+      }
+
+      const success = await playTrackOnDevice(token.accessToken, trackId, deviceId);
+      if (!success) {
+        return res.status(400).json({ error: "Şarkı çalınamadı", fallbackToPreview: true });
+      }
+      res.json({ success });
+    } catch (error) {
+      console.error("Play track error:", error);
+      res.status(500).json({ error: "Şarkı çalınamadı", fallbackToPreview: true });
+    }
+  });
+
+  // Pause playback
+  app.post("/api/spotify/pause", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: "userId gerekli" });
+      }
+
+      const deviceId = userDevices.get(userId);
+      
+      let token = await storage.getSpotifyToken(userId);
+      if (!token) {
+        return res.status(401).json({ error: "Spotify bağlantısı gerekli" });
+      }
+
+      // Refresh token if expired
+      if (token.expiresAt < new Date()) {
+        const refreshed = await refreshAccessToken(token.refreshToken);
+        if (refreshed) {
+          const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+          await storage.saveSpotifyToken(userId, {
+            accessToken: refreshed.accessToken,
+            refreshToken: token.refreshToken,
+            expiresAt: newExpiresAt,
+          });
+          token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
+        }
+      }
+
+      await pausePlayback(token.accessToken, deviceId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Pause error:", error);
+      res.status(500).json({ error: "Durdurma başarısız" });
     }
   });
 
@@ -423,6 +579,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
+      // Build tracks by owner for fair distribution
+      const tracks = await storage.getTracksByRoom(room.id);
+      const tracksByOwner = new Map<string, string[]>();
+      
+      for (const track of tracks) {
+        const primaryOwner = track.sourceUserIds[0];
+        if (primaryOwner) {
+          if (!tracksByOwner.has(primaryOwner)) {
+            tracksByOwner.set(primaryOwner, []);
+          }
+          tracksByOwner.get(primaryOwner)!.push(track.id);
+        }
+      }
+
       // Start the game
       await storage.updateRoom(room.id, { status: "playing", currentRound: 0 });
 
@@ -434,6 +604,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         trackId: null,
         roundStartTime: null,
         answeredUsers: new Set(),
+        usedTrackIds: new Set(),
+        tracksByOwner,
+        lastOwnerIndex: -1,
       });
 
       // Start first round after a short delay
@@ -525,6 +698,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         timeLeft: gameState?.timeLeft || 20,
         track: track ? {
           id: track.id,
+          spotifyTrackId: track.trackId,
           name: track.trackName,
           artist: track.artistName,
           albumArt: track.albumArtUrl,
@@ -635,8 +809,47 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return;
     }
 
-    // Get random track
-    const track = await storage.getRandomTrack(room.id);
+    // Get track with fair distribution - rotate between owners
+    const owners = Array.from(gameState.tracksByOwner.keys());
+    let track: Track | null = null;
+    
+    if (owners.length > 0) {
+      // Try to get a track from the next owner in rotation
+      for (let attempts = 0; attempts < owners.length; attempts++) {
+        gameState.lastOwnerIndex = (gameState.lastOwnerIndex + 1) % owners.length;
+        const currentOwner = owners[gameState.lastOwnerIndex];
+        const ownerTracks = gameState.tracksByOwner.get(currentOwner) || [];
+        
+        // Find an unused track from this owner
+        const unusedTrack = ownerTracks.find(trackId => !gameState.usedTrackIds.has(trackId));
+        
+        if (unusedTrack) {
+          const allTracks = await storage.getTracksByRoom(room.id);
+          track = allTracks.find(t => t.id === unusedTrack) || null;
+          if (track) {
+            gameState.usedTrackIds.add(track.id);
+            break;
+          }
+        }
+      }
+      
+      // If no unused tracks found, reset and get any random track
+      if (!track) {
+        gameState.usedTrackIds.clear();
+        const randomTrack = await storage.getRandomTrack(room.id);
+        if (randomTrack) {
+          track = randomTrack;
+          gameState.usedTrackIds.add(track.id);
+        }
+      }
+    } else {
+      // Fallback to random track
+      const randomTrack = await storage.getRandomTrack(room.id);
+      if (randomTrack) {
+        track = randomTrack;
+      }
+    }
+    
     if (!track) {
       gameState.status = "finished";
       broadcastToRoom(roomCode, { type: "game_finished" });
