@@ -356,7 +356,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.clearRoomContent(room.id);
       
       const contentByUser = new Map<string, { content: any; userId: string; type: string }[]>();
-      const playersWithScopeError: string[] = [];
       
       console.log(`[GAME START] Fetching content for ${players.length} players`);
       
@@ -390,22 +389,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           }
 
           // Fetch liked videos and subscriptions
-          const likedVideosResult = await getLikedVideos(token.accessToken, 50);
-          const subscriptionsResult = await getSubscriptions(token.accessToken, 50);
-          
-          // Check for scope errors - if so, delete token and mark user as disconnected
-          if (likedVideosResult.scopeError || subscriptionsResult.scopeError) {
-            console.log(`[GAME START] Scope error for player ${player.userId}, deleting token and marking as disconnected`);
-            await storage.deleteGoogleToken(player.userId);
-            await storage.updateUser(player.userId, { googleConnected: false });
-            // Get user display name for error message
-            const user = await storage.getUser(player.userId);
-            playersWithScopeError.push(user?.displayName || player.userId);
-            continue;
-          }
-          
-          const likedVideos = likedVideosResult.data;
-          const subscriptions = subscriptionsResult.data;
+          const likedVideos = await getLikedVideos(token.accessToken, 50);
+          const subscriptions = await getSubscriptions(token.accessToken, 50);
           
           console.log(`[GAME START] Fetched ${likedVideos.length} liked videos and ${subscriptions.length} subscriptions for player ${player.userId}`);
           
@@ -438,15 +423,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       
       console.log(`[GAME START] Total unique content in pool: ${contentByUser.size}`);
-
-      // Check if any players had scope errors - if so, abort and ask them to reconnect
-      if (playersWithScopeError.length > 0) {
-        const names = playersWithScopeError.join(", ");
-        return res.status(400).json({ 
-          error: `Bazı oyuncuların YouTube izinleri eksik. Şu oyuncuların YouTube'u yeniden bağlaması gerekiyor: ${names}`,
-          needsReconnect: playersWithScopeError
-        });
-      }
 
       // Add content to cache with actual users
       if (contentByUser.size > 0) {
