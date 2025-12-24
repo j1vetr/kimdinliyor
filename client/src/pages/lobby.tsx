@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, LogIn } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, LogIn, Info } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
@@ -379,14 +380,26 @@ export default function Lobby() {
                 <p className="text-xs text-muted-foreground">Oyuna katılmak için Google ile bağlan</p>
               </div>
             </div>
-            <Button
-              onClick={connectGoogle}
-              className="bg-white hover:bg-gray-100 text-gray-900 font-bold gap-2 shrink-0 border border-gray-300"
-              data-testid="button-connect-google"
-            >
-              <SiGoogle className="h-4 w-4" />
-              Google ile Bağlan
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={connectGoogle}
+                className="bg-white hover:bg-gray-100 text-gray-900 font-bold gap-2 border border-gray-300"
+                data-testid="button-connect-google"
+              >
+                <SiGoogle className="h-4 w-4" />
+                Google ile Bağlan
+              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-google-info">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-center">
+                  <p>Giriş bilgileriniz Google tarafindan guvenli sekilde islenir. Sifreniz veya kisisel verileriniz tarafimizca kaydedilmez.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
