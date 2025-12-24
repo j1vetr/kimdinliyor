@@ -2,8 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks, getUserPlaylists, getPlaylistTracks, getAvailableDevices, playTrackOnDevice, pausePlayback, getUserProfile } from "./spotify";
-import type { Room, RoomPlayer, Track } from "@shared/schema";
+import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideos, getSubscriptions, getUserProfile } from "./youtube";
+import type { Room, RoomPlayer, Content } from "@shared/schema";
 
 // WebSocket connections by room code
 const roomConnections = new Map<string, Set<WebSocket>>();
@@ -13,11 +13,11 @@ interface GameState {
   status: "waiting" | "question" | "results" | "finished";
   currentRound: number;
   timeLeft: number;
-  trackId: string | null;
+  contentId: string | null;
   roundStartTime: number | null;
   answeredUsers: Set<string>;
-  usedTrackIds: Set<string>;
-  tracksByOwner: Map<string, string[]>;
+  usedContentIds: Set<string>;
+  contentsByOwner: Map<string, string[]>;
   lastOwnerIndex: number;
   isLightningRound: boolean;
   playerStreaks: Map<string, number>;
@@ -25,17 +25,9 @@ interface GameState {
 
 const gameStates = new Map<string, GameState>();
 
-// User selected devices
-const userDevices = new Map<string, string>();
-
 // Helper: Check if round is lightning round (every 5th round: 5, 10)
 function isLightningRound(roundNumber: number): boolean {
   return roundNumber % 5 === 0 && roundNumber > 0;
-}
-
-// Helper: Get round time limit
-function getRoundTimeLimit(roundNumber: number): number {
-  return isLightningRound(roundNumber) ? 10 : 20;
 }
 
 function broadcastToRoom(roomCode: string, message: any) {
@@ -70,57 +62,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Spotify OAuth - Check user connection status
-  app.get("/api/spotify/status", async (req, res) => {
+  // Google OAuth - Check user connection status
+  app.get("/api/google/status", async (req, res) => {
     try {
       const { userId } = req.query;
       if (!userId || typeof userId !== "string") {
         return res.json({ connected: false });
       }
-      const token = await storage.getSpotifyToken(userId);
+      const token = await storage.getGoogleToken(userId);
       res.json({ connected: !!token });
     } catch (error) {
       res.json({ connected: false });
     }
   });
 
-  // Spotify OAuth - Get auth URL for a user
-  app.get("/api/spotify/auth-url", async (req, res) => {
+  // Google OAuth - Get auth URL for a user
+  app.get("/api/google/auth-url", async (req, res) => {
     try {
       const { userId, roomCode } = req.query;
       if (!userId || typeof userId !== "string") {
         return res.status(400).json({ error: "userId gerekli" });
       }
       const state = `${userId}:${roomCode || ""}`;
-      const authUrl = getSpotifyAuthUrl(state);
+      const authUrl = getGoogleAuthUrl(state);
       res.json({ authUrl });
     } catch (error) {
-      res.status(500).json({ error: "Spotify auth error" });
+      res.status(500).json({ error: "Google auth error" });
     }
   });
 
-  // Spotify OAuth - Callback
-  app.get("/api/spotify/callback", async (req, res) => {
+  // Google OAuth - Callback
+  app.get("/api/auth/google/callback", async (req, res) => {
     try {
       const { code, state, error } = req.query;
       
       if (error) {
-        return res.redirect("/?spotify_error=access_denied");
+        return res.redirect("/?google_error=access_denied");
       }
 
       if (!code || typeof code !== "string" || !state || typeof state !== "string") {
-        return res.redirect("/?spotify_error=invalid_request");
+        return res.redirect("/?google_error=invalid_request");
       }
 
       const [userId, roomCode] = state.split(":");
       
       const tokens = await exchangeCodeForTokens(code);
       if (!tokens) {
-        return res.redirect("/?spotify_error=token_exchange_failed");
+        return res.redirect("/?google_error=token_exchange_failed");
       }
 
       const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
-      await storage.saveSpotifyToken(userId, {
+      await storage.saveGoogleToken(userId, {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresAt,
@@ -129,167 +121,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Fetch and save user profile (avatar)
       const profile = await getUserProfile(tokens.accessToken);
       await storage.updateUser(userId, { 
-        spotifyConnected: true,
+        googleConnected: true,
         avatarUrl: profile?.avatarUrl || null
       });
 
       if (roomCode) {
-        return res.redirect(`/oyun/${roomCode}/lobi?spotify_connected=true`);
+        return res.redirect(`/oyun/${roomCode}/lobi?google_connected=true`);
       }
-      return res.redirect("/?spotify_connected=true");
+      return res.redirect("/?google_connected=true");
     } catch (error) {
-      console.error("Spotify callback error:", error);
-      res.redirect("/?spotify_error=callback_failed");
-    }
-  });
-
-  // Get user's available Spotify devices
-  app.get("/api/spotify/devices", async (req, res) => {
-    try {
-      const { userId } = req.query;
-      if (!userId || typeof userId !== "string") {
-        return res.status(400).json({ error: "userId gerekli" });
-      }
-
-      let token = await storage.getSpotifyToken(userId);
-      if (!token) {
-        return res.status(401).json({ error: "Spotify bağlantısı gerekli" });
-      }
-
-      // Refresh token if expired
-      if (token.expiresAt < new Date()) {
-        const refreshed = await refreshAccessToken(token.refreshToken);
-        if (refreshed) {
-          const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
-          await storage.saveSpotifyToken(userId, {
-            accessToken: refreshed.accessToken,
-            refreshToken: token.refreshToken,
-            expiresAt: newExpiresAt,
-          });
-          token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
-        }
-      }
-
-      const devices = await getAvailableDevices(token.accessToken);
-      const selectedDeviceId = userDevices.get(userId);
-      
-      res.json({ 
-        devices,
-        selectedDeviceId: selectedDeviceId || null
-      });
-    } catch (error) {
-      console.error("Get devices error:", error);
-      res.status(500).json({ error: "Cihazlar alınamadı" });
-    }
-  });
-
-  // Select a device for playback
-  app.post("/api/spotify/select-device", async (req, res) => {
-    try {
-      const { userId, deviceId } = req.body;
-      if (!userId || !deviceId) {
-        return res.status(400).json({ error: "userId ve deviceId gerekli" });
-      }
-
-      userDevices.set(userId, deviceId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Select device error:", error);
-      res.status(500).json({ error: "Cihaz seçilemedi" });
-    }
-  });
-
-  // Play track on user's device
-  app.post("/api/spotify/play", async (req, res) => {
-    try {
-      const { userId, trackId } = req.body;
-      if (!userId || !trackId) {
-        return res.status(400).json({ error: "userId ve trackId gerekli" });
-      }
-
-      let token = await storage.getSpotifyToken(userId);
-      if (!token) {
-        return res.status(401).json({ error: "Spotify bağlantısı gerekli" });
-      }
-
-      // Refresh token if expired
-      if (token.expiresAt < new Date()) {
-        const refreshed = await refreshAccessToken(token.refreshToken);
-        if (refreshed) {
-          const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
-          await storage.saveSpotifyToken(userId, {
-            accessToken: refreshed.accessToken,
-            refreshToken: token.refreshToken,
-            expiresAt: newExpiresAt,
-          });
-          token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
-        }
-      }
-
-      let deviceId = userDevices.get(userId);
-      
-      // If no device selected, try to get an active device
-      if (!deviceId) {
-        const devices = await getAvailableDevices(token.accessToken);
-        const activeDevice = devices.find(d => d.isActive);
-        if (activeDevice) {
-          deviceId = activeDevice.id;
-          userDevices.set(userId, deviceId);
-        } else if (devices.length > 0) {
-          deviceId = devices[0].id;
-          userDevices.set(userId, deviceId);
-        }
-      }
-      
-      if (!deviceId) {
-        return res.status(400).json({ error: "Cihaz bulunamadı", fallbackToPreview: true });
-      }
-
-      const success = await playTrackOnDevice(token.accessToken, trackId, deviceId);
-      if (!success) {
-        return res.status(400).json({ error: "Şarkı çalınamadı", fallbackToPreview: true });
-      }
-      res.json({ success });
-    } catch (error) {
-      console.error("Play track error:", error);
-      res.status(500).json({ error: "Şarkı çalınamadı", fallbackToPreview: true });
-    }
-  });
-
-  // Pause playback
-  app.post("/api/spotify/pause", async (req, res) => {
-    try {
-      const { userId } = req.body;
-      if (!userId) {
-        return res.status(400).json({ error: "userId gerekli" });
-      }
-
-      const deviceId = userDevices.get(userId);
-      
-      let token = await storage.getSpotifyToken(userId);
-      if (!token) {
-        return res.status(401).json({ error: "Spotify bağlantısı gerekli" });
-      }
-
-      // Refresh token if expired
-      if (token.expiresAt < new Date()) {
-        const refreshed = await refreshAccessToken(token.refreshToken);
-        if (refreshed) {
-          const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
-          await storage.saveSpotifyToken(userId, {
-            accessToken: refreshed.accessToken,
-            refreshToken: token.refreshToken,
-            expiresAt: newExpiresAt,
-          });
-          token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
-        }
-      }
-
-      await pausePlayback(token.accessToken, deviceId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Pause error:", error);
-      res.status(500).json({ error: "Durdurma başarısız" });
+      console.error("Google callback error:", error);
+      res.redirect("/?google_error=callback_failed");
     }
   });
 
@@ -379,8 +221,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(404).json({ error: "Oda bulunamadı" });
       }
 
-      // Allow joining when waiting or finished (after game ends)
-      // Block joining during active game
       if (room.status === "playing") {
         return res.status(400).json({ error: "Oyun devam ediyor, şu anda katılamazsınız" });
       }
@@ -405,11 +245,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Create unique user name
       const uniqueName = await generateUniqueName(displayName.trim());
       
-      // Create user (Spotify not connected yet - will connect via OAuth)
+      // Create user (Google not connected yet - will connect via OAuth)
       const user = await storage.createUser({
         displayName: displayName.trim(),
         uniqueName,
-        spotifyConnected: false,
+        googleConnected: false,
       });
 
       // Add player to room
@@ -448,38 +288,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(404).json({ error: "Oda bulunamadı" });
       }
 
-      // Verify the requester is actually in the room
       const players = await storage.getRoomPlayers(room.id);
       const requesterInRoom = players.some(p => p.userId === requesterId);
       if (!requesterInRoom) {
         return res.status(403).json({ error: "Bu odada değilsiniz" });
       }
 
-      // Verify the requester is the host (server-side verification)
       if (room.hostUserId !== requesterId) {
         return res.status(403).json({ error: "Sadece host oyuncu atabilir" });
       }
 
-      // Cannot kick yourself
       if (requesterId === targetUserId) {
         return res.status(400).json({ error: "Kendinizi atamazsınız" });
       }
 
-      // Cannot kick during game
       if (room.status === "playing") {
         return res.status(400).json({ error: "Oyun sırasında oyuncu atılamaz" });
       }
 
-      // Verify target is in the room
       const targetInRoom = players.some(p => p.userId === targetUserId);
       if (!targetInRoom) {
         return res.status(404).json({ error: "Oyuncu bulunamadı" });
       }
 
-      // Remove player from room
       await storage.removePlayerFromRoom(room.id, targetUserId);
-
-      // Broadcast update
       broadcastToRoom(code.toUpperCase(), { type: "player_kicked", userId: targetUserId });
 
       res.json({ success: true });
@@ -504,29 +336,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "En az 2 oyuncu gerekli" });
       }
 
-      // Check if all players have Spotify connected
+      // Check if all players have Google connected
       const playersWithUsers = await storage.getRoomWithPlayers(code.toUpperCase());
-      const disconnectedPlayers = playersWithUsers?.players.filter(p => !p.user.spotifyConnected) || [];
+      const disconnectedPlayers = playersWithUsers?.players.filter(p => !p.user.googleConnected) || [];
       if (disconnectedPlayers.length > 0) {
         const names = disconnectedPlayers.map(p => p.user.displayName).join(", ");
         return res.status(400).json({ 
-          error: `Tüm oyuncuların Spotify bağlaması gerekli. Bağlanmayanlar: ${names}` 
+          error: `Tüm oyuncuların YouTube bağlaması gerekli. Bağlanmayanlar: ${names}` 
         });
       }
 
       // Reset player scores for new game
       await storage.resetPlayerScores(room.id);
       
-      // Fetch tracks from each player's Spotify account
-      await storage.clearRoomTracks(room.id);
+      // Fetch content from each player's YouTube account
+      await storage.clearRoomContent(room.id);
       
-      const tracksByUser = new Map<string, { track: any; userId: string }[]>();
+      const contentByUser = new Map<string, { content: any; userId: string; type: string }[]>();
       
-      console.log(`[GAME START] Fetching tracks for ${players.length} players`);
+      console.log(`[GAME START] Fetching content for ${players.length} players`);
       
       for (const player of players) {
         try {
-          let token = await storage.getSpotifyToken(player.userId);
+          let token = await storage.getGoogleToken(player.userId);
           if (!token) {
             console.log(`[GAME START] No token found for player ${player.userId}`);
             continue;
@@ -540,7 +372,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             const refreshed = await refreshAccessToken(token.refreshToken);
             if (refreshed) {
               const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
-              await storage.saveSpotifyToken(player.userId, {
+              await storage.saveGoogleToken(player.userId, {
                 accessToken: refreshed.accessToken,
                 refreshToken: token.refreshToken,
                 expiresAt: newExpiresAt,
@@ -553,122 +385,122 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             }
           }
 
-          // Fetch top tracks, recent tracks, and playlist tracks
-          const recentTracks = await getRecentlyPlayedTracks(token.accessToken, 30);
-          const topTracks = await getTopTracks(token.accessToken, 30);
+          // Fetch liked videos and subscriptions
+          const likedVideos = await getLikedVideos(token.accessToken, 50);
+          const subscriptions = await getSubscriptions(token.accessToken, 50);
           
-          // Also fetch from playlists for more variety
-          let playlistTracks: any[] = [];
-          try {
-            const playlists = await getUserPlaylists(token.accessToken);
-            // Get tracks from up to 3 random playlists
-            const shuffledPlaylists = [...playlists].sort(() => Math.random() - 0.5).slice(0, 3);
-            for (const playlist of shuffledPlaylists) {
-              const tracks = await getPlaylistTracks(token.accessToken, playlist.id);
-              playlistTracks.push(...tracks.slice(0, 10)); // Take 10 random tracks per playlist
+          console.log(`[GAME START] Fetched ${likedVideos.length} liked videos and ${subscriptions.length} subscriptions for player ${player.userId}`);
+          
+          // Add videos to pool
+          for (const video of likedVideos) {
+            const key = `video:${video.id}`;
+            if (!contentByUser.has(key)) {
+              contentByUser.set(key, []);
             }
-          } catch (playlistError) {
-            console.log(`[GAME START] Could not fetch playlists for player ${player.userId}:`, playlistError);
+            const existing = contentByUser.get(key)!;
+            if (!existing.some(e => e.userId === player.userId)) {
+              existing.push({ content: video, userId: player.userId, type: "video" });
+            }
           }
           
-          const allTracks = [...recentTracks, ...topTracks, ...playlistTracks];
-          console.log(`[GAME START] Fetched ${allTracks.length} tracks for player ${player.userId} (${recentTracks.length} recent, ${topTracks.length} top, ${playlistTracks.length} playlist)`);
-          
-          for (const track of allTracks) {
-            if (!tracksByUser.has(track.id)) {
-              tracksByUser.set(track.id, []);
+          // Add channels to pool
+          for (const channel of subscriptions) {
+            const key = `channel:${channel.id}`;
+            if (!contentByUser.has(key)) {
+              contentByUser.set(key, []);
             }
-            const existing = tracksByUser.get(track.id)!;
+            const existing = contentByUser.get(key)!;
             if (!existing.some(e => e.userId === player.userId)) {
-              existing.push({ track, userId: player.userId });
+              existing.push({ content: channel, userId: player.userId, type: "channel" });
             }
           }
         } catch (error) {
-          console.error(`[GAME START] Failed to fetch tracks for user ${player.userId}:`, error);
+          console.error(`[GAME START] Failed to fetch content for user ${player.userId}:`, error);
         }
       }
       
-      console.log(`[GAME START] Total unique tracks in pool: ${tracksByUser.size}`);
+      console.log(`[GAME START] Total unique content in pool: ${contentByUser.size}`);
 
-      // Add tracks to cache with actual listeners
-      if (tracksByUser.size > 0) {
-        for (const [trackId, entries] of Array.from(tracksByUser.entries())) {
-          const track = entries[0].track;
-          const listeners = entries.map(e => e.userId);
+      // Add content to cache with actual users
+      if (contentByUser.size > 0) {
+        for (const [key, entries] of Array.from(contentByUser.entries())) {
+          const content = entries[0].content;
+          const type = entries[0].type;
+          const users = entries.map(e => e.userId);
 
-          await storage.addTrack({
+          await storage.addContent({
             roomId: room.id,
-            trackId: track.id,
-            trackName: track.name,
-            artistName: track.artist,
-            albumArtUrl: track.albumArt,
-            previewUrl: track.previewUrl,
-            sourceUserIds: listeners,
+            contentId: content.id,
+            contentType: type,
+            title: content.title,
+            subtitle: type === "video" ? content.channelTitle : content.subscriberCount,
+            thumbnailUrl: content.thumbnailUrl,
+            sourceUserIds: users,
           });
         }
       } else {
-        // Create demo tracks if no Spotify tracks available
-        const demoTracks = [
-          { name: "Bohemian Rhapsody", artist: "Queen" },
-          { name: "Stairway to Heaven", artist: "Led Zeppelin" },
-          { name: "Hotel California", artist: "Eagles" },
-          { name: "Sweet Child O' Mine", artist: "Guns N' Roses" },
-          { name: "Smells Like Teen Spirit", artist: "Nirvana" },
+        // Create demo content if no YouTube content available
+        const demoContent = [
+          { id: "demo1", title: "Demo Video 1", subtitle: "Demo Channel", type: "video" },
+          { id: "demo2", title: "Demo Video 2", subtitle: "Demo Channel", type: "video" },
+          { id: "demo3", title: "Demo Kanal 1", subtitle: "1M abone", type: "channel" },
         ];
 
-        for (const track of demoTracks) {
-          const numListeners = Math.floor(Math.random() * players.length) + 1;
+        for (const content of demoContent) {
+          const numUsers = Math.floor(Math.random() * players.length) + 1;
           const shuffledPlayers = [...players].sort(() => Math.random() - 0.5);
-          const listeners = shuffledPlayers.slice(0, numListeners).map(p => p.userId);
+          const users = shuffledPlayers.slice(0, numUsers).map(p => p.userId);
 
-          await storage.addTrack({
+          await storage.addContent({
             roomId: room.id,
-            trackId: `demo-${Math.random().toString(36).slice(2)}`,
-            trackName: track.name,
-            artistName: track.artist,
-            albumArtUrl: null,
-            previewUrl: null,
-            sourceUserIds: listeners,
+            contentId: content.id,
+            contentType: content.type,
+            title: content.title,
+            subtitle: content.subtitle,
+            thumbnailUrl: null,
+            sourceUserIds: users,
           });
         }
       }
 
-      // Build tracks by owner for fair distribution
-      const tracks = await storage.getTracksByRoom(room.id);
-      const tracksByOwner = new Map<string, string[]>();
+      // Build content by owner for fair distribution
+      const contents = await storage.getContentByRoom(room.id);
+      const contentsByOwner = new Map<string, string[]>();
       
-      for (const track of tracks) {
-        const primaryOwner = track.sourceUserIds[0];
+      for (const content of contents) {
+        const primaryOwner = content.sourceUserIds[0];
         if (primaryOwner) {
-          if (!tracksByOwner.has(primaryOwner)) {
-            tracksByOwner.set(primaryOwner, []);
+          if (!contentsByOwner.has(primaryOwner)) {
+            contentsByOwner.set(primaryOwner, []);
           }
-          tracksByOwner.get(primaryOwner)!.push(track.id);
+          contentsByOwner.get(primaryOwner)!.push(content.id);
         }
       }
-
-      // Start the game
-      await storage.updateRoom(room.id, { status: "playing", currentRound: 0 });
 
       // Initialize game state
       gameStates.set(code.toUpperCase(), {
         status: "waiting",
         currentRound: 0,
-        timeLeft: 20,
-        trackId: null,
+        timeLeft: room.roundDuration || 20,
+        contentId: null,
         roundStartTime: null,
         answeredUsers: new Set(),
-        usedTrackIds: new Set(),
-        tracksByOwner,
+        usedContentIds: new Set(),
+        contentsByOwner,
         lastOwnerIndex: -1,
         isLightningRound: false,
         playerStreaks: new Map(),
       });
 
-      // Start first round after a short delay
-      setTimeout(() => startNextRound(code.toUpperCase()), 2000);
+      // Update room status
+      await storage.updateRoom(room.id, { status: "playing", currentRound: 0 });
 
+      // Broadcast game start
       broadcastToRoom(code.toUpperCase(), { type: "game_started" });
+
+      // Start first round after a short delay
+      setTimeout(() => startNextRound(code.toUpperCase(), room), 2000);
+
       res.json({ success: true });
     } catch (error) {
       console.error("Start game error:", error);
@@ -676,119 +508,235 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Get game state
-  app.get("/api/rooms/:code/game", async (req, res) => {
-    try {
-      const { code } = req.params;
-      const { userId } = req.query;
-      const room = await storage.getRoomWithPlayers(code.toUpperCase());
+  // Helper function to start the next round
+  async function startNextRound(roomCode: string, room: Room) {
+    const gameState = gameStates.get(roomCode);
+    if (!gameState) return;
 
-      if (!room) {
-        return res.status(404).json({ error: "Oda bulunamadı" });
-      }
+    const nextRound = gameState.currentRound + 1;
+    const totalRounds = room.totalRounds || 10;
 
-      const gameState = gameStates.get(code.toUpperCase());
-      const currentRound = await storage.getCurrentRound(room.id);
-      let track: Track | null = null;
-      let correctPlayerIds: string[] = [];
-
-      if (currentRound?.trackId) {
-        const tracks = await storage.getTracksByRoom(room.id);
-        track = tracks.find(t => t.id === currentRound.trackId) || null;
-        correctPlayerIds = track?.sourceUserIds || [];
-      }
-
-      // Get answers for results
-      const answers = currentRound ? await storage.getAnswersByRound(currentRound.id) : [];
-
-      const playersWithAnswers = room.players.map(p => {
-        const answer = answers.find(a => a.oderId === p.userId);
-        return {
-          id: p.userId,
-          displayName: p.user.displayName,
-          uniqueName: p.user.uniqueName,
-          totalScore: p.totalScore || 0,
-          answered: gameState?.answeredUsers.has(p.userId) || false,
-          lastAnswer: answer ? {
-            selectedUserIds: answer.selectedUserIds,
-            isCorrect: answer.isCorrect || false,
-            isPartialCorrect: answer.isPartialCorrect || false,
-            score: answer.score || 0,
-          } : undefined,
-        };
-      });
-
-      // Only show correct answers during results phase
-      const showCorrectAnswers = gameState?.status === "results";
-
-      // Refresh player data for accurate scores during results
-      let freshPlayers = playersWithAnswers;
-      if (showCorrectAnswers) {
-        const refreshedRoom = await storage.getRoomWithPlayers(code.toUpperCase());
-        if (refreshedRoom) {
-          freshPlayers = refreshedRoom.players.map(p => {
-            const answer = answers.find(a => a.oderId === p.userId);
-            return {
-              id: p.userId,
-              displayName: p.user.displayName,
-              uniqueName: p.user.uniqueName,
-              totalScore: p.totalScore || 0,
-              answered: true,
-              lastAnswer: answer ? {
-                selectedUserIds: answer.selectedUserIds,
-                isCorrect: answer.isCorrect || false,
-                isPartialCorrect: answer.isPartialCorrect || false,
-                score: answer.score || 0,
-              } : undefined,
-            };
-          });
-        }
-      }
-
-      // Get current round time limit
-      const currentRoundNumber = room.currentRound || 0;
-      const roundTimeLimit = getRoundTimeLimit(currentRoundNumber);
-
-      // Get player streaks
-      const playerStreaks: Record<string, number> = {};
-      if (gameState?.playerStreaks) {
-        gameState.playerStreaks.forEach((streak, oderId) => {
-          playerStreaks[oderId] = streak;
-        });
-      }
-
-      res.json({
-        roomId: room.id,
-        roomName: room.name,
-        status: gameState?.status || "waiting",
-        currentRound: currentRoundNumber,
-        totalRounds: room.totalRounds || 10,
-        timeLeft: gameState?.timeLeft || roundTimeLimit,
-        totalTime: roundTimeLimit,
-        isLightningRound: gameState?.isLightningRound || false,
-        playerStreaks,
-        track: track ? {
-          id: track.id,
-          spotifyTrackId: track.trackId,
-          name: track.trackName,
-          artist: track.artistName,
-          albumArt: track.albumArtUrl,
-          previewUrl: track.previewUrl,
-        } : null,
-        players: freshPlayers,
-        correctPlayerIds: showCorrectAnswers ? correctPlayerIds : [],
-      });
-    } catch (error) {
-      console.error("Get game state error:", error);
-      res.status(500).json({ error: "Oyun durumu alınamadı" });
+    if (nextRound > totalRounds) {
+      // Game finished
+      gameState.status = "finished";
+      await storage.updateRoom(room.id, { status: "finished" });
+      broadcastToRoom(roomCode, { type: "game_finished" });
+      return;
     }
-  });
+
+    // Get owners with remaining content
+    const ownersWithContent: string[] = [];
+    const contentsByOwnerEntries = Array.from(gameState.contentsByOwner.entries());
+    for (const [owner, contentIds] of contentsByOwnerEntries) {
+      const unused = contentIds.filter((id: string) => !gameState.usedContentIds.has(id));
+      if (unused.length > 0) {
+        ownersWithContent.push(owner);
+      }
+    }
+
+    if (ownersWithContent.length === 0) {
+      // No more content, end game
+      gameState.status = "finished";
+      await storage.updateRoom(room.id, { status: "finished" });
+      broadcastToRoom(roomCode, { type: "game_finished" });
+      return;
+    }
+
+    // Round-robin owner selection
+    gameState.lastOwnerIndex = (gameState.lastOwnerIndex + 1) % ownersWithContent.length;
+    const selectedOwner = ownersWithContent[gameState.lastOwnerIndex];
+    
+    // Get unused content from this owner
+    const ownerContentIds = gameState.contentsByOwner.get(selectedOwner) || [];
+    const unusedContentIds = ownerContentIds.filter(id => !gameState.usedContentIds.has(id));
+    
+    if (unusedContentIds.length === 0) {
+      // Try next owner
+      setTimeout(() => startNextRound(roomCode, room), 100);
+      return;
+    }
+
+    // Select random content from this owner
+    const randomIndex = Math.floor(Math.random() * unusedContentIds.length);
+    const selectedContentId = unusedContentIds[randomIndex];
+    
+    gameState.usedContentIds.add(selectedContentId);
+
+    // Get content details
+    const content = await storage.getContentById(selectedContentId);
+    if (!content) {
+      setTimeout(() => startNextRound(roomCode, room), 100);
+      return;
+    }
+
+    // Check if lightning round
+    const lightning = isLightningRound(nextRound);
+    const roundDuration = lightning ? 10 : (room.roundDuration || 20);
+
+    // Update game state
+    gameState.currentRound = nextRound;
+    gameState.status = "question";
+    gameState.contentId = selectedContentId;
+    gameState.timeLeft = roundDuration;
+    gameState.roundStartTime = Date.now();
+    gameState.answeredUsers = new Set();
+    gameState.isLightningRound = lightning;
+
+    // Create round in database
+    await storage.createRound({
+      roomId: room.id,
+      roundNumber: nextRound,
+      contentId: selectedContentId,
+      correctUserIds: content.sourceUserIds,
+      startedAt: new Date(),
+    });
+
+    // Update room
+    await storage.updateRoom(room.id, { currentRound: nextRound });
+
+    // Broadcast round start
+    broadcastToRoom(roomCode, {
+      type: "round_started",
+      round: nextRound,
+      totalRounds,
+      content: {
+        id: content.id,
+        contentId: content.contentId,
+        contentType: content.contentType,
+        title: content.title,
+        subtitle: content.subtitle,
+        thumbnailUrl: content.thumbnailUrl,
+      },
+      timeLimit: roundDuration,
+      isLightningRound: lightning,
+    });
+
+    // Start timer
+    const timerInterval = setInterval(async () => {
+      const currentState = gameStates.get(roomCode);
+      if (!currentState || currentState.status !== "question") {
+        clearInterval(timerInterval);
+        return;
+      }
+
+      currentState.timeLeft--;
+      
+      if (currentState.timeLeft <= 0) {
+        clearInterval(timerInterval);
+        await endRound(roomCode, room);
+      }
+    }, 1000);
+  }
+
+  // Helper function to end the current round
+  async function endRound(roomCode: string, room: Room) {
+    const gameState = gameStates.get(roomCode);
+    if (!gameState) return;
+
+    gameState.status = "results";
+
+    // Get current round
+    const currentRound = await storage.getCurrentRound(room.id);
+    if (!currentRound) return;
+
+    // Get content for this round
+    const content = currentRound.contentId ? await storage.getContentById(currentRound.contentId) : null;
+    const correctUserIds = content?.sourceUserIds || [];
+
+    // Calculate scores for all answers
+    const answers = await storage.getAnswersByRound(currentRound.id);
+    const players = await storage.getRoomPlayers(room.id);
+    const scoreMultiplier = gameState.isLightningRound ? 2 : 1;
+
+    const roundResults: any[] = [];
+
+    for (const player of players) {
+      const answer = answers.find(a => a.oderId === player.userId);
+      let score = 0;
+      let isCorrect = false;
+      let isPartialCorrect = false;
+
+      if (answer) {
+        const selectedIds = answer.selectedUserIds || [];
+        const correctSet = new Set(correctUserIds);
+        const selectedSet = new Set(selectedIds);
+
+        // Count correct and incorrect selections
+        let correctCount = 0;
+        let incorrectCount = 0;
+        for (const id of selectedIds) {
+          if (correctSet.has(id)) {
+            correctCount++;
+          } else {
+            incorrectCount++;
+          }
+        }
+
+        // Calculate score
+        score = (correctCount * 5 - incorrectCount * 5) * scoreMultiplier;
+        
+        // Check if fully correct (all correct users selected, no wrong ones)
+        isCorrect = correctCount === correctUserIds.length && incorrectCount === 0;
+        isPartialCorrect = correctCount > 0 && !isCorrect;
+
+        // Streak bonus
+        const currentStreak = gameState.playerStreaks.get(player.userId) || 0;
+        if (isCorrect || isPartialCorrect) {
+          const newStreak = currentStreak + 1;
+          gameState.playerStreaks.set(player.userId, newStreak);
+          if (newStreak >= 3) {
+            score += 10 * scoreMultiplier; // Streak bonus
+          }
+        } else {
+          gameState.playerStreaks.set(player.userId, 0);
+        }
+
+        // Update answer
+        await storage.updateAnswer(answer.id, { isCorrect, isPartialCorrect, score });
+      } else {
+        // No answer submitted
+        gameState.playerStreaks.set(player.userId, 0);
+      }
+
+      // Update player score
+      const newTotalScore = (player.totalScore || 0) + score;
+      await storage.updatePlayerScore(player.id, newTotalScore);
+
+      roundResults.push({
+        oderId: player.userId,
+        displayName: player.user.displayName,
+        score,
+        isCorrect,
+        isPartialCorrect,
+        totalScore: newTotalScore,
+        streak: gameState.playerStreaks.get(player.userId) || 0,
+      });
+    }
+
+    // Update round end time
+    await storage.updateRound(currentRound.id, { endedAt: new Date() });
+
+    // Broadcast round results
+    broadcastToRoom(roomCode, {
+      type: "round_ended",
+      correctUserIds,
+      results: roundResults,
+      isLightningRound: gameState.isLightningRound,
+    });
+
+    // Start next round after delay
+    setTimeout(() => startNextRound(roomCode, room), 5000);
+  }
 
   // Submit answer
   app.post("/api/rooms/:code/answer", async (req, res) => {
     try {
       const { code } = req.params;
-      const { userId, selectedUserIds } = req.body;
+      const { oderId, selectedUserIds } = req.body;
+
+      if (!oderId || !selectedUserIds) {
+        return res.status(400).json({ error: "Gerekli bilgiler eksik" });
+      }
 
       const room = await storage.getRoomByCode(code.toUpperCase());
       if (!room) {
@@ -800,7 +748,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Şu anda cevap verilemez" });
       }
 
-      if (gameState.answeredUsers.has(userId)) {
+      if (gameState.answeredUsers.has(oderId)) {
         return res.status(400).json({ error: "Zaten cevap verdiniz" });
       }
 
@@ -812,23 +760,71 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Save answer
       await storage.createAnswer({
         roundId: currentRound.id,
-        oderId: userId,
-        selectedUserIds: selectedUserIds || [],
+        oderId,
+        selectedUserIds,
       });
 
-      gameState.answeredUsers.add(userId);
+      gameState.answeredUsers.add(oderId);
+
+      // Broadcast that user answered
+      broadcastToRoom(code.toUpperCase(), {
+        type: "player_answered",
+        oderId,
+      });
 
       // Check if all players answered
       const players = await storage.getRoomPlayers(room.id);
       if (gameState.answeredUsers.size >= players.length) {
-        endRound(code.toUpperCase());
+        // End round early
+        await endRound(code.toUpperCase(), room);
       }
 
-      broadcastToRoom(code.toUpperCase(), { type: "player_answered", userId });
       res.json({ success: true });
     } catch (error) {
       console.error("Submit answer error:", error);
       res.status(500).json({ error: "Cevap gönderilemedi" });
+    }
+  });
+
+  // Get game state
+  app.get("/api/rooms/:code/game", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const room = await storage.getRoomWithPlayers(code.toUpperCase());
+
+      if (!room) {
+        return res.status(404).json({ error: "Oda bulunamadı" });
+      }
+
+      const gameState = gameStates.get(code.toUpperCase());
+      const currentRound = await storage.getCurrentRound(room.id);
+      
+      let content = null;
+      if (currentRound?.contentId) {
+        content = await storage.getContentById(currentRound.contentId);
+      }
+
+      res.json({
+        room,
+        gameState: gameState ? {
+          status: gameState.status,
+          currentRound: gameState.currentRound,
+          timeLeft: gameState.timeLeft,
+          isLightningRound: gameState.isLightningRound,
+        } : null,
+        currentRound,
+        content: content ? {
+          id: content.id,
+          contentId: content.contentId,
+          contentType: content.contentType,
+          title: content.title,
+          subtitle: content.subtitle,
+          thumbnailUrl: content.thumbnailUrl,
+        } : null,
+      });
+    } catch (error) {
+      console.error("Get game state error:", error);
+      res.status(500).json({ error: "Oyun durumu alınamadı" });
     }
   });
 
@@ -842,20 +838,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(404).json({ error: "Oda bulunamadı" });
       }
 
-      const players = room.players.map(p => ({
-        id: p.userId,
-        displayName: p.user.displayName,
-        uniqueName: p.user.uniqueName,
-        avatarUrl: p.user.avatarUrl || null,
-        totalScore: p.totalScore || 0,
-        correctAnswers: 0,
-        partialAnswers: 0,
-      }));
+      // Sort players by score
+      const sortedPlayers = [...room.players].sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
 
       res.json({
-        roomName: room.name,
-        totalRounds: room.currentRound || 0,
-        players,
+        room,
+        players: sortedPlayers.map((p, index) => ({
+          rank: index + 1,
+          oderId: p.userId,
+          displayName: p.user.displayName,
+          avatarUrl: p.user.avatarUrl,
+          totalScore: p.totalScore || 0,
+        })),
       });
     } catch (error) {
       console.error("Get results error:", error);
@@ -863,43 +857,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // Rematch - reset room for new game
+  // Rematch - reset scores and go back to lobby
   app.post("/api/rooms/:code/rematch", async (req, res) => {
     try {
       const { code } = req.params;
-      const { userId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ error: "userId gerekli" });
-      }
-
       const room = await storage.getRoomByCode(code.toUpperCase());
+
       if (!room) {
         return res.status(404).json({ error: "Oda bulunamadı" });
       }
 
-      if (room.status !== "finished") {
-        return res.status(400).json({ error: "Oyun henüz bitmedi" });
-      }
-
-      // Verify the user is the host
-      if (room.hostUserId !== userId) {
-        return res.status(403).json({ error: "Sadece host yeni oyun başlatabilir" });
-      }
-
-      // Reset room state
-      await storage.updateRoom(room.id, {
-        status: "waiting",
-        currentRound: 0,
-      });
-
       // Reset player scores
       await storage.resetPlayerScores(room.id);
-
+      
+      // Clear content cache
+      await storage.clearRoomContent(room.id);
+      
+      // Reset room status to waiting
+      await storage.updateRoom(room.id, { status: "waiting", currentRound: 0 });
+      
       // Clear game state
       gameStates.delete(code.toUpperCase());
 
-      // Broadcast to all players
+      // Broadcast rematch
       broadcastToRoom(code.toUpperCase(), { type: "rematch_started" });
 
       res.json({ success: true });
@@ -908,195 +888,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.status(500).json({ error: "Rematch başlatılamadı" });
     }
   });
-
-  // Helper functions for game flow
-  async function startNextRound(roomCode: string) {
-    const room = await storage.getRoomByCode(roomCode);
-    if (!room) return;
-
-    const gameState = gameStates.get(roomCode);
-    if (!gameState) return;
-
-    const newRoundNumber = (room.currentRound || 0) + 1;
-
-    if (newRoundNumber > (room.totalRounds || 10)) {
-      // Game finished - keep room in finished state until new game starts
-      await storage.updateRoom(room.id, { status: "finished" });
-      gameState.status = "finished";
-      broadcastToRoom(roomCode, { type: "game_finished" });
-      return;
-    }
-
-    // Get all tracks for this room
-    const allTracks = await storage.getTracksByRoom(room.id);
-    let track: Track | null = null;
-    
-    // Filter unused tracks
-    let availableTracks = allTracks.filter(t => !gameState.usedTrackIds.has(t.id));
-    
-    // If all tracks used, reset
-    if (availableTracks.length === 0) {
-      gameState.usedTrackIds.clear();
-      availableTracks = allTracks;
-    }
-    
-    if (availableTracks.length > 0) {
-      // Every 2 rounds (rounds 2, 4, 6, 8, 10), prefer multi-owner songs
-      const preferMultiOwner = newRoundNumber % 2 === 0;
-      
-      if (preferMultiOwner) {
-        // Find tracks with multiple owners
-        const multiOwnerTracks = availableTracks.filter(t => t.sourceUserIds.length > 1);
-        if (multiOwnerTracks.length > 0) {
-          // Random selection from multi-owner tracks
-          track = multiOwnerTracks[Math.floor(Math.random() * multiOwnerTracks.length)];
-        }
-      }
-      
-      // If no multi-owner track found or odd round, pick random
-      if (!track) {
-        track = availableTracks[Math.floor(Math.random() * availableTracks.length)];
-      }
-      
-      if (track) {
-        gameState.usedTrackIds.add(track.id);
-      }
-    }
-    
-    if (!track) {
-      // No tracks available - mark game as finished
-      await storage.updateRoom(room.id, { status: "finished" });
-      gameState.status = "finished";
-      broadcastToRoom(roomCode, { type: "game_finished" });
-      return;
-    }
-
-    // Create new round
-    const round = await storage.createRound({
-      roomId: room.id,
-      roundNumber: newRoundNumber,
-      trackId: track.id,
-      correctUserIds: track.sourceUserIds,
-      startedAt: new Date(),
-      endedAt: null,
-    });
-
-    await storage.updateRoom(room.id, { currentRound: newRoundNumber });
-
-    // Check if this is a lightning round
-    const lightning = isLightningRound(newRoundNumber);
-    const timeLimit = getRoundTimeLimit(newRoundNumber);
-
-    // Update game state
-    gameState.status = "question";
-    gameState.currentRound = newRoundNumber;
-    gameState.timeLeft = timeLimit;
-    gameState.trackId = track.id;
-    gameState.roundStartTime = Date.now();
-    gameState.answeredUsers = new Set();
-    gameState.isLightningRound = lightning;
-
-    broadcastToRoom(roomCode, { 
-      type: "round_started", 
-      round: newRoundNumber,
-      isLightningRound: lightning,
-      timeLimit,
-    });
-
-    // Start timer with correct time limit
-    const timer = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - gameState.roundStartTime!) / 1000);
-      gameState.timeLeft = Math.max(0, timeLimit - elapsed);
-
-      if (gameState.timeLeft <= 0) {
-        clearInterval(timer);
-        endRound(roomCode);
-      }
-    }, 1000);
-  }
-
-  async function endRound(roomCode: string) {
-    const room = await storage.getRoomByCode(roomCode);
-    if (!room) return;
-
-    const gameState = gameStates.get(roomCode);
-    if (!gameState || gameState.status !== "question") return;
-
-    gameState.status = "results";
-
-    const currentRound = await storage.getCurrentRound(room.id);
-    if (!currentRound) return;
-
-    const track = (await storage.getTracksByRoom(room.id)).find(t => t.id === currentRound.trackId);
-    const correctUserIds = track?.sourceUserIds || [];
-
-    // Calculate scores with streak bonus and lightning multiplier
-    const answers = await storage.getAnswersByRound(currentRound.id);
-    const players = await storage.getRoomPlayers(room.id);
-    const isLightning = gameState.isLightningRound;
-
-    for (const answer of answers) {
-      const selected = answer.selectedUserIds || [];
-      const correct = new Set(correctUserIds);
-
-      let correctCount = 0;
-      let wrongCount = 0;
-
-      for (const selectedId of selected) {
-        if (correct.has(selectedId)) {
-          correctCount++;
-        } else {
-          wrongCount++;
-        }
-      }
-
-      // Base score calculation
-      let baseScore = (correctCount * 5) - (wrongCount * 5);
-      const isCorrect = correctCount === correct.size && wrongCount === 0;
-      const isPartialCorrect = correctCount > 0 && !isCorrect;
-
-      // Apply lightning round 2x multiplier
-      if (isLightning) {
-        baseScore = baseScore * 2;
-      }
-
-      // Track streak and apply bonus
-      const userId = answer.oderId;
-      const currentStreak = gameState.playerStreaks.get(userId) || 0;
-      let streakBonus = 0;
-
-      if (isCorrect || isPartialCorrect) {
-        // Increment streak for correct answers
-        const newStreak = currentStreak + 1;
-        gameState.playerStreaks.set(userId, newStreak);
-        
-        // +10 bonus for 3+ streak
-        if (newStreak >= 3) {
-          streakBonus = 10;
-        }
-      } else {
-        // Reset streak on wrong answer
-        gameState.playerStreaks.set(userId, 0);
-      }
-
-      const finalScore = baseScore + streakBonus;
-
-      await storage.updateAnswer(answer.id, { isCorrect, isPartialCorrect, score: finalScore });
-
-      // Update player score
-      const player = players.find(p => p.userId === answer.oderId);
-      if (player) {
-        await storage.updatePlayerScore(player.id, (player.totalScore || 0) + finalScore);
-      }
-    }
-
-    await storage.updateRound(currentRound.id, { endedAt: new Date() });
-
-    broadcastToRoom(roomCode, { type: "round_ended" });
-
-    // Start next round after showing results
-    setTimeout(() => startNextRound(roomCode), 5000);
-  }
 
   return httpServer;
 }

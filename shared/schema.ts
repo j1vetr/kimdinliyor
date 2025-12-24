@@ -3,12 +3,12 @@ import { pgTable, text, varchar, integer, boolean, timestamp, json } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users - Anonim kullanıcılar (sadece isim + Spotify bağlantısı)
+// Users - Anonim kullanıcılar (isim + Google bağlantısı)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   displayName: text("display_name").notNull(),
   uniqueName: text("unique_name").notNull().unique(),
-  spotifyConnected: boolean("spotify_connected").default(false),
+  googleConnected: boolean("google_connected").default(false),
   avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -39,26 +39,26 @@ export const roomPlayers = pgTable("room_players", {
   joinedAt: timestamp("joined_at").defaultNow(),
 });
 
-// SpotifyTokens - Kullanıcı Spotify token'ları
-export const spotifyTokens = pgTable("spotify_tokens", {
+// GoogleTokens - Kullanıcı Google token'ları
+export const googleTokens = pgTable("google_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  oderId: varchar("order_id").references(() => users.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
   accessToken: text("access_token").notNull(),
   refreshToken: text("refresh_token").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// TracksCache - Odadaki şarkı havuzu
-export const tracksCache = pgTable("tracks_cache", {
+// ContentCache - Odadaki içerik havuzu (video + kanal)
+export const contentCache = pgTable("content_cache", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   roomId: varchar("room_id").references(() => rooms.id).notNull(),
-  trackId: text("track_id").notNull(),
-  trackName: text("track_name").notNull(),
-  artistName: text("artist_name").notNull(),
-  albumArtUrl: text("album_art_url"),
-  previewUrl: text("preview_url"),
-  sourceUserIds: text("source_user_ids").array().notNull(),
+  contentId: text("content_id").notNull(), // YouTube video ID veya channel ID
+  contentType: text("content_type").notNull(), // "video" veya "channel"
+  title: text("title").notNull(),
+  subtitle: text("subtitle"), // Video için kanal adı, kanal için abone sayısı
+  thumbnailUrl: text("thumbnail_url"),
+  sourceUserIds: text("source_user_ids").array().notNull(), // Bu içeriği beğenen/abone olan kullanıcılar
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -67,7 +67,7 @@ export const rounds = pgTable("rounds", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   roomId: varchar("room_id").references(() => rooms.id).notNull(),
   roundNumber: integer("round_number").notNull(),
-  trackId: varchar("track_id").references(() => tracksCache.id),
+  contentId: varchar("content_id").references(() => contentCache.id),
   correctUserIds: text("correct_user_ids").array(),
   startedAt: timestamp("started_at"),
   endedAt: timestamp("ended_at"),
@@ -97,7 +97,7 @@ export const roomsRelations = relations(rooms, ({ one, many }) => ({
     references: [users.id],
   }),
   players: many(roomPlayers),
-  tracks: many(tracksCache),
+  contents: many(contentCache),
   rounds: many(rounds),
 }));
 
@@ -112,9 +112,9 @@ export const roomPlayersRelations = relations(roomPlayers, ({ one }) => ({
   }),
 }));
 
-export const tracksCacheRelations = relations(tracksCache, ({ one }) => ({
+export const contentCacheRelations = relations(contentCache, ({ one }) => ({
   room: one(rooms, {
-    fields: [tracksCache.roomId],
+    fields: [contentCache.roomId],
     references: [rooms.id],
   }),
 }));
@@ -124,9 +124,9 @@ export const roundsRelations = relations(rounds, ({ one, many }) => ({
     fields: [rounds.roomId],
     references: [rooms.id],
   }),
-  track: one(tracksCache, {
-    fields: [rounds.trackId],
-    references: [tracksCache.id],
+  content: one(contentCache, {
+    fields: [rounds.contentId],
+    references: [contentCache.id],
   }),
   answers: many(answers),
 }));
@@ -163,7 +163,7 @@ export const insertRoomPlayerSchema = createInsertSchema(roomPlayers).omit({
   isReady: true,
 });
 
-export const insertTrackSchema = createInsertSchema(tracksCache).omit({
+export const insertContentSchema = createInsertSchema(contentCache).omit({
   id: true,
   createdAt: true,
 });
@@ -190,8 +190,8 @@ export type InsertRoom = z.infer<typeof insertRoomSchema>;
 export type RoomPlayer = typeof roomPlayers.$inferSelect;
 export type InsertRoomPlayer = z.infer<typeof insertRoomPlayerSchema>;
 
-export type Track = typeof tracksCache.$inferSelect;
-export type InsertTrack = z.infer<typeof insertTrackSchema>;
+export type Content = typeof contentCache.$inferSelect;
+export type InsertContent = z.infer<typeof insertContentSchema>;
 
 export type Round = typeof rounds.$inferSelect;
 export type InsertRound = z.infer<typeof insertRoundSchema>;
@@ -202,4 +202,4 @@ export type InsertAnswer = z.infer<typeof insertAnswerSchema>;
 // Extended types for frontend
 export type PlayerWithUser = RoomPlayer & { user: User };
 export type RoomWithPlayers = Room & { players: PlayerWithUser[] };
-export type RoundWithTrack = Round & { track: Track | null };
+export type RoundWithContent = Round & { content: Content | null };

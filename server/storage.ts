@@ -2,18 +2,18 @@ import {
   users,
   rooms,
   roomPlayers,
-  tracksCache,
+  contentCache,
   rounds,
   answers,
-  spotifyTokens,
+  googleTokens,
   type User,
   type InsertUser,
   type Room,
   type InsertRoom,
   type RoomPlayer,
   type InsertRoomPlayer,
-  type Track,
-  type InsertTrack,
+  type Content,
+  type InsertContent,
   type Round,
   type InsertRound,
   type Answer,
@@ -24,7 +24,7 @@ import {
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 
-export interface SpotifyToken {
+export interface GoogleToken {
   accessToken: string;
   refreshToken: string;
   expiresAt: Date;
@@ -48,17 +48,18 @@ export interface IStorage {
 
   // Room Players
   getRoomPlayers(roomId: string): Promise<PlayerWithUser[]>;
-  getRoomPlayer(roomId: string, oderId: string): Promise<RoomPlayer | undefined>;
+  getRoomPlayer(roomId: string, userId: string): Promise<RoomPlayer | undefined>;
   addPlayerToRoom(data: InsertRoomPlayer): Promise<RoomPlayer>;
   updatePlayerScore(id: string, score: number): Promise<void>;
-  removePlayerFromRoom(roomId: string, oderId: string): Promise<void>;
+  removePlayerFromRoom(roomId: string, userId: string): Promise<void>;
   resetPlayerScores(roomId: string): Promise<void>;
 
-  // Tracks
-  getTracksByRoom(roomId: string): Promise<Track[]>;
-  addTrack(track: InsertTrack): Promise<Track>;
-  getRandomTrack(roomId: string): Promise<Track | undefined>;
-  clearRoomTracks(roomId: string): Promise<void>;
+  // Content (videos + channels)
+  getContentByRoom(roomId: string): Promise<Content[]>;
+  addContent(content: InsertContent): Promise<Content>;
+  getRandomContent(roomId: string): Promise<Content | undefined>;
+  clearRoomContent(roomId: string): Promise<void>;
+  getContentById(id: string): Promise<Content | undefined>;
 
   // Rounds
   getCurrentRound(roomId: string): Promise<Round | undefined>;
@@ -67,14 +68,14 @@ export interface IStorage {
 
   // Answers
   getAnswersByRound(roundId: string): Promise<Answer[]>;
-  getAnswer(roundId: string, oderId: string): Promise<Answer | undefined>;
+  getAnswer(roundId: string, userId: string): Promise<Answer | undefined>;
   createAnswer(answer: InsertAnswer): Promise<Answer>;
   updateAnswer(id: string, data: Partial<Answer>): Promise<Answer | undefined>;
 
-  // Spotify Tokens
-  getSpotifyToken(userId: string): Promise<SpotifyToken | undefined>;
-  saveSpotifyToken(userId: string, token: SpotifyToken): Promise<void>;
-  deleteSpotifyToken(userId: string): Promise<void>;
+  // Google Tokens
+  getGoogleToken(userId: string): Promise<GoogleToken | undefined>;
+  saveGoogleToken(userId: string, token: GoogleToken): Promise<void>;
+  deleteGoogleToken(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -142,11 +143,11 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getRoomPlayer(roomId: string, oderId: string): Promise<RoomPlayer | undefined> {
+  async getRoomPlayer(roomId: string, userId: string): Promise<RoomPlayer | undefined> {
     const [player] = await db
       .select()
       .from(roomPlayers)
-      .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, oderId)));
+      .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, userId)));
     return player || undefined;
   }
 
@@ -159,10 +160,10 @@ export class DatabaseStorage implements IStorage {
     await db.update(roomPlayers).set({ totalScore: score }).where(eq(roomPlayers.id, id));
   }
 
-  async removePlayerFromRoom(roomId: string, oderId: string): Promise<void> {
+  async removePlayerFromRoom(roomId: string, userId: string): Promise<void> {
     await db
       .delete(roomPlayers)
-      .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, oderId)));
+      .where(and(eq(roomPlayers.roomId, roomId), eq(roomPlayers.userId, userId)));
   }
 
   async resetPlayerScores(roomId: string): Promise<void> {
@@ -172,25 +173,30 @@ export class DatabaseStorage implements IStorage {
       .where(eq(roomPlayers.roomId, roomId));
   }
 
-  // Tracks
-  async getTracksByRoom(roomId: string): Promise<Track[]> {
-    return db.select().from(tracksCache).where(eq(tracksCache.roomId, roomId));
+  // Content (videos + channels)
+  async getContentByRoom(roomId: string): Promise<Content[]> {
+    return db.select().from(contentCache).where(eq(contentCache.roomId, roomId));
   }
 
-  async addTrack(track: InsertTrack): Promise<Track> {
-    const [newTrack] = await db.insert(tracksCache).values(track).returning();
-    return newTrack;
+  async addContent(content: InsertContent): Promise<Content> {
+    const [newContent] = await db.insert(contentCache).values(content).returning();
+    return newContent;
   }
 
-  async getRandomTrack(roomId: string): Promise<Track | undefined> {
-    const tracks = await this.getTracksByRoom(roomId);
-    if (tracks.length === 0) return undefined;
-    const randomIndex = Math.floor(Math.random() * tracks.length);
-    return tracks[randomIndex];
+  async getRandomContent(roomId: string): Promise<Content | undefined> {
+    const contents = await this.getContentByRoom(roomId);
+    if (contents.length === 0) return undefined;
+    const randomIndex = Math.floor(Math.random() * contents.length);
+    return contents[randomIndex];
   }
 
-  async clearRoomTracks(roomId: string): Promise<void> {
-    await db.delete(tracksCache).where(eq(tracksCache.roomId, roomId));
+  async clearRoomContent(roomId: string): Promise<void> {
+    await db.delete(contentCache).where(eq(contentCache.roomId, roomId));
+  }
+
+  async getContentById(id: string): Promise<Content | undefined> {
+    const [content] = await db.select().from(contentCache).where(eq(contentCache.id, id));
+    return content || undefined;
   }
 
   // Rounds
@@ -219,11 +225,11 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(answers).where(eq(answers.roundId, roundId));
   }
 
-  async getAnswer(roundId: string, oderId: string): Promise<Answer | undefined> {
+  async getAnswer(roundId: string, userId: string): Promise<Answer | undefined> {
     const [answer] = await db
       .select()
       .from(answers)
-      .where(and(eq(answers.roundId, roundId), eq(answers.oderId, oderId)));
+      .where(and(eq(answers.roundId, roundId), eq(answers.oderId, userId)));
     return answer || undefined;
   }
 
@@ -237,12 +243,12 @@ export class DatabaseStorage implements IStorage {
     return answer || undefined;
   }
 
-  // Spotify Tokens
-  async getSpotifyToken(userId: string): Promise<SpotifyToken | undefined> {
+  // Google Tokens
+  async getGoogleToken(userId: string): Promise<GoogleToken | undefined> {
     const [token] = await db
       .select()
-      .from(spotifyTokens)
-      .where(eq(spotifyTokens.oderId, userId));
+      .from(googleTokens)
+      .where(eq(googleTokens.userId, userId));
     if (!token) return undefined;
     return {
       accessToken: token.accessToken,
@@ -251,20 +257,20 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async saveSpotifyToken(userId: string, token: SpotifyToken): Promise<void> {
-    const existing = await this.getSpotifyToken(userId);
+  async saveGoogleToken(userId: string, token: GoogleToken): Promise<void> {
+    const existing = await this.getGoogleToken(userId);
     if (existing) {
       await db
-        .update(spotifyTokens)
+        .update(googleTokens)
         .set({
           accessToken: token.accessToken,
           refreshToken: token.refreshToken,
           expiresAt: token.expiresAt,
         })
-        .where(eq(spotifyTokens.oderId, userId));
+        .where(eq(googleTokens.userId, userId));
     } else {
-      await db.insert(spotifyTokens).values({
-        oderId: userId,
+      await db.insert(googleTokens).values({
+        userId: userId,
         accessToken: token.accessToken,
         refreshToken: token.refreshToken,
         expiresAt: token.expiresAt,
@@ -272,8 +278,8 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteSpotifyToken(userId: string): Promise<void> {
-    await db.delete(spotifyTokens).where(eq(spotifyTokens.oderId, userId));
+  async deleteGoogleToken(userId: string): Promise<void> {
+    await db.delete(googleTokens).where(eq(googleTokens.userId, userId));
   }
 }
 
