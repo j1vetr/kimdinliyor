@@ -54,7 +54,7 @@ export function TimerRing({ timeLeft, totalTime, size = 120, className }: TimerR
           strokeDasharray={circumference}
           strokeDashoffset={circumference - progress}
           strokeLinecap="round"
-          className="transition-all duration-1000 linear"
+          style={{ transition: "stroke-dashoffset 1s linear" }}
           filter={isUrgent ? "url(#glow)" : undefined}
         />
       </svg>
