@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/logo";
-import { SpotifyIcon } from "@/components/spotify-icon";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,8 +21,6 @@ export default function JoinRoom() {
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [consentGiven, setConsentGiven] = useState(false);
-  const [spotifyConnected, setSpotifyConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
 
   const roomQuery = useQuery<{ room: Room; requiresPassword: boolean }>({
     queryKey: ["/api/rooms", roomCode, "info"],
@@ -59,50 +56,6 @@ export default function JoinRoom() {
     },
   });
 
-  const handleSpotifyConnect = async () => {
-    setIsConnecting(true);
-    try {
-      const response = await fetch("/api/spotify/auth-url");
-      const data = await response.json();
-      
-      if (data.authUrl) {
-        localStorage.setItem("pendingJoin", JSON.stringify({
-          roomCode,
-          displayName,
-          password,
-        }));
-        window.location.href = data.authUrl;
-      } else {
-        setSpotifyConnected(true);
-        toast({
-          title: "Spotify Bağlandı",
-          description: "Spotify hesabınız başarıyla bağlandı.",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Bağlantı hatası",
-        description: "Spotify'a bağlanılamadı. Lütfen tekrar deneyin.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  useEffect(() => {
-    const checkSpotifyConnection = async () => {
-      try {
-        const response = await fetch("/api/spotify/status");
-        const data = await response.json();
-        setSpotifyConnected(data.connected);
-      } catch (error) {
-        console.error("Spotify status check failed:", error);
-      }
-    };
-    checkSpotifyConnection();
-  }, []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -119,15 +72,6 @@ export default function JoinRoom() {
       toast({
         title: "Onay gerekli",
         description: "Devam etmek için veri kullanım onayı vermeniz gerekiyor.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!spotifyConnected) {
-      toast({
-        title: "Spotify bağlantısı gerekli",
-        description: "Odaya katılmadan önce Spotify hesabınızı bağlamalısınız.",
         variant: "destructive",
       });
       return;
@@ -223,46 +167,6 @@ export default function JoinRoom() {
                 </div>
               )}
 
-              <div className="p-4 rounded-lg bg-muted/50 space-y-4">
-                <div className="flex items-start gap-3">
-                  <SpotifyIcon size={24} />
-                  <div className="flex-1">
-                    <h3 className="font-medium">Spotify Bağlantısı</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Oyuna katılmak için Spotify hesabınızı bağlamanız gerekiyor.
-                    </p>
-                  </div>
-                </div>
-
-                {spotifyConnected ? (
-                  <div className="flex items-center gap-2 text-primary font-medium">
-                    <SpotifyIcon size={18} />
-                    <span>Spotify Bağlı</span>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={handleSpotifyConnect}
-                    disabled={isConnecting}
-                    data-testid="button-connect-spotify"
-                  >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Bağlanıyor...
-                      </>
-                    ) : (
-                      <>
-                        <SpotifyIcon size={18} />
-                        Spotify'a Bağlan
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-
               <div className="flex items-start gap-3 p-4 rounded-lg border border-border">
                 <Checkbox
                   id="consent"
@@ -280,7 +184,7 @@ export default function JoinRoom() {
                 type="submit"
                 className="w-full"
                 size="lg"
-                disabled={joinMutation.isPending || !spotifyConnected || !consentGiven}
+                disabled={joinMutation.isPending || !consentGiven}
                 data-testid="button-join"
               >
                 {joinMutation.isPending ? (
