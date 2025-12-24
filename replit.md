@@ -65,9 +65,16 @@ shared/
 4. Host oyunu başlatır
 5. Her turda rastgele bir şarkı seçilir
 6. Oyuncular "Bu şarkıyı kim dinliyor?" sorusunu cevaplar
-7. 20 saniye süre veya herkes cevapladığında tur biter
-8. Puanlama: Tam doğru +10, Kısmi +5, Yanlış 0
-9. 10 tur sonunda oyun biter
+7. Normal turlar 20 saniye, yıldırım turları 10 saniye
+8. Puanlama: Doğru seçim +5, Yanlış seçim -5
+9. Seri bonusu: 3+ art arda doğru = +10 ekstra puan
+10. Yıldırım turları (5. ve 10. tur): 2x puan çarpanı
+11. 10 tur sonunda oyun biter, oyuncular lobiye dönebilir
+
+## Oda Durumları
+- `waiting`: Lobi, oyuncular bekliyor
+- `playing`: Oyun aktif
+- `finished`: Oyun bitti, sonuçlar görüntülenebilir
 
 ## Önemli Notlar
 - Tüm UI metinleri Türkçe
@@ -75,3 +82,5 @@ shared/
 - Font: Poppins
 - Mobil öncelikli tasarım
 - Spotify entegrasyonu Replit Connector ile
+- Oyun bitince oda "finished" durumunda kalır (sonuçlar korunur)
+- Yeni oyun başlatıldığında skorlar sıfırlanır
