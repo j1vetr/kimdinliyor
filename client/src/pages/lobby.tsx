@@ -480,13 +480,17 @@ export default function Lobby() {
         <div className="mt-auto pt-4 border-t border-border">
           {isHost ? (
             <div className="space-y-2">
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={() => startGameMutation.mutate()}
-                disabled={!canStart || startGameMutation.isPending}
-                data-testid="button-start-game"
-              >
+              <div className={`relative ${playerCount < 2 ? "p-[2px] rounded-lg overflow-hidden" : ""}`}>
+                {playerCount < 2 && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-500 to-red-500 animate-gradient-x rounded-lg" />
+                )}
+                <Button
+                  className={`w-full relative ${playerCount < 2 ? "bg-background" : ""}`}
+                  size="lg"
+                  onClick={() => startGameMutation.mutate()}
+                  disabled={!canStart || startGameMutation.isPending}
+                  data-testid="button-start-game"
+                >
                 {startGameMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -498,11 +502,12 @@ export default function Lobby() {
                     {canStart
                       ? "Oyunu Başlat"
                       : playerCount < 2
-                        ? "En az 2 oyuncu gerekli"
-                        : `${disconnectedCount} oyuncu YouTube'a bağlanmalı`}
+                        ? "En Az 2 Oyuncu Gerekli :("
+                        : `${disconnectedCount} Oyuncu YouTube'a Bağlanmalı`}
                   </>
                 )}
               </Button>
+              </div>
               {!allGoogleConnected && playerCount >= 2 && (
                 <p className="text-sm text-center text-muted-foreground">
                   Tüm oyuncuların YouTube hesabını bağlaması gerekiyor
