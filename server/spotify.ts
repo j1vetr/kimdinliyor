@@ -269,3 +269,32 @@ export async function pausePlayback(accessToken: string, deviceId?: string): Pro
     return false;
   }
 }
+
+export interface SpotifyUserProfile {
+  displayName: string;
+  avatarUrl: string | null;
+}
+
+export async function getUserProfile(accessToken: string): Promise<SpotifyUserProfile | null> {
+  try {
+    const response = await fetch("https://api.spotify.com/v1/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Failed to get user profile:", await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      displayName: data.display_name || "Spotify User",
+      avatarUrl: data.images?.[0]?.url || null,
+    };
+  } catch (error) {
+    console.error("Failed to get user profile:", error);
+    return null;
+  }
+}

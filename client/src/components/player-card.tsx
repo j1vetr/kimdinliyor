@@ -1,5 +1,5 @@
 import { Crown, Check, X, Music } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SpotifyIcon } from "./spotify-icon";
@@ -12,6 +12,7 @@ interface PlayerCardProps {
     uniqueName: string;
     spotifyConnected?: boolean;
     totalScore?: number;
+    avatarUrl?: string | null;
   };
   isHost?: boolean;
   isSelectable?: boolean;
@@ -70,6 +71,9 @@ export function PlayerCard({
       )}
 
       <Avatar className="h-10 w-10 border-2 border-muted">
+        {player.avatarUrl && (
+          <AvatarImage src={player.avatarUrl} alt={player.displayName} />
+        )}
         <AvatarFallback className="bg-muted text-muted-foreground font-medium">
           {initials}
         </AvatarFallback>

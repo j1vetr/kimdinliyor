@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   displayName: text("display_name").notNull(),
   uniqueName: text("unique_name").notNull().unique(),
   spotifyConnected: boolean("spotify_connected").default(false),
+  avatarUrl: text("avatar_url"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -24,6 +25,7 @@ export const rooms = pgTable("rooms", {
   status: text("status").default("waiting"), // waiting, playing, finished
   currentRound: integer("current_round").default(0),
   totalRounds: integer("total_rounds").default(10),
+  roundDuration: integer("round_duration").default(20), // seconds per round
   createdAt: timestamp("created_at").defaultNow(),
 });
 

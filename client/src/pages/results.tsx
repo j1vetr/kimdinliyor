@@ -1,11 +1,13 @@
 import { useParams, useLocation } from "wouter";
-import { Trophy, Medal, Crown, Home, RotateCcw, Loader2, Star, Target, Zap } from "lucide-react";
+import { Trophy, Medal, Crown, Home, RotateCcw, Loader2, Star, Target, Zap, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Logo } from "@/components/logo";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface FinalResults {
   roomName: string;
@@ -14,6 +16,7 @@ interface FinalResults {
     id: string;
     displayName: string;
     uniqueName: string;
+    avatarUrl?: string | null;
     totalScore: number;
     correctAnswers: number;
     partialAnswers: number;
@@ -23,6 +26,7 @@ interface FinalResults {
 export default function Results() {
   const params = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const roomCode = params.code?.toUpperCase();
   const userId = localStorage.getItem("userId");
 
@@ -34,6 +38,28 @@ export default function Results() {
       return response.json();
     },
     enabled: !!roomCode,
+  });
+
+  const rematchMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/rooms/${roomCode}/rematch`, { userId });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Rematch başlatılamadı");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+      setLocation(`/oyun/${roomCode}/lobi`);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Hata",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   if (resultsQuery.isLoading) {
@@ -152,6 +178,9 @@ export default function Results() {
                       rank === 2 ? "ring-2 ring-gray-300" : 
                       rank === 3 ? "ring-2 ring-amber-600" : ""
                     }`}>
+                      {player.avatarUrl && (
+                        <AvatarImage src={player.avatarUrl} alt={player.displayName} />
+                      )}
                       <AvatarFallback className={`font-bold ${
                         rank === 1 ? "bg-yellow-400/20 text-yellow-600 dark:text-yellow-400" :
                         rank === 2 ? "bg-gray-300/20" :
@@ -220,6 +249,7 @@ export default function Results() {
             Ana Sayfa
           </Button>
           <Button 
+            variant="outline"
             className="flex-1" 
             size="lg" 
             onClick={() => setLocation(`/oyun/${roomCode}/lobi`)}
@@ -227,6 +257,20 @@ export default function Results() {
           >
             <RotateCcw className="h-5 w-5 mr-2" />
             Lobiye Dön
+          </Button>
+          <Button 
+            className="flex-1" 
+            size="lg" 
+            onClick={() => rematchMutation.mutate()}
+            disabled={rematchMutation.isPending}
+            data-testid="button-rematch"
+          >
+            {rematchMutation.isPending ? (
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            ) : (
+              <Play className="h-5 w-5 mr-2" />
+            )}
+            Tekrar Oyna
           </Button>
         </div>
       </main>

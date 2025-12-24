@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks, getAvailableDevices, playTrackOnDevice, pausePlayback } from "./spotify";
+import { getSpotifyAuthUrl, exchangeCodeForTokens, refreshAccessToken, getRecentlyPlayedTracks, getTopTracks, getAvailableDevices, playTrackOnDevice, pausePlayback, getUserProfile } from "./spotify";
 import type { Room, RoomPlayer, Track } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -126,7 +126,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         expiresAt,
       });
 
-      await storage.updateUser(userId, { spotifyConnected: true });
+      // Fetch and save user profile (avatar)
+      const profile = await getUserProfile(tokens.accessToken);
+      await storage.updateUser(userId, { 
+        spotifyConnected: true,
+        avatarUrl: profile?.avatarUrl || null
+      });
 
       if (roomCode) {
         return res.redirect(`/oyun/${roomCode}/lobi?spotify_connected=true`);
@@ -332,7 +337,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Create room
   app.post("/api/rooms", async (req, res) => {
     try {
-      const { name, maxPlayers, isPublic, password } = req.body;
+      const { name, maxPlayers, totalRounds, roundDuration, isPublic, password } = req.body;
 
       if (!name || name.trim().length === 0) {
         return res.status(400).json({ error: "Oda adı gerekli" });
@@ -348,7 +353,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         isPublic: isPublic !== false,
         passwordHash,
         hostUserId: null,
-        totalRounds: 10,
+        totalRounds: totalRounds || 10,
+        roundDuration: roundDuration || 20,
       });
 
       res.json({ id: room.id, code: room.code, name: room.name });
@@ -809,6 +815,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         id: p.userId,
         displayName: p.user.displayName,
         uniqueName: p.user.uniqueName,
+        avatarUrl: p.user.avatarUrl || null,
         totalScore: p.totalScore || 0,
         correctAnswers: 0,
         partialAnswers: 0,
@@ -822,6 +829,52 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error("Get results error:", error);
       res.status(500).json({ error: "Sonuçlar alınamadı" });
+    }
+  });
+
+  // Rematch - reset room for new game
+  app.post("/api/rooms/:code/rematch", async (req, res) => {
+    try {
+      const { code } = req.params;
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId gerekli" });
+      }
+
+      const room = await storage.getRoomByCode(code.toUpperCase());
+      if (!room) {
+        return res.status(404).json({ error: "Oda bulunamadı" });
+      }
+
+      if (room.status !== "finished") {
+        return res.status(400).json({ error: "Oyun henüz bitmedi" });
+      }
+
+      // Verify the user is the host
+      if (room.hostUserId !== userId) {
+        return res.status(403).json({ error: "Sadece host yeni oyun başlatabilir" });
+      }
+
+      // Reset room state
+      await storage.updateRoom(room.id, {
+        status: "waiting",
+        currentRound: 0,
+      });
+
+      // Reset player scores
+      await storage.resetPlayerScores(room.id);
+
+      // Clear game state
+      gameStates.delete(code.toUpperCase());
+
+      // Broadcast to all players
+      broadcastToRoom(code.toUpperCase(), { type: "rematch_started" });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Rematch error:", error);
+      res.status(500).json({ error: "Rematch başlatılamadı" });
     }
   });
 

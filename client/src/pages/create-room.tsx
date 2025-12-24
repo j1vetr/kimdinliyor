@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Lock, Globe, Users, Loader2 } from "lucide-react";
+import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ export default function CreateRoom() {
 
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(8);
+  const [totalRounds, setTotalRounds] = useState(10);
+  const [roundDuration, setRoundDuration] = useState(20);
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState("");
 
@@ -25,6 +27,8 @@ export default function CreateRoom() {
     mutationFn: async (data: {
       name: string;
       maxPlayers: number;
+      totalRounds: number;
+      roundDuration: number;
       isPublic: boolean;
       password?: string;
     }) => {
@@ -67,6 +71,8 @@ export default function CreateRoom() {
     createRoomMutation.mutate({
       name: roomName.trim(),
       maxPlayers,
+      totalRounds,
+      roundDuration,
       isPublic,
       password: isPublic ? undefined : password,
     });
@@ -124,6 +130,52 @@ export default function CreateRoom() {
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>2</span>
                   <span>12</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <Label htmlFor="totalRounds" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Tur Sayısı: {totalRounds}
+                  </Label>
+                </div>
+                <Slider
+                  id="totalRounds"
+                  min={2}
+                  max={15}
+                  step={1}
+                  value={[totalRounds]}
+                  onValueChange={(value) => setTotalRounds(value[0])}
+                  className="w-full"
+                  data-testid="slider-total-rounds"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>2</span>
+                  <span>15</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <Label htmlFor="roundDuration" className="flex items-center gap-2">
+                    <Timer className="h-4 w-4" />
+                    Tur Süresi: {roundDuration} saniye
+                  </Label>
+                </div>
+                <Slider
+                  id="roundDuration"
+                  min={10}
+                  max={30}
+                  step={5}
+                  value={[roundDuration]}
+                  onValueChange={(value) => setRoundDuration(value[0])}
+                  className="w-full"
+                  data-testid="slider-round-duration"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>10s</span>
+                  <span>30s</span>
                 </div>
               </div>
 
