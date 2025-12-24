@@ -11,14 +11,14 @@ import { useLocation } from "wouter";
 function FloatingIcons() {
   const icons = useMemo(() => {
     const iconTypes = [Music, Music2, Headphones, Disc3, "spotify"];
-    return Array.from({ length: 20 }, (_, i) => ({
+    return Array.from({ length: 10 }, (_, i) => ({
       id: i,
       type: iconTypes[i % iconTypes.length],
       left: Math.random() * 100,
       delay: Math.random() * 10,
       duration: 15 + Math.random() * 20,
       size: 16 + Math.random() * 24,
-      opacity: 0.02 + Math.random() * 0.03,
+      opacity: 0.01 + Math.random() * 0.015,
     }));
   }, []);
 
