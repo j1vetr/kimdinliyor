@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { useQuery } from "@tanstack/react-query";
 
@@ -105,9 +104,8 @@ export default function Results() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between p-4 border-b border-border">
-        <Logo height={48} />
-        <ThemeToggle />
+      <header className="flex items-center justify-center p-4 border-b border-border">
+        <Logo height={56} />
       </header>
 
       <main className="flex-1 flex flex-col p-4 md:p-6 gap-6 max-w-2xl mx-auto w-full">

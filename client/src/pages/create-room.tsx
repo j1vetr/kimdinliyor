@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -84,7 +83,6 @@ export default function CreateRoom() {
           </Link>
           <Logo height={48} />
         </div>
-        <ThemeToggle />
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4 md:p-8">

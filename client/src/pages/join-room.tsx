@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { useToast } from "@/hooks/use-toast";
@@ -151,13 +150,8 @@ export default function JoinRoom() {
   if (roomQuery.isError) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-between p-4 border-b border-border">
-          <Link href="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <ThemeToggle />
+        <header className="flex items-center justify-center p-4 border-b border-border">
+          <Logo height={56} />
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <Card className="w-full max-w-md text-center p-8">
@@ -188,7 +182,6 @@ export default function JoinRoom() {
           </Link>
           <Logo height={48} />
         </div>
-        <ThemeToggle />
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4 md:p-8">

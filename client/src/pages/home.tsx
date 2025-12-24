@@ -3,7 +3,6 @@ import { Users, Plus, Music2, Music, Headphones, Disc3, ArrowRight, Sparkles } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { Logo } from "@/components/logo";
 import { useState, useMemo } from "react";
@@ -70,9 +69,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background flex flex-col relative">
       <FloatingIcons />
-      <header className="flex items-center justify-between p-4 border-b border-border relative z-10">
-        <Logo height={56} />
-        <ThemeToggle />
+      <header className="flex items-center justify-center p-4 border-b border-border relative z-10">
+        <Logo height={72} />
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative z-10">

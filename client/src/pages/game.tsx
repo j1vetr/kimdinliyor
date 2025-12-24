@@ -4,7 +4,6 @@ import { Loader2, Users, Send, Volume2, VolumeX, Music, Check, Trophy } from "lu
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { TimerRing } from "@/components/timer-ring";
@@ -242,7 +241,6 @@ export default function Game() {
               >
                 {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
               </Button>
-              <ThemeToggle />
             </div>
           </header>
 

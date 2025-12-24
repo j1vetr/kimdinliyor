@@ -4,7 +4,6 @@ import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, ExternalLink, Use
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { SpotifyIcon } from "@/components/spotify-icon";
 import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
@@ -177,13 +176,8 @@ export default function Lobby() {
   if (roomQuery.isError || !roomQuery.data) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-between p-4 border-b border-border">
-          <Link href="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <ThemeToggle />
+        <header className="flex items-center justify-center p-4 border-b border-border">
+          <Logo height={56} />
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <Card className="w-full max-w-md text-center p-8">
@@ -224,7 +218,6 @@ export default function Lobby() {
           <Badge variant="secondary" className="font-mono">
             {roomCode}
           </Badge>
-          <ThemeToggle />
         </div>
       </header>
 
