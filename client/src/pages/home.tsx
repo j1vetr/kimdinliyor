@@ -171,7 +171,7 @@ export default function Home() {
 
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground text-center">
-                    Arkadaşının paylaştığı oda kodunu gir
+                    Mevcut bir odaya katılmak için kodu gir
                   </p>
                   <div className="flex gap-3">
                     <Input
