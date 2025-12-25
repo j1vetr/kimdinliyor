@@ -496,32 +496,20 @@ export default function Game() {
             </button>
           )}
 
-          <div className="fixed right-3 bottom-20 lg:bottom-6 z-40">
-            {showEmojiPicker && (
-              <div className="absolute bottom-12 right-0 bg-card/95 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl p-2 mb-2 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex gap-1">
-                  {EMOJI_REACTIONS.map((emoji) => (
-                    <button
-                      key={emoji}
-                      onClick={() => sendReaction(emoji)}
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:bg-muted/50 active:scale-95 transition-all"
-                      data-testid={`button-emoji-${emoji}`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <Button
-              size="icon"
-              variant={showEmojiPicker ? "default" : "outline"}
-              className="rounded-full w-12 h-12 shadow-lg"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              data-testid="button-emoji-picker"
-            >
-              <Smile className="h-5 w-5" />
-            </Button>
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 lg:left-auto lg:translate-x-0 lg:right-4 lg:bottom-4">
+            <div className="bg-card/95 backdrop-blur-md rounded-full border border-border/50 shadow-xl px-2 py-1.5 flex items-center gap-1">
+              <Smile className="h-4 w-4 text-muted-foreground mx-1 hidden lg:block" />
+              {EMOJI_REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendReaction(emoji)}
+                  className="w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center text-lg lg:text-xl hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
+                  data-testid={`button-emoji-${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
 
           <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
