@@ -110,6 +110,25 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       roomConnections.get(roomCode)!.add(ws);
 
+      ws.on("message", async (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          
+          if (message.type === "reaction") {
+            broadcastToRoom(roomCode, {
+              type: "reaction",
+              userId: message.userId,
+              displayName: message.displayName,
+              avatarUrl: message.avatarUrl,
+              emoji: message.emoji,
+              timestamp: Date.now(),
+            });
+          }
+        } catch (e) {
+          console.error("WS message parse error:", e);
+        }
+      });
+
       ws.on("close", () => {
         roomConnections.get(roomCode)?.delete(ws);
       });

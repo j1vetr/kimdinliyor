@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,17 @@ import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+
+const EMOJI_REACTIONS = ["👏", "😂", "😮", "🔥", "💀", "🎉"];
+
+interface FloatingReaction {
+  id: string;
+  emoji: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  x: number;
+  y: number;
+}
 
 interface Content {
   id: string;
@@ -60,6 +71,11 @@ interface WSMessage {
   oderId?: string;
   gameMode?: GameMode;
   correctAnswer?: string;
+  userId?: string;
+  displayName?: string;
+  avatarUrl?: string | null;
+  emoji?: string;
+  timestamp?: number;
 }
 
 export default function Game() {
@@ -82,6 +98,10 @@ export default function Game() {
   const [gameMode, setGameMode] = useState<GameMode>("who_liked");
   const [numericAnswer, setNumericAnswer] = useState("");
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
+  const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const wsRef = useRef<WebSocket | null>(null);
 
   const gameQuery = useQuery<any>({
@@ -149,6 +169,13 @@ export default function Game() {
             setCorrectPlayerIds(message.correctUserIds || []);
             setRoundResults(message.results || []);
             setCorrectAnswer(message.correctAnswer || null);
+            if (message.results) {
+              const newScores = new Map<string, number>();
+              message.results.forEach((r: RoundResult) => {
+                newScores.set(r.oderId, r.totalScore);
+              });
+              setPlayerScores(newScores);
+            }
             break;
             
           case "game_finished":
@@ -156,6 +183,24 @@ export default function Game() {
             break;
             
           case "player_answered":
+            break;
+            
+          case "reaction":
+            if (message.emoji && message.displayName) {
+              const reactionId = `${message.userId}-${message.timestamp}`;
+              const newReaction: FloatingReaction = {
+                id: reactionId,
+                emoji: message.emoji,
+                displayName: message.displayName,
+                avatarUrl: message.avatarUrl,
+                x: 20 + Math.random() * 60,
+                y: 100,
+              };
+              setFloatingReactions(prev => [...prev, newReaction]);
+              setTimeout(() => {
+                setFloatingReactions(prev => prev.filter(r => r.id !== reactionId));
+              }, 3000);
+            }
             break;
         }
       } catch (e) {
@@ -291,8 +336,59 @@ export default function Game() {
   const timerPercentage = (timeLeft / totalTime) * 100;
   const isTimeLow = timeLeft <= 5;
 
+  const sendReaction = (emoji: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const currentPlayer = allPlayers.find((p: any) => (p.userId || p.user?.id) === userId);
+      const displayName = currentPlayer?.user?.displayName || currentPlayer?.displayName || "Oyuncu";
+      const avatarUrl = currentPlayer?.user?.avatarUrl || currentPlayer?.avatarUrl;
+      
+      wsRef.current.send(JSON.stringify({
+        type: "reaction",
+        userId,
+        displayName,
+        avatarUrl,
+        emoji,
+      }));
+    }
+    setShowEmojiPicker(false);
+  };
+
+  const getSortedPlayersByScore = () => {
+    return [...allPlayers].sort((a: any, b: any) => {
+      const aId = a.userId || a.user?.id;
+      const bId = b.userId || b.user?.id;
+      const aScore = playerScores.get(aId) || a.totalScore || 0;
+      const bScore = playerScores.get(bId) || b.totalScore || 0;
+      return bScore - aScore;
+    });
+  };
+
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="h-screen bg-background flex flex-col overflow-hidden relative">
+      {floatingReactions.map((reaction) => (
+        <div
+          key={reaction.id}
+          className="fixed z-50 pointer-events-none animate-in fade-in zoom-in-50 duration-300"
+          style={{
+            left: `${reaction.x}%`,
+            bottom: "20%",
+            animation: "floatUp 3s ease-out forwards",
+          }}
+        >
+          <div className="flex flex-col items-center gap-1 bg-card/90 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg border border-border/50">
+            <span className="text-2xl">{reaction.emoji}</span>
+            <span className="text-[10px] font-medium text-muted-foreground truncate max-w-[80px]">{reaction.displayName}</span>
+          </div>
+        </div>
+      ))}
+      
+      <style>{`
+        @keyframes floatUp {
+          0% { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(-200px) scale(0.8); opacity: 0; }
+        }
+      `}</style>
+
       {gameStatus === "question" && content && (
         <>
           <header className="relative flex items-center justify-center px-3 py-2 bg-background border-b border-border shrink-0">
@@ -334,6 +430,98 @@ export default function Game() {
                 {timeLeft} saniye
               </span>
             </div>
+          </div>
+
+          {showLeaderboard && currentRound > 1 && (
+            <div className="fixed left-3 top-32 z-40 hidden lg:block">
+              <div className="bg-card/95 backdrop-blur-sm rounded-xl border border-border/50 shadow-lg p-3 w-44">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Trophy className="h-3.5 w-3.5 text-yellow-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sıralama</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowLeaderboard(false)}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {getSortedPlayersByScore().slice(0, 5).map((player: any, index: number) => {
+                    const playerId = player.userId || player.user?.id;
+                    const displayName = player.user?.displayName || player.displayName;
+                    const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
+                    const score = playerScores.get(playerId) || player.totalScore || 0;
+                    const isSelf = playerId === userId;
+                    
+                    return (
+                      <div 
+                        key={playerId} 
+                        className={`flex items-center gap-2 p-1.5 rounded-lg transition-all ${
+                          isSelf ? "bg-red-500/10 ring-1 ring-red-500/30" : ""
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                          index === 0 ? "bg-yellow-500/20 text-yellow-600" :
+                          index === 1 ? "bg-gray-400/20 text-gray-500" :
+                          index === 2 ? "bg-amber-600/20 text-amber-600" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {index + 1}
+                        </div>
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt={displayName} className="w-5 h-5 rounded-md object-cover shrink-0" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold shrink-0">
+                            {displayName?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-xs font-medium truncate flex-1">{displayName}</span>
+                        <span className="text-xs font-bold text-muted-foreground">{score}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!showLeaderboard && currentRound > 1 && (
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="fixed left-3 top-32 z-40 hidden lg:flex items-center justify-center w-10 h-10 rounded-xl bg-card/95 backdrop-blur-sm border border-border/50 shadow-lg hover:bg-card transition-colors"
+            >
+              <Trophy className="h-4 w-4 text-yellow-500" />
+            </button>
+          )}
+
+          <div className="fixed right-3 bottom-20 lg:bottom-6 z-40">
+            {showEmojiPicker && (
+              <div className="absolute bottom-12 right-0 bg-card/95 backdrop-blur-sm rounded-2xl border border-border/50 shadow-xl p-2 mb-2 animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex gap-1">
+                  {EMOJI_REACTIONS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => sendReaction(emoji)}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:bg-muted/50 active:scale-95 transition-all"
+                      data-testid={`button-emoji-${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button
+              size="icon"
+              variant={showEmojiPicker ? "default" : "outline"}
+              className="rounded-full w-12 h-12 shadow-lg"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              data-testid="button-emoji-picker"
+            >
+              <Smile className="h-5 w-5" />
+            </Button>
           </div>
 
           <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
