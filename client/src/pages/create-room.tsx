@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound } from "lucide-react";
+import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -33,20 +32,19 @@ export default function CreateRoom() {
   const [gameModes, setGameModes] = useState<string[]>(["who_liked", "who_subscribed"]);
 
   const toggleGameMode = (modeId: string) => {
-    setGameModes((prev) => {
-      if (prev.includes(modeId)) {
-        if (prev.length === 1) {
-          toast({
-            title: "En az bir mod seçili olmalı",
-            description: "Oyun için en az bir oyun modu seçmeniz gerekiyor.",
-            variant: "destructive",
-          });
-          return prev;
-        }
-        return prev.filter((id) => id !== modeId);
+    if (gameModes.includes(modeId)) {
+      if (gameModes.length === 1) {
+        toast({
+          title: "En az bir mod seçili olmalı",
+          description: "Oyun için en az bir oyun modu seçmeniz gerekiyor.",
+          variant: "destructive",
+        });
+        return;
       }
-      return [...prev, modeId];
-    });
+      setGameModes(gameModes.filter((id) => id !== modeId));
+    } else {
+      setGameModes([...gameModes, modeId]);
+    }
   };
 
   const createRoomMutation = useMutation({
@@ -217,21 +215,24 @@ export default function CreateRoom() {
                     const Icon = mode.icon;
                     const isSelected = gameModes.includes(mode.id);
                     return (
-                      <div
+                      <button
                         key={mode.id}
-                        onClick={() => toggleGameMode(mode.id)}
-                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleGameMode(mode.id);
+                        }}
+                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all w-full text-left ${
                           isSelected
                             ? "bg-primary/10 border border-primary/30"
                             : "bg-muted/50 border border-transparent hover-elevate"
                         }`}
                         data-testid={`checkbox-mode-${mode.id}`}
                       >
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleGameMode(mode.id)}
-                          className="pointer-events-none"
-                        />
+                        <div className={`h-4 w-4 shrink-0 rounded-sm border ${isSelected ? "bg-primary border-primary" : "border-primary"} flex items-center justify-center`}>
+                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                        </div>
                         <Icon className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-medium ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
@@ -241,7 +242,7 @@ export default function CreateRoom() {
                             {mode.description}
                           </p>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
