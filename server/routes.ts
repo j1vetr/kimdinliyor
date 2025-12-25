@@ -614,17 +614,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return;
     }
 
-    // Get owners with remaining content
-    const ownersWithContent: string[] = [];
-    const contentsByOwnerEntries = Array.from(gameState.contentsByOwner.entries());
-    for (const [owner, contentIds] of contentsByOwnerEntries) {
-      const unused = contentIds.filter((id: string) => !gameState.usedContentIds.has(id));
-      if (unused.length > 0) {
-        ownersWithContent.push(owner);
-      }
-    }
-
-    if (ownersWithContent.length === 0) {
+    // Get all room content for shared content selection
+    const allContents = await storage.getContentByRoom(room.id);
+    const unusedContents = allContents.filter(c => !gameState.usedContentIds.has(c.id));
+    
+    if (unusedContents.length === 0) {
       // No more content, end game
       gameState.status = "finished";
       await storage.updateRoom(room.id, { status: "finished" });
@@ -632,23 +626,54 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return;
     }
 
-    // Round-robin owner selection
-    gameState.lastOwnerIndex = (gameState.lastOwnerIndex + 1) % ownersWithContent.length;
-    const selectedOwner = ownersWithContent[gameState.lastOwnerIndex];
+    // Separate shared content (multiple users) from single-user content
+    const sharedContents = unusedContents.filter(c => c.sourceUserIds && c.sourceUserIds.length > 1);
+    const singleUserContents = unusedContents.filter(c => !c.sourceUserIds || c.sourceUserIds.length === 1);
     
-    // Get unused content from this owner
-    const ownerContentIds = gameState.contentsByOwner.get(selectedOwner) || [];
-    const unusedContentIds = ownerContentIds.filter(id => !gameState.usedContentIds.has(id));
+    let selectedContentId: string;
     
-    if (unusedContentIds.length === 0) {
-      // Try next owner
-      setTimeout(() => startNextRound(roomCode, room), 100);
-      return;
-    }
+    // 35% chance to select shared content if available (more fun when multiple players could be correct)
+    const useSharedContent = sharedContents.length > 0 && Math.random() < 0.35;
+    
+    if (useSharedContent) {
+      // Select random shared content
+      const randomIndex = Math.floor(Math.random() * sharedContents.length);
+      selectedContentId = sharedContents[randomIndex].id;
+    } else {
+      // Use round-robin owner selection for fair distribution
+      const ownersWithContent: string[] = [];
+      const contentsByOwnerEntries = Array.from(gameState.contentsByOwner.entries());
+      for (const [owner, contentIds] of contentsByOwnerEntries) {
+        const unused = contentIds.filter((id: string) => !gameState.usedContentIds.has(id));
+        if (unused.length > 0) {
+          ownersWithContent.push(owner);
+        }
+      }
 
-    // Select random content from this owner
-    const randomIndex = Math.floor(Math.random() * unusedContentIds.length);
-    const selectedContentId = unusedContentIds[randomIndex];
+      if (ownersWithContent.length === 0) {
+        // Fallback: select random from all unused
+        const randomIndex = Math.floor(Math.random() * unusedContents.length);
+        selectedContentId = unusedContents[randomIndex].id;
+      } else {
+        // Round-robin owner selection
+        gameState.lastOwnerIndex = (gameState.lastOwnerIndex + 1) % ownersWithContent.length;
+        const selectedOwner = ownersWithContent[gameState.lastOwnerIndex];
+        
+        // Get unused content from this owner
+        const ownerContentIds = gameState.contentsByOwner.get(selectedOwner) || [];
+        const unusedOwnerContentIds = ownerContentIds.filter(id => !gameState.usedContentIds.has(id));
+        
+        if (unusedOwnerContentIds.length === 0) {
+          // Fallback: select random from all unused
+          const randomIndex = Math.floor(Math.random() * unusedContents.length);
+          selectedContentId = unusedContents[randomIndex].id;
+        } else {
+          // Select random content from this owner
+          const randomIndex = Math.floor(Math.random() * unusedOwnerContentIds.length);
+          selectedContentId = unusedOwnerContentIds[randomIndex];
+        }
+      }
+    }
     
     gameState.usedContentIds.add(selectedContentId);
 
