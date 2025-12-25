@@ -339,19 +339,19 @@ export default function Home() {
                 {[
                   {
                     step: 1,
-                    title: "Oda oluştur",
+                    title: "Oda Oluştur",
                     desc: "Altı haneli kod ile yeni bir oyun odası aç veya arkadaşının kodunu gir.",
                     icon: Users,
                   },
                   {
                     step: 2,
-                    title: "YouTube hesabını bağla",
+                    title: "YouTube Hesabını Bağla",
                     desc: "Google ile giriş yap. Beğendiğin videolar ve aboneliklerin oyuna eklenir.",
                     icon: Youtube,
                   },
                   {
                     step: 3,
-                    title: "Tahmin et ve kazan!",
+                    title: "Tahmin Et ve Kazan!",
                     desc: "Her turda soruları cevapla, seri bonusu yakala ve liderliği al!",
                     icon: Trophy,
                   },
@@ -401,7 +401,7 @@ export default function Home() {
               }} />
               <div className="relative p-6 lg:p-8 text-center">
                 <h3 className="text-xl lg:text-2xl font-bold text-white mb-2">
-                  Hemen oynamaya başla!
+                  Hemen Oynamaya Başla!
                 </h3>
                 <p className="text-white/80 text-sm mb-5">
                   Arkadaşlarını topla ve YouTube yarışmasına katıl.
