@@ -134,11 +134,6 @@ export default function Home() {
       <main className="flex-1 relative z-10">
         <section className="py-12 md:py-16 px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary">
-              <SiYoutube className="h-4 w-4" />
-              <span>YouTube tabanlı çok oyunculu oyun</span>
-            </div>
-            
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               Arkadaşlarınla{" "}
               <span className="text-primary">YouTube</span>
