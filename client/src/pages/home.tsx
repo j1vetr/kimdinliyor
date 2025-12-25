@@ -201,16 +201,16 @@ export default function Home() {
 
             <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <SiYoutube className="h-4 w-4 text-red-500" />
-                <span>YouTube API</span>
-              </div>
-              <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span>2-10 Oyuncu</span>
+                <span>2-12 Oyuncu</span>
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4" />
                 <span>4 Oyun Modu</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4" />
+                <span>Seri Bonusları</span>
               </div>
             </div>
           </div>
