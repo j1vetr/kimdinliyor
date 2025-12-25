@@ -1,105 +1,151 @@
 import { Link } from "wouter";
-import { Users, Plus, Video, Play, Film, Tv, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube } from "lucide-react";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube, Sparkles, Play } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
 const GAME_MODES = [
   {
     id: "liked",
     title: "Kim Beğenmiş?",
-    description: "Ekrandaki videoyu hangi arkadaşın beğendiğini tahmin et.",
+    tagline: "Arkadaşını yakala!",
     icon: ThumbsUp,
-    color: "from-red-500/20 to-red-600/5",
-    iconColor: "text-red-500",
+    accent: "bg-red-500",
+    glow: "shadow-red-500/30",
   },
   {
     id: "subscribed",
     title: "Kim Abone?",
-    description: "Ekrandaki kanala hangi arkadaşın abone olduğunu tahmin et.",
+    tagline: "Kanalı bul, sahibini tahmin et!",
     icon: UserPlus,
-    color: "from-orange-500/20 to-orange-600/5",
-    iconColor: "text-orange-500",
+    accent: "bg-orange-500",
+    glow: "shadow-orange-500/30",
   },
   {
     id: "viewCount",
     title: "Sayı Tahmini",
-    description: "Videonun izlenme sayısını tahmin et. En yakın tahmin kazanır!",
+    tagline: "İzlenme sayısını bil!",
     icon: Eye,
-    color: "from-blue-500/20 to-blue-600/5",
-    iconColor: "text-blue-500",
+    accent: "bg-purple-500",
+    glow: "shadow-purple-500/30",
   },
   {
     id: "subscriberCount",
     title: "Abone Sayısı",
-    description: "Kanalın abone sayısını tahmin et. En yakın tahmin kazanır!",
+    tagline: "Kanalın gücünü ölç!",
     icon: UsersRound,
-    color: "from-green-500/20 to-green-600/5",
-    iconColor: "text-green-500",
+    accent: "bg-emerald-500",
+    glow: "shadow-emerald-500/30",
   },
 ];
 
-const HOW_TO_PLAY = [
-  {
-    step: 1,
-    title: "Oda Oluştur veya Katıl",
-    description: "Yeni bir oda oluştur veya arkadaşından aldığın oda koduyla mevcut bir odaya katıl.",
-    icon: Users,
-  },
-  {
-    step: 2,
-    title: "YouTube Hesabını Bağla",
-    description: "Google hesabınla giriş yap. Beğendiğin videolar ve aboneliklerin oyunda kullanılır.",
-    icon: Youtube,
-  },
-  {
-    step: 3,
-    title: "Tahmin Et ve Kazan",
-    description: "Her turda soruları cevapla, doğru tahminlerle puan topla ve birinci ol!",
-    icon: Trophy,
-  },
+const FAKE_PLAYERS = [
+  { name: "Ahmet", avatar: "🎮", status: "online" },
+  { name: "Zeynep", avatar: "🎵", status: "online" },
+  { name: "Can", avatar: "🎬", status: "playing" },
+  { name: "Elif", avatar: "🎤", status: "online" },
 ];
 
-function FloatingIcons() {
-  const icons = useMemo(() => {
-    const iconTypes = [Video, Play, Film, Tv, "youtube"];
-    return Array.from({ length: 12 }, (_, i) => ({
-      id: i,
-      type: iconTypes[i % iconTypes.length],
-      left: Math.random() * 100,
-      delay: Math.random() * 10,
-      duration: 15 + Math.random() * 20,
-      size: 16 + Math.random() * 24,
-      opacity: 0.02 + Math.random() * 0.02,
-    }));
+function WaveformBar({ delay = 0 }: { delay?: number }) {
+  return (
+    <div 
+      className="w-1 bg-primary rounded-full animate-waveform"
+      style={{ 
+        animationDelay: `${delay}ms`,
+        height: '100%',
+      }}
+    />
+  );
+}
+
+function LiveLobbyPreview() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex(prev => (prev + 1) % FAKE_PLAYERS.length);
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {icons.map((icon) => (
+    <div className="relative">
+      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 rounded-2xl blur-xl opacity-60" />
+      <div className="relative bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs font-medium text-green-500">Canlı Lobiler</span>
+          </div>
+          <span className="text-xs text-muted-foreground">12 aktif oda</span>
+        </div>
+        
+        <div className="space-y-2">
+          {FAKE_PLAYERS.map((player, i) => (
+            <div 
+              key={player.name}
+              className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-500 ${
+                i === activeIndex ? 'bg-primary/10 scale-[1.02]' : 'bg-muted/30'
+              }`}
+            >
+              <div className="text-lg">{player.avatar}</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{player.name}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {player.status === 'playing' ? 'Oyunda...' : 'Bekliyor'}
+                </p>
+              </div>
+              {i === activeIndex && (
+                <div className="flex items-center gap-0.5 h-4">
+                  <WaveformBar delay={0} />
+                  <WaveformBar delay={150} />
+                  <WaveformBar delay={300} />
+                  <WaveformBar delay={150} />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+          <span>Toplam 47 oyuncu</span>
+          <span className="text-primary font-medium">Şimdi Katıl</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FloatingThumbnails() {
+  const thumbnails = [
+    { id: 1, x: 10, y: 20, delay: 0, size: 60 },
+    { id: 2, x: 80, y: 15, delay: 2, size: 50 },
+    { id: 3, x: 25, y: 70, delay: 4, size: 45 },
+    { id: 4, x: 70, y: 65, delay: 1, size: 55 },
+    { id: 5, x: 50, y: 40, delay: 3, size: 40 },
+  ];
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {thumbnails.map((thumb) => (
         <div
-          key={icon.id}
-          className="absolute animate-float-up"
+          key={thumb.id}
+          className="absolute animate-float-slow opacity-[0.07]"
           style={{
-            left: `${icon.left}%`,
-            bottom: "-50px",
-            animationDelay: `${icon.delay}s`,
-            animationDuration: `${icon.duration}s`,
-            opacity: icon.opacity,
+            left: `${thumb.x}%`,
+            top: `${thumb.y}%`,
+            animationDelay: `${thumb.delay}s`,
           }}
         >
-          {icon.type === "youtube" ? (
-            <SiYoutube size={icon.size} className="text-red-500" />
-          ) : (
-            <icon.type
-              size={icon.size}
-              className="text-red-500"
-            />
-          )}
+          <div 
+            className="rounded-lg bg-primary/50 flex items-center justify-center"
+            style={{ width: thumb.size, height: thumb.size * 0.6 }}
+          >
+            <Play className="w-4 h-4 text-white/50" />
+          </div>
         </div>
       ))}
     </div>
@@ -124,181 +170,237 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
-      <FloatingIcons />
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
+      <div className="fixed inset-0 opacity-[0.015] pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+      }} />
       
-      <header className="flex items-center justify-center p-4 border-b border-border relative z-10">
-        <Logo height={72} />
+      <header className="flex items-center justify-between p-4 lg:px-8 relative z-10">
+        <Logo height={56} />
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="hidden sm:inline">47 oyuncu aktif</span>
+        </div>
       </header>
 
       <main className="flex-1 relative z-10">
-        <section className="py-16 md:py-24 px-4 relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+        <section className="min-h-[calc(100vh-80px)] flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-4 lg:px-16 py-8 lg:py-0 relative">
+          <FloatingThumbnails />
           
-          <div className="max-w-xl mx-auto relative">
-            <div className="text-center mb-10">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
-                Arkadaşlarınla{" "}
-                <span className="text-primary">YouTube</span>
-                {" "}Bilgi Yarışması
-              </h1>
-              <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-                YouTube hesabını bağla, arkadaşlarınla bir oda oluştur ve eğlenceli sorularla yarış!
-              </p>
+          <div className="flex-1 max-w-xl lg:max-w-lg space-y-6 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              Türkiye'nin İlk YouTube Oyunu
+            </div>
+            
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+              <span className="block">Arkadaşların</span>
+              <span className="block">
+                Ne{" "}
+                <span className="relative inline-block">
+                  <span className="relative z-10 text-primary">İzliyor?</span>
+                  <span className="absolute -inset-1 bg-primary/20 blur-lg rounded-lg" />
+                </span>
+              </span>
+            </h1>
+            
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-md mx-auto lg:mx-0">
+              YouTube hesabını bağla, arkadaşlarını davet et. Kim hangi videoyu beğenmiş, kime abone? Tahmin et, puan topla, eğlen!
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <Link href="/oda-olustur" className="group">
+                <Button 
+                  size="lg" 
+                  className="w-full sm:w-auto gap-2 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
+                  data-testid="button-create-room"
+                >
+                  <Plus className="h-5 w-5" />
+                  Oda Oluştur
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </Link>
+              
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Oda kodu"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  onKeyDown={handleKeyDown}
+                  maxLength={7}
+                  className="w-32 uppercase text-center font-mono tracking-widest"
+                  data-testid="input-room-code"
+                />
+                <Button
+                  onClick={handleJoinRoom}
+                  disabled={!roomCode.trim()}
+                  variant="outline"
+                  size="lg"
+                  data-testid="button-join-room"
+                >
+                  Katıl
+                </Button>
+              </div>
             </div>
 
-            <Card className="overflow-visible border border-border/50 bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-6 md:p-8 space-y-6">
-                <Link href="/oda-olustur" className="block group">
-                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-primary/80 p-[2px]">
-                    <div className="relative flex items-center justify-center gap-3 rounded-xl bg-primary px-6 py-4 transition-all group-hover:bg-primary/90">
-                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-white/20">
-                        <Plus className="h-6 w-6 text-primary-foreground" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-lg font-bold text-primary-foreground">Yeni Oda Oluştur</p>
-                        <p className="text-xs text-primary-foreground/80">Arkadaşlarını davet et ve oynamaya başla</p>
-                      </div>
-                      <ArrowRight className="h-5 w-5 text-primary-foreground ml-auto group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="bg-card px-4 text-sm text-muted-foreground">veya</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground text-center">
-                    Mevcut bir odaya katılmak için oda kodunu gir
-                  </p>
-                  <div className="flex gap-3">
-                    <Input
-                      placeholder="Oda kodunu gir"
-                      value={roomCode}
-                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                      onKeyDown={handleKeyDown}
-                      maxLength={7}
-                      className="flex-1 uppercase text-center font-mono text-lg tracking-widest h-12"
-                      data-testid="input-room-code"
-                    />
-                    <Button
-                      onClick={handleJoinRoom}
-                      disabled={!roomCode.trim()}
-                      size="lg"
-                      variant="secondary"
-                      className="h-12 px-6"
-                      data-testid="button-join-room"
-                    >
-                      Katıl
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 justify-center lg:justify-start text-sm text-muted-foreground pt-2">
+              <div className="flex items-center gap-1.5">
                 <Users className="h-4 w-4" />
-                <span>2-12 Oyuncu</span>
+                <span>2-12 kişi</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+              <div className="flex items-center gap-1.5">
                 <Zap className="h-4 w-4" />
-                <span>4 Oyun Modu</span>
+                <span>4 mod</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+              <div className="flex items-center gap-1.5">
                 <Trophy className="h-4 w-4" />
-                <span>Seri Bonusları</span>
+                <span>Seri bonus</span>
               </div>
             </div>
           </div>
+
+          <div className="w-full max-w-xs lg:max-w-sm hidden lg:block">
+            <LiveLobbyPreview />
+          </div>
         </section>
 
-        <section className="py-12 md:py-16 px-4 bg-muted/30">
+        <div className="relative h-24 -mt-12">
+          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+            <polygon fill="hsl(var(--muted) / 0.3)" points="0,100 100,0 100,100" />
+          </svg>
+        </div>
+
+        <section className="py-16 px-4 bg-muted/30 relative">
           <div className="max-w-5xl mx-auto">
-            <div className="text-center mb-10">
-              <div className="inline-flex items-center gap-2 text-primary mb-3">
-                <Zap className="h-5 w-5" />
-                <span className="text-sm font-medium uppercase tracking-wider">Oyun Modları</span>
-              </div>
-              <h2 className="text-2xl md:text-3xl font-bold">
-                4 Farklı Oyun Modu
-              </h2>
-              <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
-                Her mod YouTube verilerini farklı şekillerde kullanır.
-              </p>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-8 w-1 rounded-full bg-primary" />
+              <h2 className="text-2xl font-bold">Oyun Modları</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-              {GAME_MODES.map((mode) => {
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+              {GAME_MODES.map((mode, index) => {
                 const Icon = mode.icon;
                 return (
-                  <Card 
+                  <div 
                     key={mode.id}
-                    className="overflow-visible border-2 border-transparent hover:border-primary/20 transition-all duration-300"
+                    className={`group relative rounded-xl bg-card border border-border/50 p-4 lg:p-5 hover:border-border transition-all duration-300 hover:-translate-y-1 ${
+                      index % 2 === 0 ? '' : 'lg:translate-y-4'
+                    }`}
                   >
-                    <CardContent className="p-5 md:p-6">
-                      <div className="flex items-start gap-4">
-                        <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${mode.color} flex items-center justify-center shrink-0`}>
-                          <Icon className={`h-6 w-6 ${mode.iconColor}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold mb-1">{mode.title}</h3>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {mode.description}
-                          </p>
-                        </div>
+                    <div className={`absolute inset-0 rounded-xl ${mode.glow} shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                    <div className="relative">
+                      <div className={`inline-flex items-center justify-center h-10 w-10 rounded-lg ${mode.accent} mb-3`}>
+                        <Icon className="h-5 w-5 text-white" />
                       </div>
-                    </CardContent>
-                  </Card>
+                      <h3 className="font-bold text-sm lg:text-base mb-1">{mode.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {mode.tagline}
+                      </p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
           </div>
         </section>
 
-        <section className="py-12 md:py-16 px-4">
+        <section className="py-16 px-4 relative">
           <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl md:text-3xl font-bold mb-2">
-                Nasıl Oynanır?
-              </h2>
-              <p className="text-muted-foreground">
-                Sadece 3 adımda arkadaşlarınla oynamaya başla
-              </p>
-              <div className="flex items-center justify-center gap-2 mt-6">
-                <div className="h-1 w-8 rounded-full bg-primary/30" />
-                <div className="h-1 w-12 rounded-full bg-primary" />
-                <div className="h-1 w-8 rounded-full bg-primary/30" />
-              </div>
+            <div className="flex items-center gap-3 mb-10 justify-center">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border max-w-24" />
+              <h2 className="text-2xl font-bold">Nasıl Oynanır?</h2>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border max-w-24" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-              {HOW_TO_PLAY.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.step} className="text-center">
-                    <div className="relative inline-flex mb-4">
-                      <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <Icon className="h-8 w-8 text-primary" />
+            <div className="relative">
+              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-primary/50 to-transparent hidden md:block" />
+              
+              <div className="space-y-8 md:space-y-0">
+                {[
+                  {
+                    step: 1,
+                    title: "Oda Oluştur",
+                    desc: "6 haneli kod ile yeni bir oyun odası aç veya arkadaşının kodunu gir.",
+                    icon: Users,
+                  },
+                  {
+                    step: 2,
+                    title: "YouTube'u Bağla",
+                    desc: "Google ile giriş yap. Beğendiğin videolar ve aboneliklerin oyuna eklenir.",
+                    icon: Youtube,
+                  },
+                  {
+                    step: 3,
+                    title: "Tahmin Et, Kazan!",
+                    desc: "Her turda soruları cevapla, seri bonusu yakala ve liderliği al!",
+                    icon: Trophy,
+                  },
+                ].map((item, i) => (
+                  <div 
+                    key={item.step}
+                    className={`relative flex items-center gap-4 md:gap-8 ${
+                      i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
+                    }`}
+                  >
+                    <div className={`flex-1 ${i % 2 === 0 ? 'md:text-right' : 'md:text-left'}`}>
+                      <div className={`inline-block bg-card border border-border/50 rounded-xl p-4 lg:p-5 max-w-sm ${
+                        i % 2 === 0 ? 'md:ml-auto' : 'md:mr-auto'
+                      }`}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <item.icon className="h-4 w-4 text-primary" />
+                          </div>
+                          <h3 className="font-bold">{item.title}</h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {item.desc}
+                        </p>
                       </div>
-                      <div className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                    </div>
+                    
+                    <div className="hidden md:flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg z-10">
                         {item.step}
                       </div>
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </p>
+                    
+                    <div className="flex-1 hidden md:block" />
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-12 px-4">
+          <div className="max-w-xl mx-auto">
+            <div className="relative rounded-2xl overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-red-600" />
+              <div className="absolute inset-0 opacity-10" style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+              }} />
+              <div className="relative p-6 lg:p-8 text-center">
+                <h3 className="text-xl lg:text-2xl font-bold text-white mb-2">
+                  Hemen Oynamaya Başla!
+                </h3>
+                <p className="text-white/80 text-sm mb-5">
+                  Arkadaşlarını topla, YouTube yarışmasına katıl
+                </p>
+                <Link href="/oda-olustur">
+                  <Button 
+                    size="lg" 
+                    variant="secondary"
+                    className="font-semibold gap-2"
+                    data-testid="button-cta-create"
+                  >
+                    <SiYoutube className="h-5 w-5" />
+                    Oda Oluştur
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -351,6 +453,23 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <style>{`
+        @keyframes waveform {
+          0%, 100% { height: 4px; }
+          50% { height: 16px; }
+        }
+        .animate-waveform {
+          animation: waveform 0.6s ease-in-out infinite;
+        }
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(3deg); }
+        }
+        .animate-float-slow {
+          animation: float-slow 8s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
