@@ -10,7 +10,7 @@ export function Logo({ height = 32, className = "", showAnimation = true }: Logo
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       {showAnimation && (
-        <div className="absolute inset-0 -m-1.5 rounded-xl border border-primary/30 overflow-hidden">
+        <div className="absolute inset-0 -m-1.5 rounded-xl overflow-hidden">
           <div className="absolute bottom-0 left-0 right-0 flex items-end justify-around px-1 pb-0.5 gap-0.5">
             <div className="w-1 bg-primary/60 rounded-t-full animate-equalizer-1" style={{ height: '30%' }} />
             <div className="w-1 bg-primary/60 rounded-t-full animate-equalizer-2" style={{ height: '60%' }} />
