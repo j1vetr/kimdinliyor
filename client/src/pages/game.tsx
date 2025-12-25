@@ -606,28 +606,72 @@ export default function Game() {
 
               <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-1">
                 {isNumericMode ? (
-                  <div className="flex flex-col items-center justify-center h-full py-4">
-                    <div className="w-full max-w-xs space-y-3">
-                      <div className="text-center">
-                        <ModeIcon className="h-10 w-10 mx-auto text-primary/40 mb-2" />
+                  <div className="flex flex-col items-center justify-center h-full py-2">
+                    <div className="w-full max-w-sm space-y-3">
+                      <div className="text-center mb-2">
                         <p className="text-xs text-muted-foreground">
                           {gameMode === "view_count" ? "Videonun izlenme sayısı" : "Kanalın abone sayısı"}
                         </p>
                       </div>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Örnek: 1500000"
-                        value={numericAnswer}
-                        onChange={(e) => setNumericAnswer(e.target.value.replace(/[^0-9]/g, ''))}
-                        disabled={hasAnswered}
-                        className="text-center text-lg font-bold h-12"
-                        data-testid="input-numeric-answer"
-                      />
+                      
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { label: "10K", value: 10000 },
+                          { label: "50K", value: 50000 },
+                          { label: "100K", value: 100000 },
+                          { label: "250K", value: 250000 },
+                          { label: "500K", value: 500000 },
+                          { label: "1M", value: 1000000 },
+                          { label: "2.5M", value: 2500000 },
+                          { label: "5M", value: 5000000 },
+                          { label: "10M", value: 10000000 },
+                          { label: "25M", value: 25000000 },
+                          { label: "50M", value: 50000000 },
+                          { label: "100M", value: 100000000 },
+                        ].map((preset) => (
+                          <Button
+                            key={preset.value}
+                            variant={numericAnswer === String(preset.value) ? "default" : "outline"}
+                            size="sm"
+                            disabled={hasAnswered}
+                            onClick={() => setNumericAnswer(String(preset.value))}
+                            className="text-xs font-bold"
+                            data-testid={`button-preset-${preset.label}`}
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="veya özel sayı gir..."
+                          value={numericAnswer ? parseInt(numericAnswer).toLocaleString('tr-TR') : ''}
+                          onChange={(e) => setNumericAnswer(e.target.value.replace(/[^0-9]/g, ''))}
+                          disabled={hasAnswered}
+                          className="text-center text-sm font-bold flex-1"
+                          data-testid="input-numeric-answer"
+                        />
+                        {numericAnswer && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setNumericAnswer("")}
+                            disabled={hasAnswered}
+                            className="shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
                       {numericAnswer && (
-                        <p className="text-xs text-center text-muted-foreground">
-                          Tahminin: <span className="font-semibold text-foreground">{parseInt(numericAnswer).toLocaleString('tr-TR')}</span>
-                        </p>
+                        <div className="bg-muted/50 rounded-xl p-3 text-center">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Tahminin</p>
+                          <p className="text-xl font-bold text-primary">{parseInt(numericAnswer).toLocaleString('tr-TR')}</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -889,18 +933,33 @@ export default function Game() {
                               result.numericAnswer ? (
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                    result.tier === "perfect" || result.tier === "excellent" || result.tier === "good"
+                                    result.tier === "efsane" || result.tier === "harika" || result.tier === "iyi"
                                       ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                                      : result.tier === "close" || result.tier === "far"
+                                      : result.tier === "yakin" || result.tier === "uzak"
                                         ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
                                         : "bg-red-500/20 text-red-600 dark:text-red-400"
                                   }`}>
                                     {parseInt(result.numericAnswer).toLocaleString('tr-TR')}
                                   </span>
+                                  <Badge variant="outline" className={`text-[10px] py-0 ${
+                                    result.tier === "efsane" ? "border-purple-500/50 text-purple-500" :
+                                    result.tier === "harika" ? "border-green-500/50 text-green-500" :
+                                    result.tier === "iyi" ? "border-blue-500/50 text-blue-500" :
+                                    result.tier === "yakin" ? "border-yellow-500/50 text-yellow-500" :
+                                    result.tier === "uzak" ? "border-orange-500/50 text-orange-500" :
+                                    "border-red-500/50 text-red-500"
+                                  }`}>
+                                    {result.tier === "efsane" ? "Efsane!" :
+                                     result.tier === "harika" ? "Harika" :
+                                     result.tier === "iyi" ? "İyi" :
+                                     result.tier === "yakin" ? "Yakın" :
+                                     result.tier === "uzak" ? "Uzak" :
+                                     result.tier === "riskli" ? "Riskli" : "Kaçırdın"}
+                                  </Badge>
                                   {result.isBestGuess && (
                                     <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-500 border-yellow-500/40 text-[10px] py-0 gap-1">
                                       <Trophy className="h-2.5 w-2.5" />
-                                      En yakın tahmin
+                                      En yakın
                                     </Badge>
                                   )}
                                 </div>

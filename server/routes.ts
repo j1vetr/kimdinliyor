@@ -51,25 +51,29 @@ function scoreNumericGuess(actual: number, guess: number): NumericScoreResult {
   let tier: string;
   let isCorrectForStreak: boolean;
   
-  if (percentageError <= 1) {
-    basePoints = 5;
-    tier = "perfect";
-    isCorrectForStreak = true;
-  } else if (percentageError <= 5) {
-    basePoints = 4;
-    tier = "excellent";
+  if (percentageError <= 5) {
+    basePoints = 10;
+    tier = "efsane";
     isCorrectForStreak = true;
   } else if (percentageError <= 15) {
-    basePoints = 3;
-    tier = "good";
+    basePoints = 8;
+    tier = "harika";
     isCorrectForStreak = true;
-  } else if (percentageError <= 35) {
-    basePoints = 2;
-    tier = "close";
+  } else if (percentageError <= 30) {
+    basePoints = 6;
+    tier = "iyi";
+    isCorrectForStreak = true;
+  } else if (percentageError <= 50) {
+    basePoints = 4;
+    tier = "yakin";
     isCorrectForStreak = false;
-  } else if (percentageError <= 60) {
+  } else if (percentageError <= 80) {
+    basePoints = 2;
+    tier = "uzak";
+    isCorrectForStreak = false;
+  } else if (percentageError <= 150) {
     basePoints = 1;
-    tier = "far";
+    tier = "riskli";
     isCorrectForStreak = false;
   } else if (percentageError <= 200) {
     basePoints = 0;
