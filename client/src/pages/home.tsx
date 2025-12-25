@@ -219,6 +219,11 @@ export default function Home() {
               <p className="text-muted-foreground">
                 3 kolay adımda arkadaşlarınla oynamaya başla.
               </p>
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <div className="h-1 w-8 rounded-full bg-primary/30" />
+                <div className="h-1 w-12 rounded-full bg-primary" />
+                <div className="h-1 w-8 rounded-full bg-primary/30" />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
