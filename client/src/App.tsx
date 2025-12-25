@@ -10,6 +10,8 @@ import JoinRoom from "@/pages/join-room";
 import Lobby from "@/pages/lobby";
 import Game from "@/pages/game";
 import Results from "@/pages/results";
+import PrivacyPolicy from "@/pages/privacy-policy";
+import TermsOfService from "@/pages/terms-of-service";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +23,8 @@ function Router() {
       <Route path="/oyun/:code/lobi" component={Lobby} />
       <Route path="/oyun/:code/game" component={Game} />
       <Route path="/oyun/:code/results" component={Results} />
+      <Route path="/gizlilik-politikasi" component={PrivacyPolicy} />
+      <Route path="/kullanim-kosullari" component={TermsOfService} />
       <Route component={NotFound} />
     </Switch>
   );

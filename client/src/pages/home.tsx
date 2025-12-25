@@ -186,7 +186,20 @@ export default function Home() {
       </main>
 
       <footer className="p-4 border-t border-border relative z-10">
-        <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
+            <Link href="/gizlilik-politikasi">
+              <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-privacy">
+                Gizlilik Politikası
+              </span>
+            </Link>
+            <span className="text-border">|</span>
+            <Link href="/kullanim-kosullari">
+              <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-terms">
+                Kullanım Koşulları
+              </span>
+            </Link>
+          </div>
           <div className="flex items-center gap-1">
             <span>Geliştirici:</span>
             <a
