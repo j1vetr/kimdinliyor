@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Crown, Home, RotateCcw, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,8 @@ export default function Results() {
   const roomCode = params.code?.toUpperCase();
   const userId = localStorage.getItem("userId");
 
+  const hasSeenFinished = useRef(false);
+  
   const roomStatusQuery = useQuery<RoomInfo>({
     queryKey: ["/api/rooms", roomCode, "info"],
     queryFn: async () => {
@@ -48,7 +50,13 @@ export default function Results() {
   });
 
   useEffect(() => {
-    if (roomStatusQuery.data?.status === "waiting") {
+    const status = roomStatusQuery.data?.status;
+    
+    if (status === "finished") {
+      hasSeenFinished.current = true;
+    }
+    
+    if (status === "waiting" && hasSeenFinished.current) {
       setLocation(`/oyun/${roomCode}/lobi`);
     }
   }, [roomStatusQuery.data?.status, roomCode, setLocation]);
