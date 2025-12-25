@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, LogIn, Info } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, LogIn, Info, Zap, Timer, Check, ArrowRight } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
 import { PlayerCard } from "@/components/player-card";
 import { useToast } from "@/hooks/use-toast";
@@ -128,7 +129,7 @@ export default function Lobby() {
       } else {
         toast({
           title: "Hata",
-          description: "Google bağlantı URL'si alınamadı.",
+          description: "Google bağlantı adresi alınamadı.",
           variant: "destructive",
         });
       }
@@ -151,8 +152,8 @@ export default function Lobby() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("google_connected") === "true") {
       toast({
-        title: "YouTube Bağlandı",
-        description: "Google hesabınız başarıyla bağlandı.",
+        title: "YouTube bağlandı",
+        description: "Google hesabın başarıyla bağlandı.",
       });
       window.history.replaceState({}, "", window.location.pathname);
       queryClient.invalidateQueries({ queryKey: ["/api/google/status", userId] });
@@ -181,8 +182,8 @@ export default function Lobby() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: roomQuery.data?.name || "Kim Beğendi?",
-          text: "Kim Beğendi? oyununa katıl!",
+          title: roomQuery.data?.name || "Kim Dinliyor?",
+          text: "Kim Dinliyor? oyununa katıl!",
           url: shareUrl,
         });
       } catch {
@@ -204,7 +205,10 @@ export default function Lobby() {
   if (roomQuery.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Lobi yükleniyor...</p>
+        </div>
       </div>
     );
   }
@@ -216,14 +220,22 @@ export default function Lobby() {
           <Logo height={56} />
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md text-center p-8">
-            <h2 className="text-2xl font-bold mb-4">Oda Bulunamadı</h2>
-            <p className="text-muted-foreground mb-6">
-              Bu oda artık mevcut değil veya silinmiş olabilir.
-            </p>
-            <Link href="/">
-              <Button>Ana Sayfaya Dön</Button>
-            </Link>
+          <Card className="w-full max-w-md overflow-visible">
+            <CardContent className="p-8 text-center">
+              <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-destructive/10 mb-4">
+                <SiYoutube className="h-7 w-7 text-destructive" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Oda Bulunamadı</h2>
+              <p className="text-muted-foreground mb-6">
+                Bu oda artık mevcut değil veya silinmiş olabilir.
+              </p>
+              <Link href="/">
+                <Button className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Ana Sayfaya Dön
+                </Button>
+              </Link>
+            </CardContent>
           </Card>
         </main>
       </div>
@@ -248,82 +260,113 @@ export default function Lobby() {
         <header className="flex items-center justify-center p-4 border-b border-border">
           <Logo height={56} />
         </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">{room.name}</CardTitle>
-              <p className="text-muted-foreground">
-                {isFull ? "Bu lobi dolu" : "Lobiye katılmak için ismini gir"}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-center gap-4 p-4 rounded-lg bg-muted/50">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Oda Kodu</p>
-                  <p className="font-mono text-xl font-bold text-primary">{roomCode}</p>
-                </div>
-                <div className="h-10 w-px bg-border" />
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Oyuncular</p>
-                  <p className="text-xl font-bold">{playerCount}/{maxPlayers}</p>
-                </div>
+        <main className="flex-1 p-4 md:p-8">
+          <div className="max-w-lg mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
+                <Users className="h-7 w-7 text-primary" />
               </div>
+              <h1 className="text-2xl md:text-3xl font-bold mb-2">{room.name}</h1>
+              <p className="text-muted-foreground">
+                {isFull ? "Bu lobi şu anda dolu." : "Lobiye katılmak için bilgilerini gir."}
+              </p>
+            </div>
+
+            <Card className="overflow-visible mb-6">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex items-center justify-center gap-6">
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Oda Kodu</p>
+                    <p className="font-mono text-2xl font-bold text-primary">{roomCode}</p>
+                  </div>
+                  <div className="h-12 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Oyuncular</p>
+                    <p className="text-2xl font-bold">{playerCount}/{maxPlayers}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Zap className="h-4 w-4" />
+                    <span>{room.totalRounds} tur</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Timer className="h-4 w-4" />
+                    <span>{room.roundDuration} saniye</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
               
-              {!isFull && (
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Adını gir..."
-                    value={joinName}
-                    onChange={(e) => setJoinName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
-                    disabled={isJoining}
-                    data-testid="input-join-name"
-                  />
+            {!isFull && (
+              <Card className="overflow-visible mb-6">
+                <CardContent className="p-5 md:p-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="joinName" className="text-base font-semibold">Oyuncu Adın</Label>
+                    <Input
+                      id="joinName"
+                      placeholder="Örnek: Ahmet"
+                      value={joinName}
+                      onChange={(e) => setJoinName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
+                      disabled={isJoining}
+                      className="h-12 text-base"
+                      data-testid="input-join-name"
+                    />
+                  </div>
                   <Button
-                    className="w-full"
-                    size="lg"
+                    className="w-full h-12 text-base font-semibold gap-2"
                     onClick={handleQuickJoin}
                     disabled={!joinName.trim() || isJoining}
                     data-testid="button-quick-join"
                   >
                     {isJoining ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <Loader2 className="h-5 w-5 animate-spin" />
                         Katılınıyor...
                       </>
                     ) : (
                       <>
-                        <LogIn className="h-4 w-4 mr-2" />
                         Lobiye Katıl
+                        <ArrowRight className="h-5 w-5" />
                       </>
                     )}
                   </Button>
-                </div>
-              )}
+                </CardContent>
+              </Card>
+            )}
               
-              {isFull && (
-                <div className="text-center">
-                  <Link href="/">
-                    <Button variant="outline">Ana Sayfaya Dön</Button>
-                  </Link>
-                </div>
-              )}
+            {isFull && (
+              <div className="text-center">
+                <Link href="/">
+                  <Button variant="outline" className="gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    Ana Sayfaya Dön
+                  </Button>
+                </Link>
+              </div>
+            )}
               
-              {players.length > 0 && (
-                <div className="pt-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground mb-2">Lobideki oyuncular:</p>
+            {players.length > 0 && (
+              <Card className="overflow-visible">
+                <CardContent className="p-5 md:p-6">
+                  <p className="text-sm font-semibold mb-3">Lobideki Oyuncular</p>
                   <div className="flex flex-wrap gap-2">
                     {players.map((p) => (
-                      <Badge key={p.id} variant="secondary">
-                        {p.userId === room.hostUserId && <Crown className="h-3 w-3 mr-1" />}
+                      <Badge key={p.id} variant="secondary" className="gap-1 py-1.5 px-3">
+                        {p.userId === room.hostUserId && <Crown className="h-3 w-3 text-yellow-500" />}
                         {p.user.displayName}
+                        {p.user.googleConnected && (
+                          <Check className="h-3 w-3 text-green-500 ml-1" />
+                        )}
                       </Badge>
                     ))}
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </main>
       </div>
     );
@@ -340,187 +383,245 @@ export default function Lobby() {
           </Link>
           <Logo height={48} />
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="font-mono">
-            {roomCode}
+        {isHost && (
+          <Badge variant="secondary" className="gap-1">
+            <Crown className="h-3 w-3 text-yellow-500" />
+            Oda Sahibi
           </Badge>
-        </div>
+        )}
       </header>
 
-      <main className="flex-1 flex flex-col p-4 md:p-6 gap-4 max-w-4xl mx-auto w-full overflow-y-auto">
-        {/* Room Info Header - Compact */}
-        <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-card border border-border">
-          <div className="flex items-center gap-4">
-            <div className="font-mono text-2xl font-bold text-primary">{roomCode}</div>
-            <div className="h-6 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold" data-testid="text-player-count">{playerCount}/{maxPlayers}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={copyRoomCode} data-testid="button-copy-code">
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" onClick={shareRoom} data-testid="button-share">
-              <Share2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* YouTube/Google Status - Compact & Always Visible */}
-        {!googleStatusQuery.data?.connected ? (
-          <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-red-500/10 border border-red-500/30">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-500/20 flex items-center justify-center shrink-0">
-                <SiYoutube className="h-5 w-5 text-red-500" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">YouTube Bağlanmadı</p>
-                <p className="text-xs text-muted-foreground">Oyuna katılmak için Google ile bağlan</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                onClick={connectGoogle}
-                className="bg-white hover:bg-gray-100 text-gray-900 font-bold gap-2 border border-gray-300"
-                data-testid="button-connect-google"
-              >
-                <SiGoogle className="h-4 w-4" />
-                Google ile Bağlan
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-google-info">
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs text-center">
-                  <p>Giriş işlemi Google üzerinden güvenli şekilde gerçekleşir. Şifrenizi veya kişisel bilgilerinizi kaydetmiyoruz.</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-            <div className="flex items-center gap-3">
-              <div className="relative shrink-0">
-                <div className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                  <SiYoutube className="h-4 w-4 text-red-500" />
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-green-500 rounded-full flex items-center justify-center">
-                  <svg className="w-2 h-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              </div>
-              <span className="text-sm font-medium text-green-500">YouTube Bağlı</span>
-            </div>
-          </div>
-        )}
-
-        {/* Players List */}
-        <div className="flex-1 min-h-0 space-y-3">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Oyuncular
-          </h3>
-          <div className="grid gap-2">
-            {players.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">
-                  Henüz kimse katılmadı. Arkadaşlarını davet et!
-                </p>
-              </Card>
-            ) : (
-              players.map((player, index) => {
-                const isPlayerHost = player.userId === room.hostUserId;
-                const canKick = isHost && !isPlayerHost && room.status !== "playing";
-                
-                return (
-                  <div
-                    key={player.id}
-                    className={`animate-slide-up stagger-${Math.min(index + 1, 5)} flex items-center gap-2`}
-                    style={{ animationFillMode: "backwards" }}
-                  >
-                    <div className="flex-1">
-                      <PlayerCard
-                        player={{
-                          id: player.user.id,
-                          displayName: player.user.displayName,
-                          uniqueName: player.user.uniqueName,
-                          googleConnected: player.user.googleConnected || false,
-                          avatarUrl: player.user.avatarUrl || undefined,
-                          totalScore: player.totalScore || 0,
-                        }}
-                        isHost={isPlayerHost}
-                        showScore={false}
-                      />
-                    </div>
-                    {canKick && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive shrink-0"
-                        onClick={() => kickPlayerMutation.mutate(player.userId)}
-                        disabled={kickPlayerMutation.isPending}
-                        data-testid={`button-kick-${player.userId}`}
-                      >
-                        <UserX className="h-4 w-4" />
-                      </Button>
-                    )}
+      <main className="flex-1 p-4 md:p-6 overflow-y-auto">
+        <div className="max-w-2xl mx-auto space-y-4">
+          <Card className="overflow-visible">
+            <CardContent className="p-5 md:p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                    <SiYoutube className="h-6 w-6 text-primary" />
                   </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+                  <div>
+                    <h2 className="text-lg font-bold">{room.name}</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Oda Kodu: <span className="font-mono font-bold text-foreground">{roomCode}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={copyRoomCode} data-testid="button-copy-code">
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Kodu Kopyala</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" size="icon" onClick={shareRoom} data-testid="button-share">
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Paylaş</TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
 
-        {/* Start Game Button - Fixed at bottom */}
-        <div className="mt-auto pt-4 border-t border-border">
-          {isHost ? (
-            <div className="space-y-2">
-              <div className={`relative ${playerCount < 2 ? "p-[2px] rounded-lg overflow-hidden" : ""}`}>
-                {playerCount < 2 && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-yellow-500 to-red-500 animate-gradient-x rounded-lg" />
+              <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold" data-testid="text-player-count">{playerCount}/{maxPlayers}</span>
+                  <span className="text-muted-foreground">oyuncu</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Zap className="h-4 w-4" />
+                  <span>{room.totalRounds} tur</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Timer className="h-4 w-4" />
+                  <span>{room.roundDuration} saniye</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {!googleStatusQuery.data?.connected ? (
+            <Card className="overflow-visible border-red-500/30 bg-red-500/5">
+              <CardContent className="p-5 md:p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+                      <SiYoutube className="h-6 w-6 text-red-500" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">YouTube Bağlanmadı</p>
+                      <p className="text-sm text-muted-foreground">Oyuna katılmak için hesabını bağla.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      onClick={connectGoogle}
+                      className="bg-white hover:bg-gray-100 text-gray-900 font-semibold gap-2 border border-gray-300"
+                      data-testid="button-connect-google"
+                    >
+                      <SiGoogle className="h-4 w-4" />
+                      Bağlan
+                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" data-testid="button-google-info">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-center">
+                        <p>Giriş işlemi Google üzerinden güvenli şekilde gerçekleşir. Şifreni veya kişisel bilgilerini kaydetmiyoruz.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="overflow-visible border-green-500/30 bg-green-500/5">
+              <CardContent className="p-4 md:p-5">
+                <div className="flex items-center gap-3">
+                  <div className="relative shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                      <SiYoutube className="h-5 w-5 text-red-500" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-green-500 rounded-full flex items-center justify-center">
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-green-600 dark:text-green-400">YouTube Bağlı</p>
+                    <p className="text-xs text-muted-foreground">Hesabın başarıyla bağlandı.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="overflow-visible">
+            <CardContent className="p-5 md:p-6">
+              <h3 className="font-semibold flex items-center gap-2 mb-4">
+                <Users className="h-5 w-5 text-primary" />
+                Oyuncular ({playerCount}/{maxPlayers})
+              </h3>
+              <div className="space-y-2">
+                {players.length === 0 ? (
+                  <div className="p-6 text-center rounded-lg bg-muted/30">
+                    <p className="text-muted-foreground">
+                      Henüz kimse katılmadı. Arkadaşlarını davet et!
+                    </p>
+                  </div>
+                ) : (
+                  players.map((player, index) => {
+                    const isPlayerHost = player.userId === room.hostUserId;
+                    const canKick = isHost && !isPlayerHost && room.status !== "playing";
+                    
+                    return (
+                      <div
+                        key={player.id}
+                        className={`animate-slide-up stagger-${Math.min(index + 1, 5)} flex items-center gap-2`}
+                        style={{ animationFillMode: "backwards" }}
+                      >
+                        <div className="flex-1">
+                          <PlayerCard
+                            player={{
+                              id: player.user.id,
+                              displayName: player.user.displayName,
+                              uniqueName: player.user.uniqueName,
+                              googleConnected: player.user.googleConnected || false,
+                              avatarUrl: player.user.avatarUrl || undefined,
+                              totalScore: player.totalScore || 0,
+                            }}
+                            isHost={isPlayerHost}
+                            showScore={false}
+                          />
+                        </div>
+                        {canKick && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive shrink-0"
+                                onClick={() => kickPlayerMutation.mutate(player.userId)}
+                                disabled={kickPlayerMutation.isPending}
+                                data-testid={`button-kick-${player.userId}`}
+                              >
+                                <UserX className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Oyuncuyu At</TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="pt-2">
+            {isHost ? (
+              <div className="space-y-3">
                 <Button
-                  className={`w-full relative ${playerCount < 2 ? "bg-background" : ""}`}
+                  className="w-full h-14 text-lg font-semibold gap-3"
                   size="lg"
                   onClick={() => startGameMutation.mutate()}
                   disabled={!canStart || startGameMutation.isPending}
                   data-testid="button-start-game"
                 >
-                {startGameMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Başlatılıyor...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-5 w-5 mr-2" />
-                    {canStart
-                      ? "Oyunu Başlat"
-                      : playerCount < 2
-                        ? "En Az 2 Oyuncu Gerekli :("
-                        : `${disconnectedCount} Oyuncu YouTube'a Bağlanmalı`}
-                  </>
+                  {startGameMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Oyun başlatılıyor...
+                    </>
+                  ) : canStart ? (
+                    <>
+                      <Play className="h-5 w-5" />
+                      Oyunu Başlat
+                    </>
+                  ) : playerCount < 2 ? (
+                    <>
+                      <Users className="h-5 w-5" />
+                      En az 2 oyuncu gerekli
+                    </>
+                  ) : (
+                    <>
+                      <SiYoutube className="h-5 w-5" />
+                      {disconnectedCount} oyuncu YouTube'a bağlanmalı
+                    </>
+                  )}
+                </Button>
+                {!allGoogleConnected && playerCount >= 2 && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Tüm oyuncuların YouTube hesabını bağlaması gerekiyor.
+                  </p>
                 )}
-              </Button>
+                {playerCount < 2 && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    Oyunu başlatmak için en az 2 oyuncu gerekli.
+                  </p>
+                )}
               </div>
-              {!allGoogleConnected && playerCount >= 2 && (
-                <p className="text-sm text-center text-muted-foreground">
-                  Tüm oyuncuların YouTube hesabını bağlaması gerekiyor
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="text-center p-4 rounded-lg bg-muted/50">
-              <p className="text-muted-foreground">
-                Host'un oyunu başlatmasını bekliyorsunuz...
-              </p>
-            </div>
-          )}
+            ) : (
+              <Card className="overflow-visible">
+                <CardContent className="p-5 md:p-6 text-center">
+                  <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-primary/10 mb-3">
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                  </div>
+                  <p className="font-semibold mb-1">Oda sahibi bekleniyor</p>
+                  <p className="text-sm text-muted-foreground">
+                    Oda sahibinin oyunu başlatmasını bekliyorsun.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </main>
     </div>
