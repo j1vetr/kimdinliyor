@@ -1,8 +1,7 @@
 import { useParams, useLocation } from "wouter";
 import { useEffect, useRef } from "react";
-import { Crown, Home, RotateCcw, Loader2, Play } from "lucide-react";
+import { Crown, Home, RotateCcw, Loader2, Play, Trophy, Target, Flame, Star, Medal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -120,7 +119,10 @@ export default function Results() {
   if (resultsQuery.isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center space-y-3">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Sonuçlar yükleniyor...</p>
+        </div>
       </div>
     );
   }
@@ -128,13 +130,16 @@ export default function Results() {
   if (resultsQuery.isError || !resultsQuery.data) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center p-8">
-          <h2 className="text-2xl font-bold mb-4">Sonuçlar Bulunamadı</h2>
-          <p className="text-muted-foreground mb-6">
+        <div className="w-full max-w-md text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
+            <Trophy className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-2xl font-bold">Sonuçlar Bulunamadı</h2>
+          <p className="text-muted-foreground">
             Oyun sonuçlarına ulaşılamadı.
           </p>
           <Button onClick={() => setLocation("/")}>Ana Sayfaya Dön</Button>
-        </Card>
+        </div>
       </div>
     );
   }
@@ -146,97 +151,124 @@ export default function Results() {
   const third = sortedPlayers[2];
   const restPlayers = sortedPlayers.slice(3);
 
+  const getRankIcon = (rank: number) => {
+    if (rank === 1) return Crown;
+    if (rank === 2) return Medal;
+    if (rank === 3) return Star;
+    return Target;
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-500/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-red-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-yellow-500/10 to-amber-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-red-500/10 to-orange-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
+        <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-gradient-to-tr from-amber-500/8 to-yellow-500/3 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
       </div>
 
       <header className="relative z-10 flex items-center justify-center p-4 md:p-6">
         <Logo height={48} />
       </header>
 
-      <main className="relative z-10 flex-1 flex flex-col p-4 md:p-6 gap-6 max-w-3xl mx-auto w-full">
-        <div className="text-center space-y-1">
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-medium">
-            {results.roomName}
-          </p>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+      <main className="relative z-10 flex-1 flex flex-col p-4 md:p-6 gap-6 max-w-4xl mx-auto w-full">
+        <div className="text-center space-y-2 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Sparkles className="h-5 w-5 text-yellow-500 animate-pulse" />
+            <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+              {results.roomName}
+            </span>
+            <Sparkles className="h-5 w-5 text-yellow-500 animate-pulse" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 bg-clip-text text-transparent">
             Oyun Bitti
           </h1>
+          <p className="text-sm text-muted-foreground">
+            {results.totalRounds} tur tamamlandı
+          </p>
         </div>
 
         {sortedPlayers.length >= 1 && (
-          <div className="flex items-end justify-center gap-2 md:gap-4 pt-4 pb-2">
+          <div className="flex items-end justify-center gap-3 md:gap-6 pt-6 pb-4">
             {second && (
-              <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
-                <div className="relative mb-2">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden ring-4 ring-gray-400/30 shadow-xl">
+              <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+                <div className="relative mb-3">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                    <Medal className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <div className="w-18 h-18 md:w-22 md:h-22 rounded-2xl overflow-hidden ring-4 ring-gray-400/40 shadow-2xl shadow-gray-500/20">
                     {second.avatarUrl ? (
                       <img src={second.avatarUrl} alt={second.displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white text-xl md:text-2xl font-bold">
+                      <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white text-2xl md:text-3xl font-bold">
                         {second.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center text-gray-700 font-bold text-sm shadow-lg">
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center text-gray-700 font-black text-lg shadow-xl border-2 border-background">
                     2
                   </div>
                 </div>
-                <div className="bg-gradient-to-t from-gray-400/20 to-gray-300/10 border border-gray-400/30 rounded-t-2xl p-3 md:p-4 w-24 md:w-28 h-20 md:h-24 flex flex-col items-center justify-end">
-                  <p className="font-semibold text-sm truncate max-w-full">{second.displayName}</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-400">{second.totalScore}</p>
+                <div className="bg-gradient-to-t from-gray-500/20 via-gray-400/10 to-transparent border border-gray-400/30 rounded-t-3xl p-4 md:p-5 w-28 md:w-32 h-24 md:h-28 flex flex-col items-center justify-end backdrop-blur-sm">
+                  <p className="font-bold text-sm md:text-base truncate max-w-full">{second.displayName}</p>
+                  <p className="text-2xl md:text-3xl font-black bg-gradient-to-r from-gray-400 to-gray-500 bg-clip-text text-transparent">{second.totalScore}</p>
+                  <p className="text-[10px] text-muted-foreground">puan</p>
                 </div>
               </div>
             )}
 
             {winner && (
-              <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="relative mb-2">
-                  <Crown className="absolute -top-6 left-1/2 -translate-x-1/2 w-8 h-8 text-yellow-400 animate-bounce" style={{ animationDuration: '2s' }} />
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden ring-4 ring-yellow-400/50 shadow-2xl shadow-yellow-500/20">
+              <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div className="relative mb-3">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-10">
+                    <Crown className="h-10 w-10 text-yellow-400 drop-shadow-lg animate-bounce" style={{ animationDuration: '2s' }} />
+                  </div>
+                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden ring-4 ring-yellow-400/60 shadow-2xl shadow-yellow-500/30">
                     {winner.avatarUrl ? (
                       <img src={winner.avatarUrl} alt={winner.displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center text-white text-2xl md:text-3xl font-bold">
+                      <div className="w-full h-full bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center text-white text-3xl md:text-4xl font-bold">
                         {winner.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 flex items-center justify-center text-yellow-900 font-bold shadow-lg">
+                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 flex items-center justify-center text-yellow-900 font-black text-xl shadow-xl border-2 border-background">
                     1
                   </div>
                 </div>
-                <div className="bg-gradient-to-t from-yellow-500/20 to-yellow-400/10 border border-yellow-400/40 rounded-t-2xl p-3 md:p-4 w-28 md:w-32 h-28 md:h-32 flex flex-col items-center justify-end">
-                  <p className="font-bold text-base md:text-lg truncate max-w-full">{winner.displayName}</p>
-                  <p className="text-2xl md:text-3xl font-bold text-yellow-500">{winner.totalScore}</p>
+                <div className="bg-gradient-to-t from-yellow-500/25 via-yellow-400/10 to-transparent border border-yellow-400/50 rounded-t-3xl p-4 md:p-6 w-32 md:w-40 h-32 md:h-40 flex flex-col items-center justify-end backdrop-blur-sm shadow-lg shadow-yellow-500/10">
+                  <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/40 text-[10px] py-0 px-2 mb-2 gap-1">
+                    <Trophy className="h-3 w-3" /> Kazanan
+                  </Badge>
+                  <p className="font-black text-lg md:text-xl truncate max-w-full">{winner.displayName}</p>
+                  <p className="text-3xl md:text-4xl font-black bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 bg-clip-text text-transparent">{winner.totalScore}</p>
                   <p className="text-xs text-muted-foreground">puan</p>
                 </div>
               </div>
             )}
 
             {third && (
-              <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-                <div className="relative mb-2">
-                  <div className="w-14 h-14 md:w-18 md:h-18 rounded-2xl overflow-hidden ring-4 ring-amber-600/30 shadow-xl">
+              <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-700 delay-400">
+                <div className="relative mb-3">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                    <Star className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden ring-4 ring-amber-600/40 shadow-2xl shadow-amber-600/20">
                     {third.avatarUrl ? (
                       <img src={third.avatarUrl} alt={third.displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white text-lg md:text-xl font-bold">
+                      <div className="w-full h-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white text-xl md:text-2xl font-bold">
                         {third.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold text-xs shadow-lg">
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-white font-black text-base shadow-xl border-2 border-background">
                     3
                   </div>
                 </div>
-                <div className="bg-gradient-to-t from-amber-600/20 to-amber-500/10 border border-amber-600/30 rounded-t-2xl p-3 md:p-4 w-22 md:w-26 h-16 md:h-20 flex flex-col items-center justify-end">
-                  <p className="font-semibold text-xs md:text-sm truncate max-w-full">{third.displayName}</p>
-                  <p className="text-lg md:text-xl font-bold text-amber-600">{third.totalScore}</p>
+                <div className="bg-gradient-to-t from-amber-600/20 via-amber-500/10 to-transparent border border-amber-600/30 rounded-t-3xl p-4 md:p-5 w-24 md:w-28 h-20 md:h-24 flex flex-col items-center justify-end backdrop-blur-sm">
+                  <p className="font-bold text-xs md:text-sm truncate max-w-full">{third.displayName}</p>
+                  <p className="text-xl md:text-2xl font-black bg-gradient-to-r from-amber-500 to-amber-700 bg-clip-text text-transparent">{third.totalScore}</p>
+                  <p className="text-[10px] text-muted-foreground">puan</p>
                 </div>
               </div>
             )}
@@ -244,7 +276,7 @@ export default function Results() {
         )}
 
         {restPlayers.length > 0 && (
-          <div className="space-y-2 mt-2">
+          <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500">
             {restPlayers.map((player, index) => {
               const rank = index + 4;
               const isSelf = player.id === userId;
@@ -252,36 +284,51 @@ export default function Results() {
               return (
                 <div
                   key={player.id}
-                  className={`flex items-center gap-3 p-3 md:p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50 transition-all ${
-                    isSelf ? "ring-2 ring-red-500/30 bg-red-500/5" : ""
+                  className={`flex items-center gap-4 p-4 rounded-2xl bg-card/60 backdrop-blur-sm border transition-all ${
+                    isSelf 
+                      ? "border-red-500/40 bg-red-500/5 ring-1 ring-red-500/20" 
+                      : "border-border/50 hover:border-border"
                   }`}
                   data-testid={`scoreboard-row-${rank}`}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
-                    <span className="text-sm font-bold text-muted-foreground">{rank}</span>
+                  <div className="w-10 h-10 rounded-xl bg-muted/80 flex items-center justify-center shrink-0">
+                    <span className="text-base font-black text-muted-foreground">{rank}</span>
                   </div>
                   
-                  <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 ring-2 ring-border/50">
                     {player.avatarUrl ? (
                       <img src={player.avatarUrl} alt={player.displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center font-bold text-muted-foreground">
+                      <div className="w-full h-full bg-muted flex items-center justify-center font-bold text-lg text-muted-foreground">
                         {player.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {player.displayName}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-bold text-base truncate">{player.displayName}</p>
                       {isSelf && (
-                        <Badge variant="secondary" className="ml-2 text-xs">Sen</Badge>
+                        <Badge className="bg-red-500/20 text-red-500 border-red-500/30 text-xs">Sen</Badge>
                       )}
-                    </p>
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Target className="h-3 w-3 text-green-500" />
+                        {player.correctAnswers} doğru
+                      </span>
+                      {player.partialAnswers > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Flame className="h-3 w-3 text-yellow-500" />
+                          {player.partialAnswers} kısmi
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
-                  <div className="text-right shrink-0">
-                    <p className="text-lg font-bold">{player.totalScore}</p>
+                  <div className="text-right shrink-0 pl-3 border-l border-border/50">
+                    <p className="text-2xl font-black">{player.totalScore}</p>
+                    <p className="text-[10px] text-muted-foreground">puan</p>
                   </div>
                 </div>
               );
@@ -289,11 +336,10 @@ export default function Results() {
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-6">
+        <div className="flex flex-col sm:flex-row gap-3 mt-auto pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-700">
           <Button 
             variant="outline" 
-            className="flex-1" 
-            size="lg"
+            className="flex-1 h-12 text-sm font-semibold" 
             onClick={() => setLocation("/")}
             data-testid="button-home"
           >
@@ -302,8 +348,7 @@ export default function Results() {
           </Button>
           <Button 
             variant="outline"
-            className="flex-1" 
-            size="lg" 
+            className="flex-1 h-12 text-sm font-semibold" 
             onClick={() => returnToLobbyMutation.mutate()}
             disabled={returnToLobbyMutation.isPending}
             data-testid="button-return-lobby"
@@ -317,8 +362,7 @@ export default function Results() {
           </Button>
           {isHost ? (
             <Button 
-              className="flex-1 bg-red-500 hover:bg-red-600" 
-              size="lg" 
+              className="flex-1 h-12 text-sm font-bold bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/20" 
               onClick={() => rematchMutation.mutate()}
               disabled={rematchMutation.isPending}
               data-testid="button-rematch"
@@ -326,12 +370,13 @@ export default function Results() {
               {rematchMutation.isPending ? (
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
               ) : (
-                <Play className="h-5 w-5 mr-2" />
+                <Play className="h-5 w-5 mr-2 fill-current" />
               )}
               Tekrar Oyna
             </Button>
           ) : (
-            <div className="flex-1 text-center text-sm text-muted-foreground p-3 rounded-xl bg-muted/30 border border-border/50">
+            <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground p-3 rounded-2xl bg-muted/30 border border-border/50">
+              <Loader2 className="h-4 w-4 mr-2 animate-spin opacity-50" />
               Host yeni oyun başlatabilir
             </div>
           )}

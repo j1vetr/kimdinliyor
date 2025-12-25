@@ -337,29 +337,29 @@ export default function Game() {
           </div>
 
           <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-            <div className="lg:flex-1 flex flex-col p-3 lg:p-4 border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
-              <div className="mb-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5 gap-1">
+            <div className="lg:flex-1 flex flex-col p-3 lg:p-6 border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
+              <div className="mb-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs py-0.5 px-2 gap-1.5">
                     {content.contentType === "video" ? (
-                      <><Play className="h-2.5 w-2.5" /> Video</>
+                      <><Play className="h-3 w-3" /> Video</>
                     ) : (
-                      <><SiYoutube className="h-2.5 w-2.5" /> Kanal</>
+                      <><SiYoutube className="h-3 w-3" /> Kanal</>
                     )}
                   </Badge>
                   <button 
                     onClick={openYouTubeLink}
-                    className="text-[10px] text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                    className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
                   >
-                    <ExternalLink className="h-2.5 w-2.5" />
+                    <ExternalLink className="h-3 w-3" />
                     YouTube'da aç
                   </button>
                 </div>
-                <h2 className="text-sm font-bold leading-tight line-clamp-2" data-testid="text-content-title">
+                <h2 className="text-lg lg:text-xl font-bold leading-tight line-clamp-2 px-2" data-testid="text-content-title">
                   {content.title}
                 </h2>
                 {content.subtitle && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5" data-testid="text-content-subtitle">
+                  <p className="text-sm text-muted-foreground mt-1" data-testid="text-content-subtitle">
                     {content.subtitle}
                   </p>
                 )}
@@ -368,11 +368,11 @@ export default function Game() {
               <div className="flex-1 flex items-center justify-center">
                 {content.contentType === "video" ? (
                   <div 
-                    className="w-full max-w-md aspect-video rounded-lg overflow-hidden shadow-lg ring-2 ring-red-500/20"
+                    className="w-full max-w-3xl aspect-video rounded-xl overflow-hidden shadow-2xl ring-2 ring-red-500/30"
                     data-testid="video-player-container"
                   >
                     <iframe
-                      src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0`}
+                      src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=0&volume=20&controls=1&modestbranding=1&rel=0`}
                       title={content.title}
                       className="w-full h-full"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -382,7 +382,7 @@ export default function Game() {
                 ) : (
                   <button 
                     type="button"
-                    className="relative w-full max-w-xs aspect-square rounded-xl overflow-hidden shadow-lg ring-2 ring-red-500/20 group"
+                    className="relative w-full max-w-sm lg:max-w-md aspect-square rounded-2xl overflow-hidden shadow-2xl ring-2 ring-red-500/30 group"
                     onClick={openYouTubeLink}
                     data-testid="button-open-youtube"
                   >
@@ -395,12 +395,12 @@ export default function Game() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                        <SiYoutube className="w-16 h-16 text-red-500" />
+                        <SiYoutube className="w-20 h-20 text-red-500" />
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center">
-                        <Play className="h-6 w-6 text-white fill-white ml-0.5" />
+                      <div className="w-16 h-16 rounded-full bg-red-600 flex items-center justify-center">
+                        <Play className="h-8 w-8 text-white fill-white ml-0.5" />
                       </div>
                     </div>
                   </button>
@@ -543,187 +543,214 @@ export default function Game() {
       )}
 
       {gameStatus === "results" && content && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="relative flex items-center justify-center px-3 py-2 border-b border-border shrink-0">
-            <div className="absolute left-3">
-              <Badge variant="outline" className="text-xs py-0.5">
-                Tur {currentRound}/{totalRounds}
+        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-background to-background/95">
+          <header className="relative flex items-center justify-center px-4 py-3 border-b border-border/50 shrink-0 bg-background/80 backdrop-blur-sm">
+            <div className="absolute left-4">
+              <Badge variant="outline" className="text-xs py-0.5 px-2.5 gap-1.5 bg-background/50">
+                <span className="text-muted-foreground">Tur</span>
+                <span className="font-bold">{currentRound}/{totalRounds}</span>
               </Badge>
             </div>
             <Logo height={32} showAnimation={false} />
             {isLightningRound && (
-              <div className="absolute right-3">
-                <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-xs py-0.5">
-                  <Zap className="h-3 w-3 mr-1" />
+              <div className="absolute right-4">
+                <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-500 border-yellow-500/40 text-xs py-0.5 px-2.5 gap-1.5">
+                  <Zap className="h-3.5 w-3.5" />
                   2x Puan
                 </Badge>
               </div>
             )}
           </header>
 
-          <main className="flex-1 overflow-y-auto p-3 md:p-4">
-            <div className="max-w-2xl mx-auto space-y-3">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="max-w-2xl mx-auto space-y-5">
               <button 
                 type="button"
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors text-left group"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-red-500/40 hover:bg-card transition-all text-left group shadow-lg"
                 onClick={openYouTubeLink}
               >
-                <div className="relative w-16 h-12 rounded-lg overflow-hidden shrink-0 ring-1 ring-red-500/20">
+                <div className="relative w-20 h-14 md:w-24 md:h-16 rounded-xl overflow-hidden shrink-0 ring-2 ring-red-500/30 shadow-md">
                   {content.thumbnailUrl ? (
-                    <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
+                    <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-red-500/10">
-                      <SiYoutube className="w-5 h-5 text-red-500" />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
+                      <SiYoutube className="w-6 h-6 text-red-500" />
                     </div>
                   )}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    <ExternalLink className="h-5 w-5 text-white" />
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mb-0.5">
-                    {content.contentType === "video" ? "Video" : "Kanal"}
-                    <ExternalLink className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </p>
-                  <p className="text-sm font-semibold truncate">{content.title}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 gap-1">
+                      {content.contentType === "video" ? <><Play className="h-2.5 w-2.5" /> Video</> : <><SiYoutube className="h-2.5 w-2.5" /> Kanal</>}
+                    </Badge>
+                  </div>
+                  <p className="text-sm md:text-base font-bold line-clamp-2">{content.title}</p>
                 </div>
               </button>
 
-              <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30">
-                <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-2 flex items-center gap-1.5">
-                  <Check className="h-3.5 w-3.5" />
-                  Doğru Cevap
-                </p>
-                {isNumericMode && correctAnswer !== null ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-green-700 dark:text-green-300">
-                      {Number(correctAnswer).toLocaleString('tr-TR')}
-                    </span>
-                    <Badge variant="secondary" className="text-[10px] py-0 gap-1">
-                      {gameMode === "view_count" ? <><Eye className="h-2.5 w-2.5" /> izlenme</> : <><UsersRound className="h-2.5 w-2.5" /> abone</>}
-                    </Badge>
+              <div className="relative p-5 rounded-2xl bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/40 shadow-lg overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-green-500" />
+                    </div>
+                    <h3 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Doğru Cevap</h3>
                   </div>
-                ) : correctPlayerIds.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {allPlayers
-                      .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
-                      .map((player: any) => {
-                        const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
-                        const displayName = player.user?.displayName || player.displayName;
-                        return (
-                          <div key={player.userId || player.user?.id} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-500/20">
-                            {avatarUrl ? (
-                              <img src={avatarUrl} alt={displayName} className="w-5 h-5 rounded object-cover" />
-                            ) : (
-                              <div className="w-5 h-5 rounded bg-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-700 dark:text-green-300">
-                                {displayName?.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            <span className="text-xs font-medium text-green-700 dark:text-green-300">{displayName}</span>
-                          </div>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {content.contentType === "video" ? "Bu videoyu kimse beğenmemiş." : "Bu kanala kimse abone değil."}
-                  </p>
-                )}
+                  {isNumericMode && correctAnswer !== null ? (
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl md:text-4xl font-black text-green-600 dark:text-green-400">
+                        {Number(correctAnswer).toLocaleString('tr-TR')}
+                      </span>
+                      <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/40 text-xs py-1 px-2 gap-1.5">
+                        {gameMode === "view_count" ? <><Eye className="h-3 w-3" /> izlenme</> : <><UsersRound className="h-3 w-3" /> abone</>}
+                      </Badge>
+                    </div>
+                  ) : correctPlayerIds.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {allPlayers
+                        .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
+                        .map((player: any) => {
+                          const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
+                          const displayName = player.user?.displayName || player.displayName;
+                          return (
+                            <div key={player.userId || player.user?.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/20 backdrop-blur-sm border border-green-500/30">
+                              {avatarUrl ? (
+                                <img src={avatarUrl} alt={displayName} className="w-7 h-7 rounded-lg object-cover ring-1 ring-green-500/30" />
+                              ) : (
+                                <div className="w-7 h-7 rounded-lg bg-green-500/30 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-300">
+                                  {displayName?.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <span className="text-sm font-semibold text-green-700 dark:text-green-300">{displayName}</span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      {content.contentType === "video" ? "Bu videoyu kimse beğenmemiş." : "Bu kanala kimse abone değil."}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground px-1">
-                  {isNumericMode ? "Tahminler" : "Oyuncu Tahminleri"}
-                </p>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
+                    {isNumericMode ? "Tahminler" : "Oyuncu Tahminleri"}
+                  </h3>
+                  <Badge variant="outline" className="text-[10px] py-0 px-2">
+                    {roundResults.length} oyuncu
+                  </Badge>
+                </div>
                 
-                {roundResults.map((result) => {
+                {[...roundResults].sort((a, b) => b.score - a.score).map((result, index) => {
                   const isSelf = result.oderId === userId;
+                  const isTopScorer = index === 0 && result.score > 0;
                   
                   return (
                     <div 
                       key={result.oderId} 
-                      className={`p-3 rounded-xl border ${
+                      className={`relative p-4 rounded-2xl border backdrop-blur-sm transition-all ${
                         result.isCorrect 
-                          ? "bg-green-500/5 border-green-500/30" 
+                          ? "bg-green-500/10 border-green-500/40 shadow-green-500/5 shadow-lg" 
                           : result.isPartialCorrect 
-                            ? "bg-yellow-500/5 border-yellow-500/30"
-                            : "bg-card border-border"
-                      }`}
+                            ? "bg-yellow-500/10 border-yellow-500/40 shadow-yellow-500/5 shadow-lg"
+                            : "bg-card/60 border-border/50"
+                      } ${isSelf ? "ring-2 ring-red-500/30" : ""}`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <div className="shrink-0">
+                      {isTopScorer && (
+                        <div className="absolute -top-2 -right-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
+                            <Trophy className="h-4 w-4 text-yellow-900" />
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
                           {result.avatarUrl ? (
-                            <img src={result.avatarUrl} alt={result.displayName} className="w-8 h-8 rounded-lg object-cover" />
+                            <img src={result.avatarUrl} alt={result.displayName} className="w-12 h-12 rounded-xl object-cover ring-2 ring-border/50" />
                           ) : (
-                            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-xs font-bold">
+                            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-base font-bold">
                               {result.displayName?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {result.streak >= 3 && (
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+                              <Flame className="h-3 w-3 text-white" />
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-sm font-semibold truncate">{result.displayName}</span>
-                            {isSelf && <Badge variant="secondary" className="text-[10px] py-0">Sen</Badge>}
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-base font-bold truncate">{result.displayName}</span>
+                            {isSelf && <Badge className="bg-red-500/20 text-red-500 border-red-500/30 text-[10px] py-0">Sen</Badge>}
                             {result.streak >= 3 && (
-                              <Badge className="bg-orange-500/20 text-orange-600 border-orange-500/30 text-[10px] py-0 gap-0.5">
+                              <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-500 border-orange-500/30 text-[10px] py-0 gap-1">
                                 <Flame className="h-2.5 w-2.5" />
-                                {result.streak}
+                                {result.streak} seri
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
                             {isNumericMode ? (
                               result.numericAnswer ? (
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
                                     result.tier === "perfect" || result.tier === "excellent" || result.tier === "good"
-                                      ? "bg-green-500/20 text-green-700 dark:text-green-300"
+                                      ? "bg-green-500/20 text-green-600 dark:text-green-400"
                                       : result.tier === "close" || result.tier === "far"
-                                        ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-300"
-                                        : "bg-red-500/20 text-red-700 dark:text-red-300"
+                                        ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                                        : "bg-red-500/20 text-red-600 dark:text-red-400"
                                   }`}>
                                     {parseInt(result.numericAnswer).toLocaleString('tr-TR')}
                                   </span>
                                   {result.isBestGuess && (
-                                    <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-[10px] py-0 gap-0.5">
+                                    <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-500 border-yellow-500/40 text-[10px] py-0 gap-1">
                                       <Trophy className="h-2.5 w-2.5" />
-                                      En yakın
+                                      En yakın tahmin
                                     </Badge>
                                   )}
                                 </div>
                               ) : (
-                                <span className="italic">Cevap vermedi</span>
+                                <span className="italic text-muted-foreground/60">Cevap vermedi</span>
                               )
                             ) : result.selectedUserIds.length > 0 ? (
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {result.selectedUserIds.map((selectedId, idx) => {
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {result.selectedUserIds.map((selectedId) => {
                                   const isCorrectSelection = correctPlayerIds.includes(selectedId);
                                   const selectedName = getPlayerName(selectedId);
                                   
                                   return (
-                                    <span key={selectedId} className="inline-flex items-center">
-                                      {idx > 0 && <span className="mx-0.5 text-muted-foreground">,</span>}
-                                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                                        isCorrectSelection 
-                                          ? "bg-green-500/20 text-green-700 dark:text-green-300" 
-                                          : "bg-red-500/20 text-red-700 dark:text-red-300"
-                                      }`}>
-                                        {selectedName}
-                                        {isCorrectSelection ? <Check className="h-2.5 w-2.5" /> : <X className="h-2.5 w-2.5" />}
-                                      </span>
+                                    <span key={selectedId} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${
+                                      isCorrectSelection 
+                                        ? "bg-green-500/20 text-green-600 dark:text-green-400" 
+                                        : "bg-red-500/20 text-red-600 dark:text-red-400"
+                                    }`}>
+                                      {selectedName}
+                                      {isCorrectSelection ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                                     </span>
                                   );
                                 })}
                               </div>
                             ) : (
-                              <span className="italic">Cevap vermedi</span>
+                              <span className="italic text-muted-foreground/60">Cevap vermedi</span>
                             )}
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className={`text-sm font-bold ${
-                            result.score > 0 ? "text-green-600 dark:text-green-400" : result.score < 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+                        <div className="text-right shrink-0 pl-3 border-l border-border/50">
+                          <div className={`text-xl font-black ${
+                            result.score > 0 ? "text-green-500" : result.score < 0 ? "text-red-500" : "text-muted-foreground"
                           }`}>
                             {result.score > 0 && "+"}{result.score}
                           </div>
-                          <div className="text-[10px] text-muted-foreground">Toplam: {result.totalScore}</div>
+                          <div className="text-xs text-muted-foreground font-medium">
+                            Toplam: <span className="font-bold text-foreground">{result.totalScore}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -731,9 +758,11 @@ export default function Game() {
                 })}
               </div>
 
-              <div className="flex items-center justify-center gap-2 py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Sonraki tur 5 saniye içinde başlıyor...</span>
+              <div className="flex items-center justify-center gap-3 py-6">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="text-sm font-medium text-muted-foreground">Sonraki tur 5 saniye içinde başlıyor...</span>
+                </div>
               </div>
             </div>
           </main>
