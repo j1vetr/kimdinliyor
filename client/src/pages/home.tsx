@@ -12,7 +12,7 @@ const GAME_MODES = [
   {
     id: "liked",
     title: "Kim Beğenmiş?",
-    description: "Gösterilen videoyu hangi arkadaşın beğendiğini tahmin et",
+    description: "Ekrandaki videoyu hangi arkadaşın beğendiğini tahmin et.",
     icon: ThumbsUp,
     color: "from-red-500/20 to-red-600/5",
     iconColor: "text-red-500",
@@ -20,7 +20,7 @@ const GAME_MODES = [
   {
     id: "subscribed",
     title: "Kim Abone?",
-    description: "Bu kanala hangi arkadaşın abone olduğunu bul",
+    description: "Ekrandaki kanala hangi arkadaşın abone olduğunu tahmin et.",
     icon: UserPlus,
     color: "from-orange-500/20 to-orange-600/5",
     iconColor: "text-orange-500",
@@ -28,7 +28,7 @@ const GAME_MODES = [
   {
     id: "viewCount",
     title: "Sayı Tahmini",
-    description: "Videonun izlenme sayısını tahmin et, en yakın kazanır",
+    description: "Videonun izlenme sayısını tahmin et. En yakın tahmin kazanır!",
     icon: Eye,
     color: "from-blue-500/20 to-blue-600/5",
     iconColor: "text-blue-500",
@@ -36,7 +36,7 @@ const GAME_MODES = [
   {
     id: "subscriberCount",
     title: "Abone Sayısı",
-    description: "Kanalın abone sayısını tahmin et, en yakın kazanır",
+    description: "Kanalın abone sayısını tahmin et. En yakın tahmin kazanır!",
     icon: UsersRound,
     color: "from-green-500/20 to-green-600/5",
     iconColor: "text-green-500",
@@ -47,19 +47,19 @@ const HOW_TO_PLAY = [
   {
     step: 1,
     title: "Oda Oluştur veya Katıl",
-    description: "Arkadaşlarınla oynamak için yeni bir oda oluştur veya mevcut bir odaya katıl",
+    description: "Yeni bir oda oluştur veya arkadaşının paylaştığı oda kodunu girerek katıl.",
     icon: Users,
   },
   {
     step: 2,
     title: "YouTube Hesabını Bağla",
-    description: "Google hesabınla giriş yap, beğenilerin ve aboneliklerin oyunda kullanılacak",
+    description: "Google hesabınla giriş yap. Beğendiğin videolar ve aboneliklerin oyunda kullanılacak.",
     icon: Youtube,
   },
   {
     step: 3,
     title: "Tahmin Et ve Kazan",
-    description: "Her turda soruları cevapla, doğru tahminlerle puan topla ve birinci ol",
+    description: "Her turda soruları cevapla, doğru tahminlerle puan topla ve birinci ol!",
     icon: Trophy,
   },
 ];
@@ -136,7 +136,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary">
               <SiYoutube className="h-4 w-4" />
-              <span>YouTube tabanlı multiplayer oyun</span>
+              <span>YouTube tabanlı çok oyunculu oyun</span>
             </div>
             
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
@@ -147,8 +147,8 @@ export default function Home() {
             </h1>
             
             <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              YouTube hesabını bağla, arkadaşlarınla oda kur ve eğlenceli sorularla 
-              birbirinizi ne kadar tanıdığınızı test edin!
+              YouTube hesabını bağla, arkadaşlarınla bir oda oluştur ve eğlenceli sorularla 
+              birbirinizi ne kadar iyi tanıdığınızı test edin!
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -183,7 +183,7 @@ export default function Home() {
                 4 Farklı Oyun Modu
               </h2>
               <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
-                Her biri farklı bir YouTube verisi üzerinden sorular sorar
+                Her mod farklı YouTube verileri üzerinden sorular sorar.
               </p>
             </div>
 
@@ -222,7 +222,7 @@ export default function Home() {
                 Nasıl Oynanır?
               </h2>
               <p className="text-muted-foreground">
-                3 kolay adımda arkadaşlarınla oynamaya başla
+                3 kolay adımda arkadaşlarınla oynamaya başla.
               </p>
             </div>
 
@@ -257,7 +257,7 @@ export default function Home() {
                 Hemen Başla
               </h2>
               <p className="text-muted-foreground">
-                Yeni oda oluştur veya mevcut bir odaya katıl
+                Yeni bir oda oluştur veya mevcut bir odaya katıl.
               </p>
             </div>
 
@@ -276,7 +276,7 @@ export default function Home() {
                           Yeni Oda Oluştur
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Oyun modlarını seç ve arkadaşlarını davet et
+                          Oyun modlarını seç ve arkadaşlarını davet et.
                         </p>
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
@@ -294,7 +294,7 @@ export default function Home() {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-semibold">Odaya Katıl</h3>
                       <p className="text-sm text-muted-foreground">
-                        Arkadaşından aldığın oda kodunu gir
+                        Arkadaşından aldığın oda kodunu gir.
                       </p>
                     </div>
                   </div>
@@ -334,7 +334,7 @@ export default function Home() {
                   <h4 className="font-medium text-sm mb-1">Google ile Güvenli Giriş</h4>
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     YouTube verilerine erişim için Google hesabınla giriş yapman gerekiyor. 
-                    Sadece beğendiğin videolar ve abone olduğun kanallar oyunda kullanılır.
+                    Sadece beğendiğin videolar ve abone olduğun kanallar oyunda kullanılacak.
                   </p>
                 </div>
               </div>
