@@ -212,8 +212,8 @@ export default function Home() {
         <Logo height={72} />
       </header>
 
-      <main className="flex-1 relative z-10">
-        <section className="min-h-[calc(100vh-120px)] flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-4 lg:px-16 py-8 lg:py-0 relative">
+      <main className="flex-1 relative z-10 flex flex-col">
+        <section className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-4 lg:px-16 py-12 lg:py-0 relative">
           <FloatingThumbnails />
           
           <div className="flex-1 max-w-xl lg:max-w-lg space-y-6 text-center lg:text-left">
@@ -263,20 +263,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 justify-center lg:justify-start text-sm text-muted-foreground pt-2">
-              <div className="flex items-center gap-1.5">
-                <Users className="h-4 w-4" />
-                <span>2-12 kişi</span>
+            <div className="flex items-center gap-2 justify-center lg:justify-start pt-4 flex-wrap">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium">2-12 Kişi</span>
               </div>
-              <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />
-              <div className="flex items-center gap-1.5">
-                <Zap className="h-4 w-4" />
-                <span>4 mod</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-xs font-medium">4 Mod</span>
               </div>
-              <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />
-              <div className="flex items-center gap-1.5">
-                <Trophy className="h-4 w-4" />
-                <span>Seri bonus</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                <Trophy className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-xs font-medium">Seri Bonus</span>
               </div>
             </div>
           </div>
