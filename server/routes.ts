@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideos, getSubscriptions, getUserProfile } from "./youtube";
+import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile } from "./youtube";
 import type { Room, RoomPlayer, Content } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -472,9 +472,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             }
           }
 
-          // Fetch liked videos and subscriptions
-          const likedVideos = await getLikedVideos(token.accessToken, 50);
-          const subscriptions = await getSubscriptions(token.accessToken, 50);
+          // Fetch liked videos and subscriptions with stats (viewCount, subscriberCount)
+          const likedVideos = await getLikedVideosWithStats(token.accessToken, 50);
+          const subscriptions = await getSubscriptionsWithStats(token.accessToken, 50);
           
           console.log(`[GAME START] Fetched ${likedVideos.length} liked videos and ${subscriptions.length} subscriptions for player ${player.userId}`);
           
@@ -523,14 +523,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             subtitle: type === "video" ? content.channelTitle : content.subscriberCount,
             thumbnailUrl: content.thumbnailUrl,
             sourceUserIds: users,
+            viewCount: type === "video" ? content.viewCount : null,
+            subscriberCount: type === "channel" ? content.subscriberCount : null,
           });
         }
       } else {
         // Create demo content if no YouTube content available
         const demoContent = [
-          { id: "demo1", title: "Demo Video 1", subtitle: "Demo Channel", type: "video" },
-          { id: "demo2", title: "Demo Video 2", subtitle: "Demo Channel", type: "video" },
-          { id: "demo3", title: "Demo Kanal 1", subtitle: "1M abone", type: "channel" },
+          { id: "demo1", title: "Demo Video 1", subtitle: "Demo Channel", type: "video", viewCount: "1500000", subscriberCount: null },
+          { id: "demo2", title: "Demo Video 2", subtitle: "Demo Channel", type: "video", viewCount: "2300000", subscriberCount: null },
+          { id: "demo3", title: "Demo Kanal 1", subtitle: "1M abone", type: "channel", viewCount: null, subscriberCount: "1000000" },
         ];
 
         for (const content of demoContent) {
@@ -546,6 +548,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             subtitle: content.subtitle,
             thumbnailUrl: null,
             sourceUserIds: users,
+            viewCount: content.viewCount,
+            subscriberCount: content.subscriberCount,
           });
         }
       }

@@ -606,52 +606,23 @@ export default function Game() {
 
               <div className="flex-1 overflow-y-auto min-h-0 space-y-1.5 pr-1">
                 {isNumericMode ? (
-                  <div className="flex flex-col items-center justify-center h-full py-2">
+                  <div className="flex flex-col items-center justify-start py-2">
                     <div className="w-full max-w-sm space-y-3">
-                      <div className="text-center mb-2">
+                      <div className="text-center">
                         <p className="text-xs text-muted-foreground">
-                          {gameMode === "view_count" ? "Videonun izlenme sayısı" : "Kanalın abone sayısı"}
+                          {gameMode === "view_count" ? "Videonun izlenme sayısını tahmin et" : "Kanalın abone sayısını tahmin et"}
                         </p>
                       </div>
                       
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[
-                          { label: "10K", value: 10000 },
-                          { label: "50K", value: 50000 },
-                          { label: "100K", value: 100000 },
-                          { label: "250K", value: 250000 },
-                          { label: "500K", value: 500000 },
-                          { label: "1M", value: 1000000 },
-                          { label: "2.5M", value: 2500000 },
-                          { label: "5M", value: 5000000 },
-                          { label: "10M", value: 10000000 },
-                          { label: "25M", value: 25000000 },
-                          { label: "50M", value: 50000000 },
-                          { label: "100M", value: 100000000 },
-                        ].map((preset) => (
-                          <Button
-                            key={preset.value}
-                            variant={numericAnswer === String(preset.value) ? "default" : "outline"}
-                            size="sm"
-                            disabled={hasAnswered}
-                            onClick={() => setNumericAnswer(String(preset.value))}
-                            className="text-xs font-bold"
-                            data-testid={`button-preset-${preset.label}`}
-                          >
-                            {preset.label}
-                          </Button>
-                        ))}
-                      </div>
-
                       <div className="flex items-center gap-2">
                         <Input
                           type="text"
                           inputMode="numeric"
-                          placeholder="veya özel sayı gir..."
+                          placeholder="Sayı gir (örn: 1500000)"
                           value={numericAnswer ? parseInt(numericAnswer).toLocaleString('tr-TR') : ''}
                           onChange={(e) => setNumericAnswer(e.target.value.replace(/[^0-9]/g, ''))}
                           disabled={hasAnswered}
-                          className="text-center text-sm font-bold flex-1"
+                          className="text-center text-base font-bold flex-1 h-12"
                           data-testid="input-numeric-answer"
                         />
                         {numericAnswer && (
