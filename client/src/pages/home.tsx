@@ -132,69 +132,85 @@ export default function Home() {
       </header>
 
       <main className="flex-1 relative z-10">
-        <section className="py-12 md:py-20 px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
-              Arkadaşlarınla{" "}
-              <span className="text-primary">YouTube</span>
-              <br />
-              Bilgi Yarışması
-            </h1>
-            
-            <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              YouTube hesabını bağla, arkadaşlarınla bir oda oluştur ve eğlenceli sorularla 
-              birbirinizi ne kadar iyi tanıdığınızı test edin!
-            </p>
+        <section className="py-16 md:py-24 px-4 relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+          
+          <div className="max-w-xl mx-auto relative">
+            <div className="text-center mb-10">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
+                Arkadaşlarınla{" "}
+                <span className="text-primary">YouTube</span>
+                {" "}Bilgi Yarışması
+              </h1>
+              <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+                YouTube hesabını bağla, arkadaşlarınla oda oluştur ve birbirinizi ne kadar iyi tanıdığınızı test edin!
+              </p>
+            </div>
 
-            <div className="max-w-md mx-auto pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="overflow-visible border border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardContent className="p-6 md:p-8 space-y-6">
                 <Link href="/oda-olustur" className="block">
-                  <Card className="h-full hover-elevate active-elevate-2 cursor-pointer group overflow-visible border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 bg-primary/5">
-                    <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-                      <div className="h-14 w-14 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-                        <Plus className="h-7 w-7 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
-                          Oda Oluştur
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Yeni oyun başlat
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <Button 
+                    size="lg" 
+                    className="w-full gap-3 text-base h-14 text-lg font-semibold"
+                    data-testid="button-create-room"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Yeni Oda Oluştur
+                  </Button>
                 </Link>
 
-                <Card className="h-full overflow-visible border-2 border-transparent">
-                  <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-                    <div className="h-14 w-14 rounded-xl bg-secondary flex items-center justify-center">
-                      <Users className="h-7 w-7 text-foreground" />
-                    </div>
-                    <div className="w-full">
-                      <h3 className="text-lg font-semibold">Odaya Katıl</h3>
-                      <div className="flex gap-2 mt-3">
-                        <Input
-                          placeholder="Oda kodu"
-                          value={roomCode}
-                          onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                          onKeyDown={handleKeyDown}
-                          maxLength={7}
-                          className="uppercase text-center font-mono tracking-widest"
-                          data-testid="input-room-code"
-                        />
-                        <Button
-                          onClick={handleJoinRoom}
-                          disabled={!roomCode.trim()}
-                          size="icon"
-                          data-testid="button-join-room"
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-card px-4 text-sm text-muted-foreground">veya</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Arkadaşının paylaştığı oda kodunu gir
+                  </p>
+                  <div className="flex gap-3">
+                    <Input
+                      placeholder="Oda kodu gir"
+                      value={roomCode}
+                      onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                      onKeyDown={handleKeyDown}
+                      maxLength={7}
+                      className="flex-1 uppercase text-center font-mono text-lg tracking-widest h-12"
+                      data-testid="input-room-code"
+                    />
+                    <Button
+                      onClick={handleJoinRoom}
+                      disabled={!roomCode.trim()}
+                      size="lg"
+                      variant="secondary"
+                      className="h-12 px-6"
+                      data-testid="button-join-room"
+                    >
+                      Katıl
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <SiYoutube className="h-4 w-4 text-red-500" />
+                <span>YouTube API</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>2-10 Oyuncu</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                <span>4 Oyun Modu</span>
               </div>
             </div>
           </div>
