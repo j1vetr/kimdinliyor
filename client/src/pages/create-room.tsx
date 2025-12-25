@@ -109,15 +109,13 @@ export default function CreateRoom() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <Logo height={48} />
-        </div>
+      <header className="relative flex items-center justify-center p-4 border-b border-border">
+        <Link href="/" className="absolute left-4">
+          <Button variant="ghost" size="icon" data-testid="button-back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <Logo height={48} />
       </header>
 
       <main className="flex-1 p-4 md:p-8">

@@ -295,15 +295,14 @@ export default function Game() {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {gameStatus === "question" && content && (
         <>
-          <header className="flex items-center justify-between px-3 py-2 bg-background border-b border-border shrink-0">
-            <div className="flex items-center gap-2">
-              <Logo height={32} />
-              <div className="h-4 w-px bg-border" />
-              <span className="text-xs font-medium text-muted-foreground">
+          <header className="relative flex items-center justify-center px-3 py-2 bg-background border-b border-border shrink-0">
+            <div className="absolute left-3 flex items-center gap-2">
+              <Badge variant="outline" className="text-xs py-0.5">
                 Tur {currentRound}/{totalRounds}
-              </span>
+              </Badge>
             </div>
-            <div className="flex items-center gap-2">
+            <Logo height={32} showAnimation={false} />
+            <div className="absolute right-3 flex items-center gap-1.5">
               {isLightningRound && (
                 <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-xs py-0.5">
                   <Zap className="h-3 w-3 mr-1" />
@@ -545,18 +544,20 @@ export default function Game() {
 
       {gameStatus === "results" && content && (
         <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
-            <div className="flex items-center gap-2">
-              <Logo height={32} />
+          <header className="relative flex items-center justify-center px-3 py-2 border-b border-border shrink-0">
+            <div className="absolute left-3">
               <Badge variant="outline" className="text-xs py-0.5">
                 Tur {currentRound}/{totalRounds}
               </Badge>
             </div>
+            <Logo height={32} showAnimation={false} />
             {isLightningRound && (
-              <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-xs py-0.5">
-                <Zap className="h-3 w-3 mr-1" />
-                2x Puan
-              </Badge>
+              <div className="absolute right-3">
+                <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30 text-xs py-0.5">
+                  <Zap className="h-3 w-3 mr-1" />
+                  2x Puan
+                </Badge>
+              </div>
             )}
           </header>
 
