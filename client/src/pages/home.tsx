@@ -1,11 +1,13 @@
 import { Link } from "wouter";
-import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube, Sparkles, Play } from "lucide-react";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube, Play } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+
+const ROTATING_WORDS = ["İzliyor", "Dinliyor", "Beğeniyor", "Takip Ediyor"];
 
 const GAME_MODES = [
   {
@@ -43,10 +45,10 @@ const GAME_MODES = [
 ];
 
 const FAKE_PLAYERS = [
-  { name: "Ahmet", avatar: "🎮", status: "online" },
-  { name: "Zeynep", avatar: "🎵", status: "online" },
-  { name: "Can", avatar: "🎬", status: "playing" },
-  { name: "Elif", avatar: "🎤", status: "online" },
+  { name: "Ahmet", avatar: "A", status: "online" },
+  { name: "Zeynep", avatar: "Z", status: "online" },
+  { name: "Can", avatar: "C", status: "playing" },
+  { name: "Elif", avatar: "E", status: "online" },
 ];
 
 function WaveformBar({ delay = 0 }: { delay?: number }) {
@@ -58,6 +60,35 @@ function WaveformBar({ delay = 0 }: { delay?: number }) {
         height: '100%',
       }}
     />
+  );
+}
+
+function RotatingWord() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex(prev => (prev + 1) % ROTATING_WORDS.length);
+        setIsAnimating(false);
+      }, 400);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span className="relative inline-block">
+      <span 
+        className={`relative z-10 text-primary transition-all duration-400 ${
+          isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
+        }`}
+      >
+        {ROTATING_WORDS[currentIndex]}?
+      </span>
+      <span className="absolute -inset-1 bg-primary/20 blur-lg rounded-lg" />
+    </span>
   );
 }
 
@@ -78,7 +109,7 @@ function LiveLobbyPreview() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-medium text-green-500">Canlı Lobiler</span>
+            <span className="text-xs font-medium text-green-500">Canlı lobiler</span>
           </div>
           <span className="text-xs text-muted-foreground">12 aktif oda</span>
         </div>
@@ -91,11 +122,13 @@ function LiveLobbyPreview() {
                 i === activeIndex ? 'bg-primary/10 scale-[1.02]' : 'bg-muted/30'
               }`}
             >
-              <div className="text-lg">{player.avatar}</div>
+              <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
+                {player.avatar}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{player.name}</p>
                 <p className="text-[10px] text-muted-foreground">
-                  {player.status === 'playing' ? 'Oyunda...' : 'Bekliyor'}
+                  {player.status === 'playing' ? 'Oyunda' : 'Bekliyor'}
                 </p>
               </div>
               {i === activeIndex && (
@@ -110,9 +143,8 @@ function LiveLobbyPreview() {
           ))}
         </div>
         
-        <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Toplam 47 oyuncu</span>
-          <span className="text-primary font-medium">Şimdi Katıl</span>
+        <div className="pt-2 border-t border-border/50 flex items-center justify-center">
+          <span className="text-primary font-medium text-xs">Hemen katıl</span>
         </div>
       </div>
     </div>
@@ -176,32 +208,19 @@ export default function Home() {
         backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
       }} />
       
-      <header className="flex items-center justify-between p-4 lg:px-8 relative z-10">
-        <Logo height={56} />
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="hidden sm:inline">47 oyuncu aktif</span>
-        </div>
+      <header className="flex items-center justify-center p-6 relative z-10">
+        <Logo height={72} />
       </header>
 
       <main className="flex-1 relative z-10">
-        <section className="min-h-[calc(100vh-80px)] flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-4 lg:px-16 py-8 lg:py-0 relative">
+        <section className="min-h-[calc(100vh-120px)] flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-4 lg:px-16 py-8 lg:py-0 relative">
           <FloatingThumbnails />
           
           <div className="flex-1 max-w-xl lg:max-w-lg space-y-6 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-              Türkiye'nin İlk YouTube Oyunu
-            </div>
-            
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
               <span className="block">Arkadaşların</span>
               <span className="block">
-                Ne{" "}
-                <span className="relative inline-block">
-                  <span className="relative z-10 text-primary">İzliyor?</span>
-                  <span className="absolute -inset-1 bg-primary/20 blur-lg rounded-lg" />
-                </span>
+                Ne <RotatingWord />
               </span>
             </h1>
             
@@ -209,7 +228,7 @@ export default function Home() {
               YouTube hesabını bağla, arkadaşlarını davet et. Kim hangi videoyu beğenmiş, kime abone? Tahmin et, puan topla, eğlen!
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-center lg:justify-start">
               <Link href="/oda-olustur" className="group">
                 <Button 
                   size="lg" 
@@ -222,21 +241,21 @@ export default function Home() {
                 </Button>
               </Link>
               
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Input
                   placeholder="Oda kodu"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                   onKeyDown={handleKeyDown}
                   maxLength={7}
-                  className="w-32 uppercase text-center font-mono tracking-widest"
+                  className="flex-1 sm:w-28 uppercase text-center font-mono tracking-widest h-10"
                   data-testid="input-room-code"
                 />
                 <Button
                   onClick={handleJoinRoom}
                   disabled={!roomCode.trim()}
                   variant="outline"
-                  size="lg"
+                  className="h-10"
                   data-testid="button-join-room"
                 >
                   Katıl
@@ -322,19 +341,19 @@ export default function Home() {
                 {[
                   {
                     step: 1,
-                    title: "Oda Oluştur",
-                    desc: "6 haneli kod ile yeni bir oyun odası aç veya arkadaşının kodunu gir.",
+                    title: "Oda oluştur",
+                    desc: "Altı haneli kod ile yeni bir oyun odası aç veya arkadaşının kodunu gir.",
                     icon: Users,
                   },
                   {
                     step: 2,
-                    title: "YouTube'u Bağla",
+                    title: "YouTube hesabını bağla",
                     desc: "Google ile giriş yap. Beğendiğin videolar ve aboneliklerin oyuna eklenir.",
                     icon: Youtube,
                   },
                   {
                     step: 3,
-                    title: "Tahmin Et, Kazan!",
+                    title: "Tahmin et ve kazan!",
                     desc: "Her turda soruları cevapla, seri bonusu yakala ve liderliği al!",
                     icon: Trophy,
                   },
@@ -384,10 +403,10 @@ export default function Home() {
               }} />
               <div className="relative p-6 lg:p-8 text-center">
                 <h3 className="text-xl lg:text-2xl font-bold text-white mb-2">
-                  Hemen Oynamaya Başla!
+                  Hemen oynamaya başla!
                 </h3>
                 <p className="text-white/80 text-sm mb-5">
-                  Arkadaşlarını topla, YouTube yarışmasına katıl
+                  Arkadaşlarını topla ve YouTube yarışmasına katıl.
                 </p>
                 <Link href="/oda-olustur">
                   <Button 
