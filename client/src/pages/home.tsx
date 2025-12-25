@@ -47,13 +47,13 @@ const HOW_TO_PLAY = [
   {
     step: 1,
     title: "Oda Oluştur veya Katıl",
-    description: "Yeni bir oda oluştur veya arkadaşının paylaştığı oda kodunu girerek katıl.",
+    description: "Yeni bir oda oluştur veya arkadaşından aldığın oda koduyla mevcut bir odaya katıl.",
     icon: Users,
   },
   {
     step: 2,
     title: "YouTube Hesabını Bağla",
-    description: "Google hesabınla giriş yap. Beğendiğin videolar ve aboneliklerin oyunda kullanılacak.",
+    description: "Google hesabınla giriş yap. Beğendiğin videolar ve aboneliklerin oyunda kullanılır.",
     icon: Youtube,
   },
   {
@@ -143,21 +143,25 @@ export default function Home() {
                 {" "}Bilgi Yarışması
               </h1>
               <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-                YouTube hesabını bağla, arkadaşlarınla oda oluştur ve birbirinizi ne kadar iyi tanıdığınızı test edin!
+                YouTube hesabını bağla, arkadaşlarınla bir oda oluştur ve eğlenceli sorularla yarış!
               </p>
             </div>
 
             <Card className="overflow-visible border border-border/50 bg-card/80 backdrop-blur-sm">
               <CardContent className="p-6 md:p-8 space-y-6">
-                <Link href="/oda-olustur" className="block">
-                  <Button 
-                    size="lg" 
-                    className="w-full gap-3 text-base h-14 text-lg font-semibold"
-                    data-testid="button-create-room"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Yeni Oda Oluştur
-                  </Button>
+                <Link href="/oda-olustur" className="block group">
+                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-primary/80 p-[2px]">
+                    <div className="relative flex items-center justify-center gap-3 rounded-xl bg-primary px-6 py-4 transition-all group-hover:bg-primary/90">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-white/20">
+                        <Plus className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-lg font-bold text-primary-foreground">Yeni Oda Oluştur</p>
+                        <p className="text-xs text-primary-foreground/80">Arkadaşlarını davet et ve oynamaya başla</p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-primary-foreground ml-auto group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
                 </Link>
 
                 <div className="relative">
@@ -171,11 +175,11 @@ export default function Home() {
 
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground text-center">
-                    Mevcut bir odaya katılmak için kodu gir
+                    Mevcut bir odaya katılmak için oda kodunu gir
                   </p>
                   <div className="flex gap-3">
                     <Input
-                      placeholder="Oda kodu gir"
+                      placeholder="Oda kodunu gir"
                       value={roomCode}
                       onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                       onKeyDown={handleKeyDown}
@@ -227,7 +231,7 @@ export default function Home() {
                 4 Farklı Oyun Modu
               </h2>
               <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
-                Her mod farklı YouTube verileri üzerinden sorular sorar.
+                Her mod YouTube verilerini farklı şekillerde kullanır.
               </p>
             </div>
 
@@ -266,7 +270,7 @@ export default function Home() {
                 Nasıl Oynanır?
               </h2>
               <p className="text-muted-foreground">
-                3 kolay adımda arkadaşlarınla oynamaya başla.
+                Sadece 3 adımda arkadaşlarınla oynamaya başla
               </p>
               <div className="flex items-center justify-center gap-2 mt-6">
                 <div className="h-1 w-8 rounded-full bg-primary/30" />
