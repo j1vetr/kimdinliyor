@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound, Check, Sparkles, ArrowRight, Play } from "lucide-react";
+import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound, Check, ArrowRight, Play } from "lucide-react";
+import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,10 +14,10 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const GAME_MODE_OPTIONS = [
-  { id: "who_liked", label: "Kim Beğenmiş?", description: "Bu videoyu kim beğendi?", icon: ThumbsUp, color: "from-red-500/20 to-red-600/10", iconColor: "text-red-500" },
-  { id: "who_subscribed", label: "Kim Abone?", description: "Bu kanala kim abone?", icon: UserPlus, color: "from-orange-500/20 to-orange-600/10", iconColor: "text-orange-500" },
-  { id: "view_count", label: "Sayı Tahmini", description: "İzlenme sayısını tahmin et", icon: Eye, color: "from-blue-500/20 to-blue-600/10", iconColor: "text-blue-500" },
-  { id: "subscriber_count", label: "Abone Sayısı", description: "Abone sayısını tahmin et", icon: UsersRound, color: "from-green-500/20 to-green-600/10", iconColor: "text-green-500" },
+  { id: "who_liked", label: "Kim Beğenmiş?", description: "Videoyu hangi oyuncu beğenmiş?", icon: ThumbsUp, color: "from-red-500/20 to-red-600/10", iconColor: "text-red-500" },
+  { id: "who_subscribed", label: "Kim Abone?", description: "Kanala hangi oyuncu abone?", icon: UserPlus, color: "from-orange-500/20 to-orange-600/10", iconColor: "text-orange-500" },
+  { id: "view_count", label: "Sayı Tahmini", description: "Videonun izlenme sayısını tahmin et.", icon: Eye, color: "from-blue-500/20 to-blue-600/10", iconColor: "text-blue-500" },
+  { id: "subscriber_count", label: "Abone Sayısı", description: "Kanalın abone sayısını tahmin et.", icon: UsersRound, color: "from-green-500/20 to-green-600/10", iconColor: "text-green-500" },
 ] as const;
 
 export default function CreateRoom() {
@@ -36,7 +37,7 @@ export default function CreateRoom() {
       if (gameModes.length === 1) {
         toast({
           title: "En az bir mod seçili olmalı",
-          description: "Oyun için en az bir oyun modu seçmelisiniz.",
+          description: "Oyun için en az bir oyun modu seçmelisin.",
           variant: "destructive",
         });
         return;
@@ -66,7 +67,7 @@ export default function CreateRoom() {
     onError: (error: Error) => {
       toast({
         title: "Hata",
-        description: error.message || "Oda oluşturulamadı. Lütfen tekrar deneyin.",
+        description: error.message || "Oda oluşturulamadı. Lütfen tekrar dene.",
         variant: "destructive",
       });
     },
@@ -78,7 +79,7 @@ export default function CreateRoom() {
     if (!roomName.trim()) {
       toast({
         title: "Oda adı gerekli",
-        description: "Lütfen odanız için bir ad girin.",
+        description: "Lütfen odan için bir ad gir.",
         variant: "destructive",
       });
       return;
@@ -87,7 +88,7 @@ export default function CreateRoom() {
     if (!isPublic && !password.trim()) {
       toast({
         title: "Şifre gerekli",
-        description: "Özel odalar için şifre belirlemelisiniz.",
+        description: "Şifreli odalar için bir şifre belirlemelisin.",
         variant: "destructive",
       });
       return;
@@ -123,11 +124,11 @@ export default function CreateRoom() {
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
-              <Sparkles className="h-7 w-7 text-primary" />
+              <SiYoutube className="h-7 w-7 text-primary" />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Yeni Oda Oluştur</h1>
             <p className="text-muted-foreground">
-              Odanı özelleştir ve arkadaşlarınla oynamaya başla
+              Odanı özelleştir ve arkadaşlarınla oynamaya başla.
             </p>
           </div>
 
@@ -138,7 +139,7 @@ export default function CreateRoom() {
                   <Label htmlFor="roomName" className="text-base font-semibold">Oda Adı</Label>
                   <Input
                     id="roomName"
-                    placeholder="Örneğin: Müzik Gecesi"
+                    placeholder="Örnek: Müzik Gecesi"
                     value={roomName}
                     onChange={(e) => setRoomName(e.target.value)}
                     maxLength={30}
@@ -146,7 +147,7 @@ export default function CreateRoom() {
                     data-testid="input-room-name"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Odanızı tanımlayan kısa bir ad girin
+                    Odanı tanımlayan kısa bir ad gir.
                   </p>
                 </div>
               </CardContent>
@@ -202,7 +203,7 @@ export default function CreateRoom() {
                     })}
                   </div>
                   <p className="text-xs text-muted-foreground mt-3">
-                    {gameModes.length} mod seçildi. Seçilen modlar rastgele oynanır.
+                    {gameModes.length} mod seçildi. Oyun sırasında bu modlar rastgele oynanır.
                   </p>
                 </div>
               </CardContent>
@@ -335,8 +336,8 @@ export default function CreateRoom() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {isPublic
-                          ? "Oda kodunu bilen herkes katılabilir"
-                          : "Katılmak için şifre gerekli"}
+                          ? "Oda kodunu bilen herkes katılabilir."
+                          : "Odaya katılmak için şifre gereklidir."}
                       </p>
                     </div>
                   </div>
@@ -353,7 +354,7 @@ export default function CreateRoom() {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="Şifrenizi girin"
+                      placeholder="Şifreni gir"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-12"
@@ -385,7 +386,7 @@ export default function CreateRoom() {
                 )}
               </Button>
               <p className="text-center text-xs text-muted-foreground mt-3">
-                Odayı oluşturduktan sonra arkadaşlarını davet edebilirsin
+                Odayı oluşturduktan sonra arkadaşlarını davet edebilirsin.
               </p>
             </div>
           </form>
