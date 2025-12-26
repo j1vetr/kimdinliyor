@@ -187,7 +187,7 @@ export default function JoinRoom() {
                         <SiYoutube className="h-7 w-7 text-white" />
                       </motion.div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-primary font-medium mb-1">Canlı Yayın</p>
+                        <p className="text-xs text-primary font-medium mb-1">Aktif Oda</p>
                         <h2 className="text-xl font-bold truncate">{room?.name || "Oda"}</h2>
                       </div>
                       <div className="text-right">
@@ -239,7 +239,7 @@ export default function JoinRoom() {
                       <Mic2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold">Sahne Adın</h2>
+                      <h2 className="text-lg font-bold">Oyuncu Adın</h2>
                       <p className="text-xs text-muted-foreground">Diğer Oyunculara Görünecek İsim</p>
                     </div>
                   </div>
@@ -422,7 +422,7 @@ export default function JoinRoom() {
                         />
                       </div>
                       <div>
-                        <p className="text-xs text-emerald-500 font-medium">Canlı</p>
+                        <p className="text-xs text-emerald-500 font-medium">Aktif</p>
                         <p className="font-bold">Lobi Bekliyor</p>
                       </div>
                     </div>
@@ -457,7 +457,7 @@ export default function JoinRoom() {
                       <div className="h-px bg-border/50" />
 
                       <div className="text-center">
-                        <p className="text-xs text-muted-foreground mb-2">Sahne Adın</p>
+                        <p className="text-xs text-muted-foreground mb-2">Oyuncu Adın</p>
                         <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
                           <p className="font-bold text-lg truncate">
                             {displayName || "..."}

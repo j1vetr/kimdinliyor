@@ -198,7 +198,7 @@ export default function CreateRoom() {
                       <Radio className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold">Yayın Adı</h2>
+                      <h2 className="text-lg font-bold">Oda Adı</h2>
                       <p className="text-xs text-muted-foreground">Odanı Tanımlayan Kısa Bir Ad</p>
                     </div>
                   </div>

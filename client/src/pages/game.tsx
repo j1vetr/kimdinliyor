@@ -437,7 +437,7 @@ export default function Game() {
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
               >
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span className="text-xs font-semibold text-primary">Canlı</span>
+                <span className="text-xs font-semibold text-primary">Oyun</span>
               </motion.div>
               <div className="h-6 w-px bg-border/50" />
               <div className="flex items-center gap-2">
@@ -964,7 +964,7 @@ export default function Game() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
             >
               <div className="h-2 w-2 rounded-full bg-primary" />
-              <span className="text-xs font-medium text-primary">Canlı Yayın</span>
+              <span className="text-xs font-medium text-primary">Aktif Oyun</span>
             </motion.div>
           </div>
 
@@ -995,7 +995,7 @@ export default function Game() {
               </div>
               <div className="flex items-center gap-2">
                 <Radio className="h-3 w-3" />
-                <span>Yayın Hazırlanıyor</span>
+                <span>Oda Hazırlanıyor</span>
               </div>
             </div>
           </div>
@@ -1024,8 +1024,8 @@ export default function Game() {
                       <Tv className="h-8 w-8 text-primary" />
                     </div>
                   </motion.div>
-                  <h2 className="text-2xl font-bold mb-2">Stüdyo Hazırlanıyor</h2>
-                  <p className="text-sm text-muted-foreground">Yayın Birkaç Saniye İçinde Başlayacak</p>
+                  <h2 className="text-2xl font-bold mb-2">Oda Hazırlanıyor</h2>
+                  <p className="text-sm text-muted-foreground">Oyun Birkaç Saniye İçinde Başlayacak</p>
                 </motion.div>
               )}
 
@@ -1123,7 +1123,7 @@ export default function Game() {
                     transition={{ delay: 0.2 }}
                     className="text-3xl font-black mt-6 text-emerald-500"
                   >
-                    Yayındayız!
+                    Başlıyoruz!
                   </motion.h2>
                   <motion.p 
                     initial={{ opacity: 0 }}

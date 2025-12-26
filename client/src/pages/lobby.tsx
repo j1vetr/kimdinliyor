@@ -356,7 +356,7 @@ export default function Lobby() {
                       <Mic2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold">Sahne Adın</h2>
+                      <h2 className="text-lg font-bold">Oyuncu Adın</h2>
                       <p className="text-xs text-muted-foreground">Diğer Oyunculara Görünecek İsim</p>
                     </div>
                   </div>
@@ -457,7 +457,7 @@ export default function Lobby() {
         {isHost && (
           <div className="absolute right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
             <Crown className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-xs font-medium text-amber-500">Yayın Yöneticisi</span>
+            <span className="text-xs font-medium text-amber-500">Oda Yöneticisi</span>
           </div>
         )}
       </header>
@@ -499,7 +499,7 @@ export default function Lobby() {
                               transition={{ duration: 1.5, repeat: Infinity }}
                               className="h-2 w-2 rounded-full bg-red-500"
                             />
-                            <span className="text-xs text-red-500 font-medium">Canlı Yayın</span>
+                            <span className="text-xs text-red-500 font-medium">Aktif Oda</span>
                           </div>
                           <h2 className="text-xl font-bold">{room.name}</h2>
                         </div>
@@ -648,7 +648,7 @@ export default function Lobby() {
                             <Play className="h-6 w-6 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-bold">Yayın Kontrol Paneli</h3>
+                            <h3 className="font-bold">Oda Kontrolü</h3>
                             <p className="text-xs text-muted-foreground">
                               {!canStart && playerCount < 2 && "En Az 2 Oyuncu Gerekli"}
                               {!canStart && playerCount >= 2 && !allGoogleConnected && `${connectedCount}/${playerCount} Oyuncu Bağlı`}
@@ -670,7 +670,7 @@ export default function Lobby() {
                           ) : (
                             <>
                               <Play className="h-5 w-5" />
-                              Yayını Başlat
+                              Oyunu Başlat
                             </>
                           )}
                         </Button>
@@ -692,7 +692,7 @@ export default function Lobby() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Signal className="h-4 w-4 text-primary" />
-                      <h3 className="font-bold">Sahne Arkası</h3>
+                      <h3 className="font-bold">Oyuncular</h3>
                     </div>
                     <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                       <motion.div 
@@ -782,7 +782,7 @@ export default function Lobby() {
                       <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
                         <Loader2 className="h-5 w-5 animate-spin text-primary" />
                         <div>
-                          <p className="text-sm font-medium">Yayın Başlayacak</p>
+                          <p className="text-sm font-medium">Oyun Başlayacak</p>
                           <p className="text-xs text-muted-foreground">Yönetici Oyunu Başlatacak</p>
                         </div>
                       </div>
