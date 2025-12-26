@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Info, Zap, Timer, Check, ArrowRight, Radio, Tv, Mic2, Signal } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
@@ -24,6 +24,7 @@ export default function Lobby() {
   const [userId, setUserId] = useState<string | null>(localStorage.getItem("userId"));
   const [joinName, setJoinName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+  const mountTimeRef = useRef(Date.now());
 
   const roomQuery = useQuery<RoomWithPlayers>({
     queryKey: ["/api/rooms", roomCode],
@@ -140,10 +141,15 @@ export default function Lobby() {
   }, [userId, roomCode, toast]);
 
   useEffect(() => {
-    if (roomQuery.data?.status === "playing") {
+    const dataUpdatedAt = roomQuery.dataUpdatedAt || 0;
+    const isFreshData = dataUpdatedAt > mountTimeRef.current;
+    const isIdle = roomQuery.fetchStatus === "idle";
+    const isSuccess = roomQuery.status === "success";
+    
+    if (roomQuery.data?.status === "playing" && isFreshData && isIdle && isSuccess) {
       setLocation(`/oyun/${roomCode}/game`);
     }
-  }, [roomQuery.data?.status, roomCode, setLocation]);
+  }, [roomQuery.data?.status, roomQuery.dataUpdatedAt, roomQuery.fetchStatus, roomQuery.status, roomCode, setLocation]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);

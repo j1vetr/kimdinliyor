@@ -99,8 +99,9 @@ export default function Results() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode, "info"] });
       setLocation(`/oyun/${roomCode}/lobi`);
     },
     onError: (error: Error) => {
@@ -121,8 +122,9 @@ export default function Results() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode, "info"] });
       setLocation(`/oyun/${roomCode}/lobi`);
     },
     onError: (error: Error) => {
