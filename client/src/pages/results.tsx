@@ -358,7 +358,7 @@ export default function Results() {
                 <div className="relative py-8">
                   <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-amber-500/5 to-transparent rounded-t-3xl" />
                   
-                  <div className="relative flex items-end justify-center gap-4 md:gap-8">
+                  <div className="relative flex items-end justify-center gap-2 sm:gap-4 md:gap-8">
                     {second && (
                       <motion.div 
                         initial={{ opacity: 0, y: 50 }}
@@ -370,7 +370,7 @@ export default function Results() {
                           <motion.div
                             animate={{ boxShadow: ["0 0 0 0 rgba(156,163,175,0)", "0 0 30px 10px rgba(156,163,175,0.2)", "0 0 0 0 rgba(156,163,175,0)"] }}
                             transition={{ duration: 2, repeat: Infinity }}
-                            className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden ring-4 ring-gray-400/40"
+                            className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden ring-4 ring-gray-400/40"
                           >
                             {second.avatarUrl ? (
                               <img src={second.avatarUrl} alt={second.displayName} className="w-full h-full object-cover" />
@@ -387,7 +387,7 @@ export default function Results() {
                         
                         <div className="relative">
                           <div className="absolute -left-1 top-0 bottom-0 w-1 bg-gradient-to-b from-gray-400 via-gray-400/50 to-transparent rounded-full" />
-                          <div className="pl-4 py-4 pr-6 rounded-2xl bg-gradient-to-br from-gray-500/15 to-gray-600/5 border border-gray-400/30 min-w-[100px] md:min-w-[120px]">
+                          <div className="pl-3 sm:pl-4 py-3 sm:py-4 pr-4 sm:pr-6 rounded-2xl bg-gradient-to-br from-gray-500/15 to-gray-600/5 border border-gray-400/30 min-w-[85px] sm:min-w-[100px] md:min-w-[120px]">
                             <div className="flex items-center gap-2 mb-2">
                               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center text-white font-black text-sm">
                                 2
@@ -419,7 +419,7 @@ export default function Results() {
                               ]
                             }}
                             transition={{ duration: 2, repeat: Infinity }}
-                            className="w-24 h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden ring-4 ring-amber-400/60"
+                            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl overflow-hidden ring-4 ring-amber-400/60"
                           >
                             {winner.avatarUrl ? (
                               <img src={winner.avatarUrl} alt={winner.displayName} className="w-full h-full object-cover" />
@@ -443,7 +443,7 @@ export default function Results() {
                           <motion.div 
                             animate={{ boxShadow: ["0 0 0 0 rgba(251,191,36,0)", "0 0 40px 10px rgba(251,191,36,0.15)", "0 0 0 0 rgba(251,191,36,0)"] }}
                             transition={{ duration: 3, repeat: Infinity }}
-                            className="pl-4 py-5 pr-8 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-400/40 min-w-[130px] md:min-w-[160px]"
+                            className="pl-3 sm:pl-4 py-4 sm:py-5 pr-5 sm:pr-8 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/10 border border-amber-400/40 min-w-[100px] sm:min-w-[130px] md:min-w-[160px]"
                           >
                             <div className="flex items-center gap-2 mb-2">
                               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
@@ -470,7 +470,7 @@ export default function Results() {
                           <motion.div
                             animate={{ boxShadow: ["0 0 0 0 rgba(217,119,6,0)", "0 0 25px 8px rgba(217,119,6,0.2)", "0 0 0 0 rgba(217,119,6,0)"] }}
                             transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                            className="w-14 h-14 md:w-18 md:h-18 rounded-2xl overflow-hidden ring-4 ring-amber-600/40"
+                            className="w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 rounded-2xl overflow-hidden ring-4 ring-amber-600/40"
                           >
                             {third.avatarUrl ? (
                               <img src={third.avatarUrl} alt={third.displayName} className="w-full h-full object-cover" />
@@ -487,7 +487,7 @@ export default function Results() {
                         
                         <div className="relative">
                           <div className="absolute -left-1 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-600 via-amber-600/50 to-transparent rounded-full" />
-                          <div className="pl-4 py-3 pr-5 rounded-2xl bg-gradient-to-br from-amber-600/15 to-amber-700/5 border border-amber-600/30 min-w-[90px] md:min-w-[110px]">
+                          <div className="pl-3 sm:pl-4 py-2 sm:py-3 pr-4 sm:pr-5 rounded-2xl bg-gradient-to-br from-amber-600/15 to-amber-700/5 border border-amber-600/30 min-w-[75px] sm:min-w-[90px] md:min-w-[110px]">
                             <div className="flex items-center gap-2 mb-2">
                               <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-black text-xs">
                                 3

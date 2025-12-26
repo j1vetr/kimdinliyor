@@ -414,50 +414,50 @@ export default function CreateRoom() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
                       onClick={() => setIsPublic(true)}
-                      className={`flex-1 flex items-center gap-3 p-4 rounded-2xl transition-all ${
+                      className={`flex-1 flex items-center gap-3 p-3 sm:p-4 rounded-2xl transition-all ${
                         isPublic
                           ? "bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/40"
                           : "bg-muted/20 border-2 border-transparent hover:border-border/50"
                       }`}
                       data-testid="button-public"
                     >
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                      <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center shrink-0 ${
                         isPublic ? "bg-primary" : "bg-muted"
                       }`}>
-                        <Globe className={`h-5 w-5 ${isPublic ? "text-white" : "text-muted-foreground"}`} />
+                        <Globe className={`h-4 w-4 sm:h-5 sm:w-5 ${isPublic ? "text-white" : "text-muted-foreground"}`} />
                       </div>
                       <div className="text-left">
-                        <p className={`font-semibold ${isPublic ? "text-foreground" : "text-muted-foreground"}`}>
+                        <p className={`text-sm sm:font-semibold ${isPublic ? "text-foreground" : "text-muted-foreground"}`}>
                           Herkese Açık
                         </p>
-                        <p className="text-xs text-muted-foreground">Kod Bilen Katılır</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Kod Bilen Katılır</p>
                       </div>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setIsPublic(false)}
-                      className={`flex-1 flex items-center gap-3 p-4 rounded-2xl transition-all ${
+                      className={`flex-1 flex items-center gap-3 p-3 sm:p-4 rounded-2xl transition-all ${
                         !isPublic
                           ? "bg-gradient-to-br from-purple-500/20 to-purple-500/5 border-2 border-purple-500/40"
                           : "bg-muted/20 border-2 border-transparent hover:border-border/50"
                       }`}
                       data-testid="button-private"
                     >
-                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                      <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center shrink-0 ${
                         !isPublic ? "bg-purple-500" : "bg-muted"
                       }`}>
-                        <Lock className={`h-5 w-5 ${!isPublic ? "text-white" : "text-muted-foreground"}`} />
+                        <Lock className={`h-4 w-4 sm:h-5 sm:w-5 ${!isPublic ? "text-white" : "text-muted-foreground"}`} />
                       </div>
                       <div className="text-left">
-                        <p className={`font-semibold ${!isPublic ? "text-foreground" : "text-muted-foreground"}`}>
+                        <p className={`text-sm sm:font-semibold ${!isPublic ? "text-foreground" : "text-muted-foreground"}`}>
                           Şifreli
                         </p>
-                        <p className="text-xs text-muted-foreground">Şifre Gerekli</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Şifre Gerekli</p>
                       </div>
                     </button>
                   </div>

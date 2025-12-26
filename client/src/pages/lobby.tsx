@@ -455,9 +455,9 @@ export default function Lobby() {
         </Link>
         <Logo height={40} />
         {isHost && (
-          <div className="absolute right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-            <Crown className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-xs font-medium text-amber-500">Oda Yöneticisi</span>
+          <div className="absolute right-4 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+            <Crown className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-amber-500" />
+            <span className="text-[10px] sm:text-xs font-medium text-amber-500">Host</span>
           </div>
         )}
       </header>
@@ -538,18 +538,18 @@ export default function Lobby() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                        <Users className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xs font-medium" data-testid="text-player-count">{playerCount}/{maxPlayers} Oyuncu</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted/50">
+                        <Users className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-primary" />
+                        <span className="text-[10px] sm:text-xs font-medium" data-testid="text-player-count">{playerCount}/{maxPlayers} <span className="hidden sm:inline">Oyuncu</span></span>
                       </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                        <Zap className="h-3.5 w-3.5 text-amber-500" />
-                        <span className="text-xs font-medium">{room.totalRounds} Tur</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted/50">
+                        <Zap className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-amber-500" />
+                        <span className="text-[10px] sm:text-xs font-medium">{room.totalRounds} Tur</span>
                       </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                        <Timer className="h-3.5 w-3.5 text-blue-500" />
-                        <span className="text-xs font-medium">{room.roundDuration} Saniye</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted/50">
+                        <Timer className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-blue-500" />
+                        <span className="text-[10px] sm:text-xs font-medium">{room.roundDuration}sn</span>
                       </div>
                     </div>
                   </div>
@@ -681,7 +681,7 @@ export default function Lobby() {
               )}
             </div>
 
-            <div className="lg:w-96">
+            <div className="w-full lg:w-96">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
