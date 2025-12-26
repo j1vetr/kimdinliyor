@@ -262,11 +262,15 @@ export default function Game() {
       if (data.content && !content) {
         setContent(data.content);
       }
-      if (data.room?.status === "finished") {
-        setLocation(`/oyun/${roomCode}/results`);
-      }
     }
-  }, [gameQuery.data]);
+  }, [gameQuery.data, gameStatus, content]);
+
+  useEffect(() => {
+    const roomStatus = gameQuery.data?.room?.status;
+    if (roomStatus === "finished" && roomCode) {
+      setLocation(`/oyun/${roomCode}/results`);
+    }
+  }, [gameQuery.data?.room?.status, roomCode, setLocation]);
 
   const handlePlayerToggle = useCallback((playerId: string, selected: boolean) => {
     if (hasAnswered) return;
