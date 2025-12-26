@@ -555,7 +555,7 @@ export default function Game() {
             <motion.div 
               initial={{ x: -100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="fixed left-4 top-36 z-40 hidden lg:block"
+              className="fixed left-4 top-48 z-40 hidden lg:block"
             >
               <div className="relative">
                 <div className="absolute -left-1 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent rounded-full" />
@@ -621,21 +621,36 @@ export default function Game() {
           {!showLeaderboard && currentRound > 1 && (
             <button
               onClick={() => setShowLeaderboard(true)}
-              className="fixed left-4 top-36 z-40 hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/25 hover:scale-105 transition-transform"
+              className="fixed left-4 top-48 z-40 hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/25 hover:scale-105 transition-transform"
             >
               <Trophy className="h-5 w-5 text-white" />
             </button>
           )}
 
-          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 lg:left-auto lg:translate-x-0 lg:right-4 lg:bottom-4">
-            <div className="bg-card/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-xl px-3 py-2 flex items-center gap-1">
-              <Smile className="h-4 w-4 text-muted-foreground mx-1 hidden lg:block" />
+          <div className="fixed top-32 right-4 z-40 hidden lg:block">
+            <div className="bg-card/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-xl px-2 py-3 flex flex-col items-center gap-1">
+              <Smile className="h-4 w-4 text-muted-foreground mb-1" />
               {EMOJI_REACTIONS.map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => sendReaction(emoji)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
                   data-testid={`button-emoji-${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 lg:hidden">
+            <div className="bg-card/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-xl px-2 py-1.5 flex items-center gap-0.5">
+              {EMOJI_REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendReaction(emoji)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-base hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
+                  data-testid={`button-emoji-mobile-${emoji}`}
                 >
                   {emoji}
                 </button>
