@@ -559,7 +559,7 @@ export default function Game() {
             <motion.div 
               initial={{ x: -100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="fixed left-4 top-48 z-40 hidden lg:block"
+              className="fixed left-4 top-64 z-40 hidden lg:block"
             >
               <div className="relative">
                 <div className="absolute -left-1 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent rounded-full" />
@@ -625,80 +625,51 @@ export default function Game() {
           {!showLeaderboard && currentRound > 1 && (
             <button
               onClick={() => setShowLeaderboard(true)}
-              className="fixed left-4 top-48 z-40 hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/25 hover:scale-105 transition-transform"
+              className="fixed left-4 top-64 z-40 hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/25 hover:scale-105 transition-transform"
             >
               <Trophy className="h-5 w-5 text-white" />
             </button>
           )}
 
-          <div className="fixed top-32 right-4 z-40 hidden lg:block">
-            <div className="bg-card/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-xl px-2 py-3 flex flex-col items-center gap-1">
-              <Smile className="h-4 w-4 text-muted-foreground mb-1" />
-              {EMOJI_REACTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => sendReaction(emoji)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
-                  data-testid={`button-emoji-${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 lg:hidden">
-            <div className="bg-card/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-xl px-2 py-1.5 flex items-center gap-0.5">
-              {EMOJI_REACTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => sendReaction(emoji)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-base hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
-                  data-testid={`button-emoji-mobile-${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
+          
+          
           <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
-            <div className="lg:flex-1 flex flex-col p-4 lg:p-6 overflow-y-auto relative">
+            <div className="shrink-0 lg:shrink lg:flex-1 flex flex-col p-3 lg:p-6 relative">
               <div className="absolute -left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/30 to-transparent rounded-full hidden lg:block" />
               
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-4"
+                className="mb-2 lg:mb-4"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/25">
+                <div className="flex items-center gap-2 lg:gap-3 mb-1 lg:mb-3">
+                  <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-lg lg:rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/25 shrink-0">
                     {content.contentType === "video" ? (
-                      <Play className="h-5 w-5 text-white" />
+                      <Play className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
                     ) : (
-                      <SiYoutube className="h-5 w-5 text-white" />
+                      <SiYoutube className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-primary">
+                      <span className="text-[10px] lg:text-xs font-medium text-primary">
                         {content.contentType === "video" ? "Video" : "Kanal"}
                       </span>
                       <button 
                         onClick={openYouTubeLink}
-                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                        className="text-[10px] lg:text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
                       >
-                        <ExternalLink className="h-3 w-3" />
-                        YouTube'da Aç
+                        <ExternalLink className="h-2.5 w-2.5 lg:h-3 lg:w-3" />
+                        <span className="hidden sm:inline">YouTube'da Aç</span>
                       </button>
                     </div>
-                    <h2 className="text-lg lg:text-xl font-bold leading-tight line-clamp-2" data-testid="text-content-title">
+                    <h2 className="text-sm lg:text-xl font-bold leading-tight line-clamp-1 lg:line-clamp-2" data-testid="text-content-title">
                       {content.title}
                     </h2>
                   </div>
                 </div>
                 {content.subtitle && (
-                  <p className="text-sm text-muted-foreground pl-13" data-testid="text-content-subtitle">
+                  <p className="text-xs lg:text-sm text-muted-foreground pl-10 lg:pl-13 hidden lg:block" data-testid="text-content-subtitle">
                     {content.subtitle}
                   </p>
                 )}
@@ -708,13 +679,13 @@ export default function Game() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 }}
-                className="flex-1 flex items-center justify-center"
+                className="flex items-center justify-center lg:flex-1"
               >
                 {content.contentType === "video" ? (
-                  <div className="relative w-full max-w-3xl">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-3xl blur-xl opacity-50" />
+                  <div className="relative w-full max-w-[280px] lg:max-w-3xl">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-3xl blur-xl opacity-50 hidden lg:block" />
                     <div 
-                      className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl ring-2 ring-primary/30"
+                      className="relative aspect-video rounded-xl lg:rounded-2xl overflow-hidden shadow-xl lg:shadow-2xl ring-1 lg:ring-2 ring-primary/30"
                       data-testid="video-player-container"
                     >
                       <iframe
@@ -729,12 +700,12 @@ export default function Game() {
                 ) : (
                   <button 
                     type="button"
-                    className="relative w-full max-w-sm lg:max-w-md group"
+                    className="relative w-32 h-32 lg:w-full lg:h-auto lg:max-w-md group"
                     onClick={openYouTubeLink}
                     data-testid="button-open-youtube"
                   >
-                    <div className="absolute -inset-3 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-3xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
-                    <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl ring-2 ring-primary/30">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-transparent to-primary/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity hidden lg:block" />
+                    <div className="relative aspect-square rounded-xl lg:rounded-2xl overflow-hidden shadow-xl lg:shadow-2xl ring-1 lg:ring-2 ring-primary/30">
                       {content.thumbnailUrl ? (
                         <img
                           src={content.thumbnailUrl}
@@ -761,7 +732,23 @@ export default function Game() {
 
             <div className="hidden lg:block w-px bg-gradient-to-b from-border via-border/50 to-transparent" />
 
-            <div className="lg:w-80 xl:w-96 flex flex-col p-4 min-h-0 overflow-hidden relative">
+            <div className="hidden lg:flex flex-col items-center py-4 px-1">
+              <div className="bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 shadow-xl px-1.5 py-2 flex flex-col items-center gap-0.5">
+                <Smile className="h-3.5 w-3.5 text-muted-foreground mb-1" />
+                {EMOJI_REACTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => sendReaction(emoji)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-base hover:bg-muted/60 hover:scale-110 active:scale-95 transition-all"
+                    data-testid={`button-emoji-${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 lg:flex-none lg:w-80 xl:w-96 flex flex-col p-3 lg:p-4 min-h-0 overflow-hidden relative">
               <div className="absolute -left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-purple-500/30 to-transparent rounded-full hidden lg:block" />
               
               <motion.div 
