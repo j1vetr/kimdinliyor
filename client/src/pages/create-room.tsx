@@ -1,28 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound, Check, ArrowRight, Play } from "lucide-react";
+import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound, Check, ArrowRight, Play, Disc3, Radio } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 const GAME_MODE_OPTIONS = [
-  { id: "who_liked", label: "Kim Beğenmiş?", description: "Videoyu hangi oyuncu beğenmiş?", icon: ThumbsUp, color: "from-red-500/20 to-red-600/10", iconColor: "text-red-500" },
-  { id: "who_subscribed", label: "Kim Abone?", description: "Kanala hangi oyuncu abone?", icon: UserPlus, color: "from-orange-500/20 to-orange-600/10", iconColor: "text-orange-500" },
-  { id: "view_count", label: "Sayı Tahmini", description: "Videonun izlenme sayısını tahmin et.", icon: Eye, color: "from-blue-500/20 to-blue-600/10", iconColor: "text-blue-500" },
-  { id: "subscriber_count", label: "Abone Sayısı", description: "Kanalın abone sayısını tahmin et.", icon: UsersRound, color: "from-green-500/20 to-green-600/10", iconColor: "text-green-500" },
+  { id: "who_liked", label: "Kim Beğenmiş?", description: "Videoyu hangi oyuncu beğenmiş?", icon: ThumbsUp, color: "bg-red-500", glow: "shadow-red-500/30" },
+  { id: "who_subscribed", label: "Kim Abone?", description: "Kanala hangi oyuncu abone?", icon: UserPlus, color: "bg-orange-500", glow: "shadow-orange-500/30" },
+  { id: "view_count", label: "Sayı Tahmini", description: "Videonun izlenme sayısını tahmin et.", icon: Eye, color: "bg-blue-500", glow: "shadow-blue-500/30" },
+  { id: "subscriber_count", label: "Abone Sayısı", description: "Kanalın abone sayısını tahmin et.", icon: UsersRound, color: "bg-emerald-500", glow: "shadow-emerald-500/30" },
 ] as const;
+
+const STEPS = [
+  { id: 1, label: "İsim" },
+  { id: 2, label: "Mod" },
+  { id: 3, label: "Ayar" },
+  { id: 4, label: "Gizlilik" },
+];
 
 export default function CreateRoom() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [activeStep, setActiveStep] = useState(1);
+  const [pulseStep, setPulseStep] = useState(1);
 
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(8);
@@ -31,6 +38,18 @@ export default function CreateRoom() {
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState("");
   const [gameModes, setGameModes] = useState<string[]>(["who_liked", "who_subscribed"]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulseStep((prev) => (prev % 4) + 1);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (roomName.trim()) setActiveStep(Math.max(activeStep, 2));
+    if (gameModes.length > 0) setActiveStep(Math.max(activeStep, 3));
+  }, [roomName, gameModes]);
 
   const toggleGameMode = (modeId: string) => {
     if (gameModes.includes(modeId)) {
@@ -106,288 +125,493 @@ export default function CreateRoom() {
   };
 
   const estimatedDuration = Math.ceil((totalRounds * roundDuration) / 60);
+  const isFormValid = roomName.trim() && gameModes.length > 0 && (isPublic || password.trim());
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="relative flex items-center justify-center p-4 border-b border-border">
+      <header className="relative flex items-center justify-center p-4 border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
         <Link href="/" className="absolute left-4">
           <Button variant="ghost" size="icon" data-testid="button-back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <Logo height={48} />
+        <Logo height={40} />
       </header>
 
-      <main className="flex-1 p-4 md:p-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
-              <SiYoutube className="h-7 w-7 text-primary" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Yeni Oda Oluştur</h1>
-            <p className="text-muted-foreground">
-              Odanı özelleştir ve arkadaşlarınla oynamaya başla.
-            </p>
-          </div>
+      <main className="flex-1 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-primary blur-3xl" />
+          <div className="absolute bottom-40 right-10 w-48 h-48 rounded-full bg-purple-500 blur-3xl" />
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Card className="overflow-visible">
-              <CardContent className="p-5 md:p-6">
-                <div className="space-y-2">
-                  <Label htmlFor="roomName" className="text-base font-semibold">Oda Adı</Label>
-                  <Input
-                    id="roomName"
-                    placeholder="Örnek: Müzik Gecesi"
-                    value={roomName}
-                    onChange={(e) => setRoomName(e.target.value)}
-                    maxLength={30}
-                    className="h-12 text-base"
-                    data-testid="input-room-name"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Odanı tanımlayan kısa bir ad gir.
-                  </p>
+        <div className="relative max-w-6xl mx-auto px-4 py-6 lg:py-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            
+            <div className="hidden lg:flex flex-col items-center gap-0 pt-12">
+              {STEPS.map((step, i) => (
+                <div key={step.id} className="flex flex-col items-center">
+                  <motion.div
+                    className={`relative h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-500 ${
+                      activeStep >= step.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                    animate={{
+                      scale: pulseStep === step.id ? [1, 1.1, 1] : 1,
+                      boxShadow: pulseStep === step.id 
+                        ? ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 12px rgba(255,0,0,0.15)", "0 0 0 0 rgba(255,0,0,0)"]
+                        : "none"
+                    }}
+                    transition={{ duration: 1.5, ease: "easeInOut" }}
+                  >
+                    {activeStep > step.id ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      step.id
+                    )}
+                  </motion.div>
+                  <span className={`text-xs mt-2 font-medium ${
+                    activeStep >= step.id ? "text-foreground" : "text-muted-foreground"
+                  }`}>
+                    {step.label}
+                  </span>
+                  {i < STEPS.length - 1 && (
+                    <div className={`w-0.5 h-16 mt-2 transition-colors duration-500 ${
+                      activeStep > step.id ? "bg-primary" : "bg-border"
+                    }`} />
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
 
-            <Card className="overflow-visible">
-              <CardContent className="p-5 md:p-6 space-y-6">
-                <div>
-                  <h3 className="text-base font-semibold flex items-center gap-2 mb-4">
-                    <Zap className="h-5 w-5 text-primary" />
-                    Oyun Modları
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {GAME_MODE_OPTIONS.map((mode) => {
+            <form onSubmit={handleSubmit} className="flex-1 space-y-6 lg:space-y-8">
+              
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative"
+              >
+                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
+                <div className="pl-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/25">
+                      <Radio className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold">Yayın Adı</h2>
+                      <p className="text-xs text-muted-foreground">Odanı tanımlayan kısa bir ad</p>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      placeholder="Örnek: Müzik Gecesi"
+                      value={roomName}
+                      onChange={(e) => setRoomName(e.target.value)}
+                      maxLength={30}
+                      className="h-14 text-lg pl-5 pr-20 bg-muted/30 border-border/50 focus:border-primary/50 focus:bg-muted/50 transition-all"
+                      data-testid="input-room-name"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                      {roomName.length}/30
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="relative"
+              >
+                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-500 via-orange-500/50 to-transparent rounded-full" />
+                <div className="pl-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/25">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold">Oyun Modları</h2>
+                      <p className="text-xs text-muted-foreground">{gameModes.length} mod seçildi</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {GAME_MODE_OPTIONS.map((mode, i) => {
                       const Icon = mode.icon;
                       const isSelected = gameModes.includes(mode.id);
                       return (
-                        <button
+                        <motion.button
                           key={mode.id}
                           type="button"
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.15 + i * 0.05 }}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             toggleGameMode(mode.id);
                           }}
-                          className={`relative flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all text-left ${
+                          className={`group relative flex flex-col items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 ${
                             isSelected
-                              ? "bg-gradient-to-br border-2 border-primary/40 " + mode.color
-                              : "bg-muted/30 border-2 border-transparent hover:border-border"
+                              ? `bg-gradient-to-b from-muted to-muted/50 border-2 border-primary/40 shadow-lg ${mode.glow}`
+                              : "bg-muted/20 border-2 border-transparent hover:border-border/50 hover:bg-muted/40"
                           }`}
                           data-testid={`checkbox-mode-${mode.id}`}
                         >
-                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                            isSelected ? `bg-gradient-to-br ${mode.color}` : "bg-muted"
-                          }`}>
-                            <Icon className={`h-5 w-5 ${isSelected ? mode.iconColor : "text-muted-foreground"}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
-                              {mode.label}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {mode.description}
-                            </p>
-                          </div>
-                          <div className={`absolute top-2 right-2 h-5 w-5 rounded-full flex items-center justify-center transition-all ${
-                            isSelected ? "bg-primary" : "bg-muted border border-border"
-                          }`}>
-                            {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                          </div>
-                        </button>
+                          <motion.div 
+                            className={`relative h-12 w-12 rounded-xl flex items-center justify-center mb-3 transition-all ${
+                              isSelected ? mode.color : "bg-muted"
+                            }`}
+                            animate={{ 
+                              rotate: isSelected ? [0, -5, 5, 0] : 0,
+                              scale: isSelected ? 1.05 : 1
+                            }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <Icon className={`h-6 w-6 ${isSelected ? "text-white" : "text-muted-foreground"}`} />
+                            <AnimatePresence>
+                              {isSelected && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  exit={{ scale: 0 }}
+                                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center"
+                                >
+                                  <Check className="h-3 w-3 text-white" />
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                          <p className={`text-sm font-semibold text-center ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                            {mode.label}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground text-center mt-1 leading-tight hidden sm:block">
+                            {mode.description}
+                          </p>
+                        </motion.button>
                       );
                     })}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    {gameModes.length} mod seçildi. Oyun sırasında bu modlar rastgele oynanır.
-                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </motion.div>
 
-            <Card className="overflow-visible">
-              <CardContent className="p-5 md:p-6 space-y-6">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Timer className="h-5 w-5 text-primary" />
-                  Oyun Ayarları
-                </h3>
-
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="maxPlayers" className="flex items-center gap-2 text-sm">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        Maksimum Oyuncu
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-primary">{maxPlayers}</span>
-                        <span className="text-sm text-muted-foreground">kişi</span>
-                      </div>
-                    </div>
-                    <Slider
-                      id="maxPlayers"
-                      min={2}
-                      max={12}
-                      step={1}
-                      value={[maxPlayers]}
-                      onValueChange={(value) => setMaxPlayers(value[0])}
-                      className="w-full"
-                      data-testid="slider-max-players"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>2 kişi</span>
-                      <span>12 kişi</span>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="totalRounds" className="flex items-center gap-2 text-sm">
-                        <Zap className="h-4 w-4 text-muted-foreground" />
-                        Toplam Tur
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-primary">{totalRounds}</span>
-                        <span className="text-sm text-muted-foreground">tur</span>
-                      </div>
-                    </div>
-                    <Slider
-                      id="totalRounds"
-                      min={2}
-                      max={15}
-                      step={1}
-                      value={[totalRounds]}
-                      onValueChange={(value) => setTotalRounds(value[0])}
-                      className="w-full"
-                      data-testid="slider-total-rounds"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>2 tur</span>
-                      <span>15 tur</span>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="roundDuration" className="flex items-center gap-2 text-sm">
-                        <Timer className="h-4 w-4 text-muted-foreground" />
-                        Tur Süresi
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-primary">{roundDuration}</span>
-                        <span className="text-sm text-muted-foreground">saniye</span>
-                      </div>
-                    </div>
-                    <Slider
-                      id="roundDuration"
-                      min={10}
-                      max={30}
-                      step={5}
-                      value={[roundDuration]}
-                      onValueChange={(value) => setRoundDuration(value[0])}
-                      className="w-full"
-                      data-testid="slider-round-duration"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>10 saniye</span>
-                      <span>30 saniye</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                  <Play className="h-4 w-4 text-primary" />
-                  <span className="text-sm">
-                    Tahmini oyun süresi: <strong className="text-primary">{estimatedDuration} dakika</strong>
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-visible">
-              <CardContent className="p-5 md:p-6 space-y-4">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  {isPublic ? <Globe className="h-5 w-5 text-primary" /> : <Lock className="h-5 w-5 text-primary" />}
-                  Oda Gizliliği
-                </h3>
-
-                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                      isPublic ? "bg-primary/10" : "bg-muted"
-                    }`}>
-                      {isPublic ? (
-                        <Globe className="h-5 w-5 text-primary" />
-                      ) : (
-                        <Lock className="h-5 w-5 text-muted-foreground" />
-                      )}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="relative"
+              >
+                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-blue-500/50 to-transparent rounded-full" />
+                <div className="pl-4">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+                      <Timer className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-medium">
-                        {isPublic ? "Herkese Açık" : "Şifreli Oda"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {isPublic
-                          ? "Oda kodunu bilen herkes katılabilir."
-                          : "Odaya katılmak için şifre gereklidir."}
-                      </p>
+                      <h2 className="text-lg font-bold">Oyun Ayarları</h2>
+                      <p className="text-xs text-muted-foreground">Süre ve tur sayısını belirle</p>
                     </div>
                   </div>
-                  <Switch
-                    checked={isPublic}
-                    onCheckedChange={setIsPublic}
-                    data-testid="switch-public"
-                  />
-                </div>
 
-                {!isPublic && (
-                  <div className="space-y-2 animate-slide-up">
-                    <Label htmlFor="password">Oda Şifresi</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Şifreni gir"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-12"
-                      data-testid="input-password"
-                    />
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="relative p-5 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/30">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Oyuncu</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold text-primary">{maxPlayers}</span>
+                          <span className="text-xs text-muted-foreground">kişi</span>
+                        </div>
+                      </div>
+                      <Slider
+                        min={2}
+                        max={12}
+                        step={1}
+                        value={[maxPlayers]}
+                        onValueChange={(value) => setMaxPlayers(value[0])}
+                        className="w-full"
+                        data-testid="slider-max-players"
+                      />
+                      <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                        <span>2</span>
+                        <span>12</span>
+                      </div>
+                    </div>
+
+                    <div className="relative p-5 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/30">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Tur</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold text-primary">{totalRounds}</span>
+                          <span className="text-xs text-muted-foreground">tur</span>
+                        </div>
+                      </div>
+                      <Slider
+                        min={2}
+                        max={15}
+                        step={1}
+                        value={[totalRounds]}
+                        onValueChange={(value) => setTotalRounds(value[0])}
+                        className="w-full"
+                        data-testid="slider-total-rounds"
+                      />
+                      <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                        <span>2</span>
+                        <span>15</span>
+                      </div>
+                    </div>
+
+                    <div className="relative p-5 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/30">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <Timer className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Süre</span>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold text-primary">{roundDuration}</span>
+                          <span className="text-xs text-muted-foreground">sn</span>
+                        </div>
+                      </div>
+                      <Slider
+                        min={10}
+                        max={30}
+                        step={5}
+                        value={[roundDuration]}
+                        onValueChange={(value) => setRoundDuration(value[0])}
+                        className="w-full"
+                        data-testid="slider-round-duration"
+                      />
+                      <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                        <span>10</span>
+                        <span>30</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              </motion.div>
 
-            <div className="pt-2">
-              <Button
-                type="submit"
-                className="w-full h-14 text-lg font-semibold gap-3"
-                size="lg"
-                disabled={createRoomMutation.isPending || !roomName.trim()}
-                data-testid="button-create-room"
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="relative"
               >
-                {createRoomMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Oda oluşturuluyor...
-                  </>
-                ) : (
-                  <>
-                    Odayı Oluştur
-                    <ArrowRight className="h-5 w-5" />
-                  </>
-                )}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground mt-3">
-                Odayı oluşturduktan sonra arkadaşlarını davet edebilirsin.
-              </p>
+                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-purple-500/50 to-transparent rounded-full" />
+                <div className="pl-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                      {isPublic ? <Globe className="h-5 w-5 text-white" /> : <Lock className="h-5 w-5 text-white" />}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold">Oda Gizliliği</h2>
+                      <p className="text-xs text-muted-foreground">{isPublic ? "Herkese açık" : "Şifre korumalı"}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsPublic(true)}
+                      className={`flex-1 flex items-center gap-3 p-4 rounded-2xl transition-all ${
+                        isPublic
+                          ? "bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/40"
+                          : "bg-muted/20 border-2 border-transparent hover:border-border/50"
+                      }`}
+                      data-testid="button-public"
+                    >
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        isPublic ? "bg-primary" : "bg-muted"
+                      }`}>
+                        <Globe className={`h-5 w-5 ${isPublic ? "text-white" : "text-muted-foreground"}`} />
+                      </div>
+                      <div className="text-left">
+                        <p className={`font-semibold ${isPublic ? "text-foreground" : "text-muted-foreground"}`}>
+                          Herkese Açık
+                        </p>
+                        <p className="text-xs text-muted-foreground">Kod bilen katılır</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsPublic(false)}
+                      className={`flex-1 flex items-center gap-3 p-4 rounded-2xl transition-all ${
+                        !isPublic
+                          ? "bg-gradient-to-br from-purple-500/20 to-purple-500/5 border-2 border-purple-500/40"
+                          : "bg-muted/20 border-2 border-transparent hover:border-border/50"
+                      }`}
+                      data-testid="button-private"
+                    >
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        !isPublic ? "bg-purple-500" : "bg-muted"
+                      }`}>
+                        <Lock className={`h-5 w-5 ${!isPublic ? "text-white" : "text-muted-foreground"}`} />
+                      </div>
+                      <div className="text-left">
+                        <p className={`font-semibold ${!isPublic ? "text-foreground" : "text-muted-foreground"}`}>
+                          Şifreli
+                        </p>
+                        <p className="text-xs text-muted-foreground">Şifre gerekli</p>
+                      </div>
+                    </button>
+                  </div>
+
+                  <AnimatePresence>
+                    {!isPublic && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 overflow-hidden"
+                      >
+                        <Input
+                          type="password"
+                          placeholder="Oda şifresini gir"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="h-12 bg-muted/30 border-border/50"
+                          data-testid="input-password"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="relative pt-4"
+              >
+                <div className="flex flex-col sm:flex-row items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <Play className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Tahmini Süre</p>
+                      <p className="text-2xl font-bold">{estimatedDuration} <span className="text-sm font-normal text-muted-foreground">dakika</span></p>
+                    </div>
+                    <div className="h-8 w-px bg-border/50 hidden sm:block" />
+                    <div className="hidden sm:block">
+                      <p className="text-sm text-muted-foreground">Mod</p>
+                      <p className="text-lg font-bold">{gameModes.length}</p>
+                    </div>
+                    <div className="h-8 w-px bg-border/50 hidden sm:block" />
+                    <div className="hidden sm:block">
+                      <p className="text-sm text-muted-foreground">Oyuncu</p>
+                      <p className="text-lg font-bold">{maxPlayers}</p>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full sm:w-auto min-w-[180px] h-12 text-base font-semibold gap-2 shadow-lg shadow-primary/25"
+                    disabled={createRoomMutation.isPending || !isFormValid}
+                    data-testid="button-create-room"
+                  >
+                    {createRoomMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Oluşturuluyor...
+                      </>
+                    ) : (
+                      <>
+                        Odayı Oluştur
+                        <ArrowRight className="h-5 w-5" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.div>
+            </form>
+
+            <div className="hidden xl:block w-72 pt-12">
+              <div className="sticky top-24">
+                <div className="relative p-6 rounded-2xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                  
+                  <div className="relative">
+                    <div className="flex items-center gap-3 mb-6">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                        className="h-10 w-10 rounded-full bg-gradient-to-r from-primary to-red-600 flex items-center justify-center"
+                      >
+                        <Disc3 className="h-5 w-5 text-white" />
+                      </motion.div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Önizleme</p>
+                        <p className="font-bold truncate max-w-[180px]">
+                          {roomName || "Oda Adı"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Oyuncu</span>
+                        <span className="font-semibold">{maxPlayers} kişi</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Tur</span>
+                        <span className="font-semibold">{totalRounds} tur</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Süre</span>
+                        <span className="font-semibold">{roundDuration} saniye</span>
+                      </div>
+                      <div className="h-px bg-border/50" />
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Durum</span>
+                        <div className="flex items-center gap-1.5">
+                          {isPublic ? (
+                            <>
+                              <Globe className="h-3.5 w-3.5 text-emerald-500" />
+                              <span className="font-semibold text-emerald-500">Açık</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3.5 w-3.5 text-purple-500" />
+                              <span className="font-semibold text-purple-500">Şifreli</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-border/30">
+                      <p className="text-xs text-muted-foreground mb-3">Seçili Modlar</p>
+                      <div className="flex flex-wrap gap-2">
+                        {gameModes.map((modeId) => {
+                          const mode = GAME_MODE_OPTIONS.find((m) => m.id === modeId);
+                          if (!mode) return null;
+                          const Icon = mode.icon;
+                          return (
+                            <div
+                              key={modeId}
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${mode.color} text-white text-xs font-medium`}
+                            >
+                              <Icon className="h-3 w-3" />
+                              <span>{mode.label.split("?")[0]}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </form>
+          </div>
         </div>
       </main>
     </div>
