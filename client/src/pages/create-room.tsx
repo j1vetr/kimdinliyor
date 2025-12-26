@@ -199,7 +199,7 @@ export default function CreateRoom() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold">Yayın Adı</h2>
-                      <p className="text-xs text-muted-foreground">Odanı tanımlayan kısa bir ad</p>
+                      <p className="text-xs text-muted-foreground">Odanı Tanımlayan Kısa Bir Ad</p>
                     </div>
                   </div>
                   <div className="relative">
@@ -232,7 +232,7 @@ export default function CreateRoom() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold">Oyun Modları</h2>
-                      <p className="text-xs text-muted-foreground">{gameModes.length} mod seçildi</p>
+                      <p className="text-xs text-muted-foreground">{gameModes.length} Mod Seçildi</p>
                     </div>
                   </div>
                   
@@ -310,7 +310,7 @@ export default function CreateRoom() {
                     </div>
                     <div>
                       <h2 className="text-lg font-bold">Oyun Ayarları</h2>
-                      <p className="text-xs text-muted-foreground">Süre ve tur sayısını belirle</p>
+                      <p className="text-xs text-muted-foreground">Süre ve Tur Sayısını Belirle</p>
                     </div>
                   </div>
 
@@ -434,7 +434,7 @@ export default function CreateRoom() {
                         <p className={`font-semibold ${isPublic ? "text-foreground" : "text-muted-foreground"}`}>
                           Herkese Açık
                         </p>
-                        <p className="text-xs text-muted-foreground">Kod bilen katılır</p>
+                        <p className="text-xs text-muted-foreground">Kod Bilen Katılır</p>
                       </div>
                     </button>
 
@@ -457,7 +457,7 @@ export default function CreateRoom() {
                         <p className={`font-semibold ${!isPublic ? "text-foreground" : "text-muted-foreground"}`}>
                           Şifreli
                         </p>
-                        <p className="text-xs text-muted-foreground">Şifre gerekli</p>
+                        <p className="text-xs text-muted-foreground">Şifre Gerekli</p>
                       </div>
                     </button>
                   </div>
