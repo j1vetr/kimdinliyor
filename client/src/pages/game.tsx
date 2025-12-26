@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Radio, Tv, Signal, Mic2 } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 const EMOJI_REACTIONS = ["👏", "😂", "😮", "🔥", "💀", "🎉"];
 
@@ -102,7 +103,31 @@ export default function Game() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
   const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
+  const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
+  const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    if (gameStatus === "waiting" && currentRound === 0) {
+      setCountdownPhase("preparing");
+      const timer1 = setTimeout(() => {
+        setCountdownPhase("counting");
+        setCountdownNumber(5);
+      }, 1500);
+      return () => clearTimeout(timer1);
+    }
+  }, [gameStatus, currentRound]);
+
+  useEffect(() => {
+    if (countdownPhase === "counting" && countdownNumber !== null && countdownNumber > 0) {
+      const timer = setTimeout(() => {
+        setCountdownNumber(countdownNumber - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdownPhase === "counting" && countdownNumber === 0) {
+      setCountdownPhase("go");
+    }
+  }, [countdownPhase, countdownNumber]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -724,12 +749,240 @@ export default function Game() {
       )}
 
       {gameStatus === "waiting" && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-3" />
-            <p className="text-sm font-medium">Sonraki tur hazırlanıyor...</p>
-            <p className="text-xs text-muted-foreground mt-1">Birazdan başlıyor</p>
+        <div className="flex-1 flex items-center justify-center overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
+          
+          <div className="absolute inset-0 overflow-hidden">
+            <motion.div
+              animate={{ x: ["100%", "-100%"] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+            />
+            <motion.div
+              animate={{ x: ["-100%", "100%"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 0.5 }}
+              className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"
+            />
+            <motion.div
+              animate={{ y: ["100%", "-100%"] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+              className="absolute left-1/4 top-0 h-full w-px bg-gradient-to-b from-transparent via-primary/20 to-transparent"
+            />
+            <motion.div
+              animate={{ y: ["-100%", "100%"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 1 }}
+              className="absolute right-1/4 top-0 h-full w-px bg-gradient-to-b from-transparent via-amber-500/20 to-transparent"
+            />
           </div>
+
+          <div className="absolute top-6 left-6 flex items-center gap-3">
+            <motion.div 
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
+            >
+              <div className="h-2 w-2 rounded-full bg-primary" />
+              <span className="text-xs font-medium text-primary">Canlı Yayın</span>
+            </motion.div>
+          </div>
+
+          <div className="absolute top-6 right-6 flex items-center gap-2">
+            {[...Array(5)].map((_, i) => (
+              <motion.div
+                key={i}
+                animate={{ 
+                  height: [8, 16 + Math.random() * 16, 8],
+                  opacity: [0.3, 1, 0.3]
+                }}
+                transition={{ 
+                  duration: 0.5 + Math.random() * 0.3, 
+                  repeat: Infinity,
+                  delay: i * 0.1
+                }}
+                className="w-1 bg-emerald-500 rounded-full"
+                style={{ height: 8 }}
+              />
+            ))}
+          </div>
+
+          <div className="absolute bottom-6 left-6 right-6">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Signal className="h-3 w-3" />
+                <span>Sinyal Güçlü</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Radio className="h-3 w-3" />
+                <span>Yayın Hazırlanıyor</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative z-10 text-center">
+            <AnimatePresence mode="wait">
+              {countdownPhase === "preparing" && (
+                <motion.div
+                  key="preparing"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.2 }}
+                  className="flex flex-col items-center"
+                >
+                  <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    className="relative h-24 w-24 mb-6"
+                  >
+                    <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary" />
+                    <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-emerald-500" 
+                      style={{ animation: "spin 2s linear infinite reverse" }} 
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Tv className="h-8 w-8 text-primary" />
+                    </div>
+                  </motion.div>
+                  <h2 className="text-2xl font-bold mb-2">Stüdyo Hazırlanıyor</h2>
+                  <p className="text-sm text-muted-foreground">Yayın Birkaç Saniye İçinde Başlayacak</p>
+                </motion.div>
+              )}
+
+              {countdownPhase === "counting" && countdownNumber !== null && (
+                <motion.div
+                  key={`count-${countdownNumber}`}
+                  initial={{ opacity: 0, scale: 2, rotateX: -90 }}
+                  animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+                  exit={{ opacity: 0, scale: 0.5, rotateX: 90 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="relative">
+                    <motion.div
+                      animate={{ 
+                        boxShadow: [
+                          "0 0 0 0 rgba(255,0,0,0)",
+                          "0 0 60px 20px rgba(255,0,0,0.3)",
+                          "0 0 0 0 rgba(255,0,0,0)"
+                        ]
+                      }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="relative"
+                    >
+                      <div className="h-40 w-40 rounded-3xl bg-gradient-to-br from-primary via-red-600 to-red-700 flex items-center justify-center shadow-2xl shadow-primary/50">
+                        <span className="text-8xl font-black text-white" style={{ textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
+                          {countdownNumber}
+                        </span>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ scale: 1, opacity: 0.5 }}
+                      animate={{ scale: 2, opacity: 0 }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="absolute inset-0 rounded-3xl border-2 border-primary"
+                    />
+                  </div>
+
+                  <motion.p 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-lg font-semibold mt-6 text-muted-foreground"
+                  >
+                    {countdownNumber === 5 && "Hazır Ol!"}
+                    {countdownNumber === 4 && "Konsantre Ol!"}
+                    {countdownNumber === 3 && "Dikkat!"}
+                    {countdownNumber === 2 && "Neredeyse Hazır..."}
+                    {countdownNumber === 1 && "Başlıyor!"}
+                  </motion.p>
+
+                  <div className="flex items-center gap-1 mt-4">
+                    {[5, 4, 3, 2, 1].map((num) => (
+                      <motion.div
+                        key={num}
+                        className={`h-2 w-8 rounded-full transition-all ${
+                          num > (countdownNumber || 0) 
+                            ? "bg-primary" 
+                            : "bg-muted"
+                        }`}
+                        animate={num === countdownNumber ? { scale: [1, 1.2, 1] } : {}}
+                        transition={{ duration: 0.3 }}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {countdownPhase === "go" && (
+                <motion.div
+                  key="go"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", damping: 10, stiffness: 100 }}
+                  className="flex flex-col items-center"
+                >
+                  <motion.div
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      boxShadow: [
+                        "0 0 0 0 rgba(16,185,129,0)",
+                        "0 0 80px 30px rgba(16,185,129,0.4)",
+                        "0 0 0 0 rgba(16,185,129,0)"
+                      ]
+                    }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 flex items-center justify-center shadow-2xl shadow-emerald-500/50"
+                  >
+                    <Play className="h-20 w-20 text-white ml-2" fill="white" />
+                  </motion.div>
+                  <motion.h2 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-3xl font-black mt-6 text-emerald-500"
+                  >
+                    Yayındayız!
+                  </motion.h2>
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-sm text-muted-foreground mt-2"
+                  >
+                    Oyun Birkaç Saniye İçinde Başlayacak
+                  </motion.p>
+                </motion.div>
+              )}
+
+              {!countdownPhase && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex flex-col items-center"
+                >
+                  <div className="relative h-20 w-20 mb-4">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Radio className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium">Sonraki Tur Hazırlanıyor...</p>
+                  <p className="text-xs text-muted-foreground mt-1">Birazdan Başlıyor</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       )}
 
