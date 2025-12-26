@@ -157,13 +157,13 @@ export default function JoinRoom() {
         <Logo height={40} />
       </header>
 
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative overflow-hidden flex items-start lg:items-center justify-center">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-primary blur-3xl" />
           <div className="absolute bottom-20 left-10 w-48 h-48 rounded-full bg-emerald-500 blur-3xl" />
         </div>
 
-        <div className="relative max-w-5xl mx-auto px-4 py-6 lg:py-8">
+        <div className="relative w-full max-w-3xl mx-auto px-4 py-6 lg:py-8">
           <div className="flex flex-col lg:flex-row gap-8">
             
             <form onSubmit={handleSubmit} className="flex-1 space-y-6">

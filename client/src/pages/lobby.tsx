@@ -462,13 +462,13 @@ export default function Lobby() {
         )}
       </header>
 
-      <main className="flex-1 relative overflow-hidden">
+      <main className="flex-1 relative overflow-hidden flex items-start lg:items-center justify-center">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-10 left-20 w-72 h-72 rounded-full bg-primary blur-3xl" />
           <div className="absolute bottom-20 right-10 w-56 h-56 rounded-full bg-emerald-500 blur-3xl" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-6">
+        <div className="relative w-full max-w-5xl mx-auto px-4 py-6">
           <div className="flex flex-col lg:flex-row gap-6">
             
             <div className="flex-1 space-y-5">
@@ -681,34 +681,42 @@ export default function Lobby() {
               )}
             </div>
 
-            <div className="lg:w-80">
+            <div className="lg:w-96">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
                 className="sticky top-24"
               >
-                <div className="p-5 rounded-2xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Signal className="h-4 w-4 text-primary" />
-                      <h3 className="font-bold">Oyuncular</h3>
+                <div className="relative p-6 rounded-2xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30">
+                  <div className="absolute -left-1 top-4 bottom-4 w-1 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
+                  
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/25">
+                        <Users className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">Oyuncular</h3>
+                        <p className="text-xs text-muted-foreground">{playerCount} Kişi Katıldı</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                       <motion.div 
                         animate={{ opacity: [1, 0.3, 1] }}
                         transition={{ duration: 1, repeat: Infinity }}
-                        className="h-1.5 w-1.5 rounded-full bg-emerald-500"
+                        className="h-2 w-2 rounded-full bg-emerald-500"
                       />
-                      <span className="text-[10px] font-medium text-emerald-500">{connectedCount}/{playerCount} Hazır</span>
+                      <span className="text-xs font-medium text-emerald-500">{connectedCount}/{playerCount} Hazır</span>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {players.length === 0 ? (
-                      <div className="p-6 text-center rounded-xl bg-muted/30">
-                        <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Oyuncu Bekleniyor...</p>
+                      <div className="p-8 text-center rounded-xl bg-muted/30 border border-dashed border-border/50">
+                        <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-sm font-medium text-muted-foreground">Oyuncu Bekleniyor...</p>
+                        <p className="text-xs text-muted-foreground mt-1">Kodu Paylaşarak Arkadaşlarını Davet Et</p>
                       </div>
                     ) : (
                       players.map((player, index) => {
@@ -721,51 +729,74 @@ export default function Lobby() {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
+                            className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all ${
                               player.user.googleConnected
-                                ? "bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20"
-                                : "bg-muted/30 border border-border/30"
+                                ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 border border-emerald-500/30 shadow-sm shadow-emerald-500/10"
+                                : "bg-muted/40 border border-border/40"
                             }`}
                           >
+                            {isPlayerHost && (
+                              <div className="absolute -top-2 -left-2">
+                                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                                  <Crown className="h-4 w-4 text-white" />
+                                </div>
+                              </div>
+                            )}
+                            
                             <div className="relative">
                               {player.user.avatarUrl ? (
                                 <img 
                                   src={player.user.avatarUrl} 
                                   alt={player.user.displayName}
-                                  className="h-10 w-10 rounded-full object-cover"
+                                  className={`h-14 w-14 rounded-xl object-cover ring-2 ${
+                                    player.user.googleConnected ? "ring-emerald-500/50" : "ring-border/50"
+                                  }`}
                                 />
                               ) : (
-                                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                                  <span className="text-sm font-bold">{player.user.displayName.charAt(0).toUpperCase()}</span>
+                                <div className={`h-14 w-14 rounded-xl flex items-center justify-center text-lg font-bold ${
+                                  player.user.googleConnected 
+                                    ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white" 
+                                    : "bg-muted text-muted-foreground"
+                                }`}>
+                                  {player.user.displayName.charAt(0).toUpperCase()}
                                 </div>
                               )}
                               {player.user.googleConnected && (
-                                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-background">
-                                  <Check className="h-2.5 w-2.5 text-white" />
+                                <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 rounded-lg flex items-center justify-center border-2 border-background shadow-sm">
+                                  <Check className="h-3 w-3 text-white" />
                                 </div>
                               )}
                             </div>
+                            
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                {isPlayerHost && <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                                <p className="font-medium text-sm truncate">{player.user.displayName}</p>
+                              <p className="font-bold text-base truncate">{player.user.displayName}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {player.user.googleConnected ? (
+                                  <span className="text-xs font-medium text-emerald-500 flex items-center gap-1">
+                                    <SiYoutube className="h-3 w-3" />
+                                    YouTube Bağlı
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Bağlantı Bekleniyor
+                                  </span>
+                                )}
                               </div>
-                              <p className={`text-xs ${player.user.googleConnected ? "text-emerald-500" : "text-muted-foreground"}`}>
-                                {player.user.googleConnected ? "Hazır" : "YouTube Bekleniyor"}
-                              </p>
                             </div>
+                            
                             {canKick && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-8 w-8 text-destructive shrink-0"
+                                    className="h-9 w-9 text-destructive shrink-0"
                                     onClick={() => kickPlayerMutation.mutate(player.userId)}
                                     disabled={kickPlayerMutation.isPending}
                                     data-testid={`button-kick-${player.userId}`}
                                   >
-                                    <UserX className="h-4 w-4" />
+                                    <UserX className="h-5 w-5" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Oyuncuyu At</TooltipContent>
@@ -778,11 +809,13 @@ export default function Lobby() {
                   </div>
 
                   {!isHost && (
-                    <div className="mt-4 pt-4 border-t border-border/30">
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30">
-                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <div className="mt-5 pt-5 border-t border-border/30">
+                      <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        </div>
                         <div>
-                          <p className="text-sm font-medium">Oyun Başlayacak</p>
+                          <p className="text-sm font-bold">Oyun Başlayacak</p>
                           <p className="text-xs text-muted-foreground">Yönetici Oyunu Başlatacak</p>
                         </div>
                       </div>
