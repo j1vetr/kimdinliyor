@@ -101,8 +101,7 @@ export default function Game() {
   const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(true);
-  const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
+    const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
   const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -555,80 +554,44 @@ export default function Game() {
             )}
           </div>
 
-          {showLeaderboard && currentRound > 1 && (
-            <motion.div 
-              initial={{ x: -100, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="fixed left-4 top-64 z-40 hidden lg:block"
-            >
-              <div className="relative">
-                <div className="absolute -left-1 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent rounded-full" />
-                <div className="bg-card/95 backdrop-blur-md rounded-2xl border border-border/50 shadow-2xl p-4 w-48">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-                        <Trophy className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="text-xs font-bold">Sıralama</span>
+          {currentRound > 1 && (
+            <div className="fixed left-4 top-24 lg:top-28 z-40 flex flex-col gap-1">
+              {getSortedPlayersByScore().slice(0, 3).map((player: any, index: number) => {
+                const playerId = player.userId || player.user?.id;
+                const displayName = player.user?.displayName || player.displayName;
+                const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
+                const score = playerScores.get(playerId) || player.totalScore || 0;
+                const isSelf = playerId === userId;
+                
+                const medalColors = [
+                  "from-amber-400 to-amber-600",
+                  "from-slate-300 to-slate-500", 
+                  "from-orange-400 to-orange-600"
+                ];
+                
+                return (
+                  <div 
+                    key={playerId}
+                    className={`flex items-center gap-1.5 lg:gap-2 pl-1 pr-2 lg:pr-3 py-1 rounded-full ${
+                      isSelf ? "bg-primary/20 ring-1 ring-primary/40" : "bg-card/90"
+                    }`}
+                  >
+                    <div className={`w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-gradient-to-br ${medalColors[index]} flex items-center justify-center text-[10px] lg:text-xs font-black text-white shrink-0`}>
+                      {index + 1}
                     </div>
-                    <button 
-                      onClick={() => setShowLeaderboard(false)}
-                      className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={displayName} className="w-5 h-5 lg:w-6 lg:h-6 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-muted flex items-center justify-center text-[10px] lg:text-xs font-bold shrink-0">
+                        {displayName?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-[10px] lg:text-xs font-semibold truncate max-w-[60px] lg:max-w-[80px]">{displayName}</span>
+                    <span className="text-[10px] lg:text-xs font-black text-primary ml-auto">{score}</span>
                   </div>
-                  <div className="space-y-1.5">
-                    {getSortedPlayersByScore().slice(0, 5).map((player: any, index: number) => {
-                      const playerId = player.userId || player.user?.id;
-                      const displayName = player.user?.displayName || player.displayName;
-                      const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
-                      const score = playerScores.get(playerId) || player.totalScore || 0;
-                      const isSelf = playerId === userId;
-                      
-                      return (
-                        <motion.div 
-                          key={playerId}
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: index * 0.05 }}
-                          className={`flex items-center gap-2 p-2 rounded-xl transition-all ${
-                            isSelf ? "bg-primary/10 border border-primary/20" : "bg-muted/30"
-                          }`}
-                        >
-                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
-                            index === 0 ? "bg-gradient-to-br from-amber-400 to-yellow-600 text-white" :
-                            index === 1 ? "bg-gradient-to-br from-gray-300 to-gray-500 text-white" :
-                            index === 2 ? "bg-gradient-to-br from-amber-600 to-orange-700 text-white" :
-                            "bg-muted text-muted-foreground"
-                          }`}>
-                            {index + 1}
-                          </div>
-                          {avatarUrl ? (
-                            <img src={avatarUrl} alt={displayName} className="w-6 h-6 rounded-lg object-cover shrink-0" />
-                          ) : (
-                            <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center text-xs font-bold shrink-0">
-                              {displayName?.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-xs font-medium truncate flex-1">{displayName}</span>
-                          <span className="text-xs font-black text-primary">{score}</span>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {!showLeaderboard && currentRound > 1 && (
-            <button
-              onClick={() => setShowLeaderboard(true)}
-              className="fixed left-4 top-64 z-40 hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 shadow-lg shadow-amber-500/25 hover:scale-105 transition-transform"
-            >
-              <Trophy className="h-5 w-5 text-white" />
-            </button>
+                );
+              })}
+            </div>
           )}
 
           
