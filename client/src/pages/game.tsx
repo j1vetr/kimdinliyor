@@ -829,71 +829,110 @@ export default function Game() {
                     </div>
                   </motion.div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {allPlayers.map((player: any, index: number) => {
-                      const playerId = player.userId || player.user?.id;
-                      const displayName = player.user?.displayName || player.displayName;
-                      const avatarUrl = player.user?.avatarUrl;
-                      const isSelected = selectedPlayers.includes(playerId);
-                      const isSelf = playerId === userId;
-                      
-                      return (
-                        <motion.button
-                          key={playerId}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: index * 0.03 }}
-                          onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
-                          disabled={hasAnswered}
-                          className={`relative flex flex-col items-center p-3 rounded-2xl transition-all text-center ${
-                            hasAnswered 
-                              ? "opacity-50 cursor-not-allowed" 
-                              : "hover:scale-[1.02] active:scale-[0.98]"
-                          } ${
-                            isSelected 
-                              ? "bg-gradient-to-br from-primary/20 to-primary/10 ring-2 ring-primary shadow-lg shadow-primary/20" 
-                              : "bg-muted/30 hover:bg-muted/50"
-                          }`}
-                          data-testid={`button-player-${playerId}`}
-                        >
-                          {isSelected && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center shadow-lg"
-                            >
-                              <Check className="h-3.5 w-3.5 text-primary-foreground" />
-                            </motion.div>
-                          )}
-                          
-                          <div className="relative mb-2">
-                            {avatarUrl ? (
-                              <img 
-                                src={avatarUrl} 
-                                alt={displayName}
-                                className={`w-14 h-14 rounded-xl object-cover transition-all ${
-                                  isSelected ? "ring-2 ring-primary" : ""
-                                }`}
-                              />
-                            ) : (
-                              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold transition-all ${
-                                isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
-                              }`}>
-                                {displayName?.charAt(0).toUpperCase()}
-                              </div>
+                  <>
+                    <div className="hidden lg:grid grid-cols-2 gap-2">
+                      {allPlayers.map((player: any, index: number) => {
+                        const playerId = player.userId || player.user?.id;
+                        const displayName = player.user?.displayName || player.displayName;
+                        const avatarUrl = player.user?.avatarUrl;
+                        const isSelected = selectedPlayers.includes(playerId);
+                        const isSelf = playerId === userId;
+                        
+                        return (
+                          <motion.button
+                            key={playerId}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: index * 0.03 }}
+                            onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
+                            disabled={hasAnswered}
+                            className={`relative flex flex-col items-center p-3 rounded-2xl transition-all text-center ${
+                              hasAnswered 
+                                ? "opacity-50 cursor-not-allowed" 
+                                : "hover:scale-[1.02] active:scale-[0.98]"
+                            } ${
+                              isSelected 
+                                ? "bg-gradient-to-br from-primary/20 to-primary/10 ring-2 ring-primary shadow-lg shadow-primary/20" 
+                                : "bg-muted/30 hover:bg-muted/50"
+                            }`}
+                            data-testid={`button-player-${playerId}`}
+                          >
+                            {isSelected && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="absolute -top-1 -right-1 h-6 w-6 bg-primary rounded-full flex items-center justify-center shadow-lg"
+                              >
+                                <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                              </motion.div>
                             )}
-                          </div>
-                          
-                          <p className="text-sm font-medium truncate w-full">
-                            {displayName}
-                          </p>
-                          {isSelf && (
-                            <span className="text-[10px] text-muted-foreground">(Sen)</span>
-                          )}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
+                            
+                            <div className="relative mb-2">
+                              {avatarUrl ? (
+                                <img 
+                                  src={avatarUrl} 
+                                  alt={displayName}
+                                  className={`w-14 h-14 rounded-xl object-cover transition-all ${
+                                    isSelected ? "ring-2 ring-primary" : ""
+                                  }`}
+                                />
+                              ) : (
+                                <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-lg font-bold transition-all ${
+                                  isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                                }`}>
+                                  {displayName?.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <p className="text-sm font-medium truncate w-full">
+                              {displayName}
+                            </p>
+                            {isSelf && (
+                              <span className="text-[10px] text-muted-foreground">(Sen)</span>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="lg:hidden flex flex-wrap gap-2">
+                      {allPlayers.map((player: any, index: number) => {
+                        const playerId = player.userId || player.user?.id;
+                        const displayName = player.user?.displayName || player.displayName;
+                        const isSelected = selectedPlayers.includes(playerId);
+                        const isSelf = playerId === userId;
+                        
+                        return (
+                          <motion.button
+                            key={playerId}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: index * 0.02 }}
+                            onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
+                            disabled={hasAnswered}
+                            className={`relative flex items-center gap-2 px-3 py-2 rounded-full transition-all ${
+                              hasAnswered 
+                                ? "opacity-50 cursor-not-allowed" 
+                                : "active:scale-95"
+                            } ${
+                              isSelected 
+                                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30" 
+                                : "bg-muted/50 text-foreground"
+                            }`}
+                            data-testid={`button-player-mobile-${playerId}`}
+                          >
+                            {isSelected && (
+                              <Check className="h-3.5 w-3.5 shrink-0" />
+                            )}
+                            <span className="text-sm font-medium whitespace-nowrap">
+                              {displayName}{isSelf ? " (Sen)" : ""}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </div>
 
