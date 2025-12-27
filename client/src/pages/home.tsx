@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
 const TAHMIN_MODLARI = [
@@ -70,22 +70,85 @@ const KARSILASTIRMA_MODLARI = [
   },
 ];
 
-const SAMPLE_PLAYERS = [
-  { name: "Beren", initial: "B", status: "Bekliyor", signal: true },
-  { name: "Selin", initial: "S", status: "Bekliyor", signal: false },
-  { name: "Duru", initial: "D", status: "Oyunda", signal: true },
-  { name: "Mert", initial: "M", status: "Bekliyor", signal: false },
+const LIVE_LOBBIES = [
+  {
+    name: "Efsane Oda",
+    players: [
+      { name: "Beren", initial: "B", status: "Hazır", color: "#ef4444" },
+      { name: "Selin", initial: "S", status: "Bekliyor", color: "#3b82f6" },
+      { name: "Duru", initial: "D", status: "Hazır", color: "#10b981" },
+      { name: "Mert", initial: "M", status: "Bekliyor", color: "#f59e0b" },
+    ],
+    count: "4/6",
+  },
+  {
+    name: "Gece Yarisi",
+    players: [
+      { name: "Ali", initial: "A", status: "Hazır", color: "#8b5cf6" },
+      { name: "Zeynep", initial: "Z", status: "Hazır", color: "#ec4899" },
+      { name: "Can", initial: "C", status: "Hazır", color: "#06b6d4" },
+    ],
+    count: "3/4",
+  },
+  {
+    name: "YouTube Masters",
+    players: [
+      { name: "Ece", initial: "E", status: "Hazır", color: "#f97316" },
+      { name: "Burak", initial: "B", status: "Bekliyor", color: "#3b82f6" },
+      { name: "Deniz", initial: "D", status: "Hazır", color: "#10b981" },
+      { name: "Aylin", initial: "A", status: "Hazır", color: "#ef4444" },
+      { name: "Kaan", initial: "K", status: "Bekliyor", color: "#8b5cf6" },
+    ],
+    count: "5/8",
+  },
+  {
+    name: "Tahmin Ustaları",
+    players: [
+      { name: "Melis", initial: "M", status: "Hazır", color: "#ec4899" },
+      { name: "Ozan", initial: "O", status: "Hazır", color: "#f59e0b" },
+    ],
+    count: "2/4",
+  },
+  {
+    name: "Video Avcilari",
+    players: [
+      { name: "Yigit", initial: "Y", status: "Hazır", color: "#06b6d4" },
+      { name: "Sude", initial: "S", status: "Bekliyor", color: "#f97316" },
+      { name: "Emre", initial: "E", status: "Hazır", color: "#3b82f6" },
+      { name: "Irem", initial: "I", status: "Hazır", color: "#10b981" },
+      { name: "Arda", initial: "A", status: "Hazır", color: "#ef4444" },
+      { name: "Nil", initial: "N", status: "Bekliyor", color: "#8b5cf6" },
+    ],
+    count: "6/8",
+  },
 ];
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState("");
   const [, setLocation] = useLocation();
+  const [currentLobbyIndex, setCurrentLobbyIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [activeRooms, setActiveRooms] = useState(12);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentLobbyIndex((prev) => (prev + 1) % LIVE_LOBBIES.length);
+        setActiveRooms(Math.floor(Math.random() * 8) + 10);
+        setIsTransitioning(false);
+      }, 300);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
       setLocation(`/oyun/${roomCode.trim().toUpperCase()}`);
     }
   };
+
+  const currentLobby = LIVE_LOBBIES[currentLobbyIndex];
 
   return (
     <div className="home-page">
@@ -96,7 +159,7 @@ export default function Home() {
       </header>
 
       <main className="home-main">
-        {/* Hero Section - Matching Reference Image */}
+        {/* Hero Section */}
         <section className="hero-section">
           <div className="hero-content">
             <div className="hero-badge-white">
@@ -123,26 +186,6 @@ export default function Home() {
                   <ArrowRight />
                 </Button>
               </Link>
-              <div className="hero-join-form">
-                <Input
-                  placeholder="ODA KODU"
-                  value={roomCode}
-                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
-                  maxLength={7}
-                  className="hero-join-input"
-                  data-testid="input-room-code"
-                />
-                <Button
-                  onClick={handleJoinRoom}
-                  disabled={!roomCode.trim()}
-                  variant="outline"
-                  className="hero-join-btn"
-                  data-testid="button-join-room"
-                >
-                  Katıl
-                </Button>
-              </div>
             </div>
 
             <div className="hero-features">
@@ -161,7 +204,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Side - Lobby Preview Card */}
+          {/* Right Side - Live Lobby Preview Card */}
           <div className="hero-lobby-preview">
             <div className="hero-lobby-card">
               <div className="hero-lobby-header">
@@ -169,29 +212,36 @@ export default function Home() {
                   <span className="hero-live-dot" />
                   <span>Canlı Lobiler</span>
                 </div>
-                <span className="hero-lobby-count">12 Aktif Oda</span>
+                <span className="hero-lobby-count">{activeRooms} Aktif Oda</span>
               </div>
               
-              <div className="hero-lobby-room">
-                <span className="hero-room-name">Efsane Oda</span>
+              <div className={`hero-lobby-room ${isTransitioning ? 'transitioning' : ''}`}>
+                <span className="hero-room-name">{currentLobby.name}</span>
+                <span className="hero-room-count">{currentLobby.count}</span>
               </div>
 
-              <div className="hero-lobby-players">
-                {SAMPLE_PLAYERS.map((player) => (
-                  <div key={player.name} className="hero-lobby-player">
-                    <div className="hero-lobby-avatar" style={{ background: player.status === "Oyunda" ? "#f59e0b" : "#3b82f6" }}>
+              <div className={`hero-lobby-players ${isTransitioning ? 'transitioning' : ''}`}>
+                {currentLobby.players.map((player, idx) => (
+                  <div key={`${currentLobbyIndex}-${idx}`} className="hero-lobby-player" style={{ animationDelay: `${idx * 0.08}s` }}>
+                    <div className="hero-lobby-avatar" style={{ background: player.color }}>
                       {player.initial}
                     </div>
                     <div className="hero-lobby-info">
                       <span className="hero-lobby-name">{player.name}</span>
-                      <span className="hero-lobby-status">{player.status}</span>
+                      <span className={`hero-lobby-status ${player.status === 'Hazır' ? 'ready' : ''}`}>{player.status}</span>
                     </div>
-                    {player.signal && (
+                    {player.status === "Hazır" && (
                       <div className="hero-lobby-signal">
                         <span /><span /><span />
                       </div>
                     )}
                   </div>
+                ))}
+              </div>
+
+              <div className="hero-lobby-dots">
+                {LIVE_LOBBIES.map((_, idx) => (
+                  <span key={idx} className={`hero-lobby-dot ${idx === currentLobbyIndex ? 'active' : ''}`} />
                 ))}
               </div>
             </div>
@@ -237,14 +287,14 @@ export default function Home() {
                   onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
                   maxLength={7}
                   className="join-input"
-                  data-testid="input-room-code-2"
+                  data-testid="input-room-code"
                 />
                 <Button
                   onClick={handleJoinRoom}
                   disabled={!roomCode.trim()}
                   variant="outline"
                   className="join-btn"
-                  data-testid="button-join-room-2"
+                  data-testid="button-join-room"
                 >
                   Katıl
                 </Button>

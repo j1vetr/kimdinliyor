@@ -730,13 +730,27 @@
   }
 
   .hero-lobby-room {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid hsl(0 0% 15%);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .hero-lobby-room.transitioning {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 
   .hero-room-name {
     font-size: 0.8125rem;
     font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  .hero-room-count {
+    font-size: 0.625rem;
     color: hsl(var(--muted-foreground));
   }
 
@@ -745,6 +759,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-height: 140px;
+    transition: opacity 0.3s;
+  }
+
+  .hero-lobby-players.transitioning {
+    opacity: 0;
   }
 
   .hero-lobby-player {
@@ -754,6 +774,18 @@
     padding: 0.375rem 0.5rem;
     background: hsl(0 0% 8%);
     border-radius: 0.375rem;
+    animation: heroPlayerSlideIn 0.4s ease-out backwards;
+  }
+
+  @keyframes heroPlayerSlideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   .hero-lobby-avatar {
@@ -786,6 +818,10 @@
     color: hsl(var(--muted-foreground));
   }
 
+  .hero-lobby-status.ready {
+    color: hsl(142 70% 55%);
+  }
+
   .hero-lobby-signal {
     display: flex;
     align-items: flex-end;
@@ -794,13 +830,40 @@
 
   .hero-lobby-signal span {
     width: 3px;
-    background: hsl(var(--primary));
+    background: hsl(142 70% 50%);
     border-radius: 1px;
+    animation: heroSignalPulse 1s ease-in-out infinite;
   }
 
-  .hero-lobby-signal span:nth-child(1) { height: 4px; }
-  .hero-lobby-signal span:nth-child(2) { height: 6px; }
-  .hero-lobby-signal span:nth-child(3) { height: 8px; }
+  .hero-lobby-signal span:nth-child(1) { height: 4px; animation-delay: 0s; }
+  .hero-lobby-signal span:nth-child(2) { height: 6px; animation-delay: 0.15s; }
+  .hero-lobby-signal span:nth-child(3) { height: 8px; animation-delay: 0.3s; }
+
+  @keyframes heroSignalPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .hero-lobby-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem;
+    border-top: 1px solid hsl(0 0% 15%);
+  }
+
+  .hero-lobby-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    background: hsl(0 0% 25%);
+    border-radius: 50%;
+    transition: background 0.3s, transform 0.3s;
+  }
+
+  .hero-lobby-dot.active {
+    background: hsl(var(--primary));
+    transform: scale(1.2);
+  }
 
   /* Play Options Section */
   .play-options-section {
