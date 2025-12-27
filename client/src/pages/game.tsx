@@ -126,6 +126,10 @@ export default function Game() {
   // CRITICAL: Immutable snapshot of results - prevents data leakage during transitions
   const [resultsSnapshot, setResultsSnapshot] = useState<ResultsSnapshot | null>(null);
   
+  // Transition guard: briefly show loading when switching from results to question
+  const [isTransitioningToQuestion, setIsTransitioningToQuestion] = useState(false);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Refs to track current values for WebSocket callbacks (avoids stale closure)
   const contentRef = useRef<Content | null>(null);
   const content2Ref = useRef<Content | null>(null);
@@ -232,21 +236,39 @@ export default function Game() {
         
         switch (message.type) {
           case "round_started":
-            // Apply round data immediately
-            setGameStatus("question");
-            setCurrentRound(message.round || 1);
-            setIsLightningRound(message.isLightningRound || false);
-            setContent(message.content || null);
-            setContent2(message.content2 || null);
-            setTimeLeft(message.timeLimit || 20);
-            setTotalTime(message.timeLimit || 20);
-            setHasAnswered(false);
-            setSelectedPlayers([]);
-            setSelectedContentId(null);
+            // CRITICAL: Show transition loading to mask any flash
+            setIsTransitioningToQuestion(true);
+            
+            // Clear any previous timeout
+            if (transitionTimeoutRef.current) {
+              clearTimeout(transitionTimeoutRef.current);
+            }
+            
+            // First reset all answer-related state BEFORE updating content
             setCorrectPlayerIds([]);
             setCorrectContentId(null);
             setRoundResults([]);
+            setHasAnswered(false);
+            setSelectedPlayers([]);
+            setSelectedContentId(null);
+            
+            // Then update content and round info
+            setContent(message.content || null);
+            setContent2(message.content2 || null);
+            setCurrentRound(message.round || 1);
+            setIsLightningRound(message.isLightningRound || false);
+            setTimeLeft(message.timeLimit || 20);
+            setTotalTime(message.timeLimit || 20);
             setGameMode(message.gameMode || "who_liked");
+            
+            // Clear snapshot to prevent stale data
+            setResultsSnapshot(null);
+            
+            // Transition to question after a brief delay
+            transitionTimeoutRef.current = setTimeout(() => {
+              setGameStatus("question");
+              setIsTransitioningToQuestion(false);
+            }, 100);
             break;
             
           case "round_ended":
@@ -347,22 +369,40 @@ export default function Game() {
       // Check if this is a new round or we're in wrong state
       if (gameStatus === "results" || gameStatus === "waiting" || (gameStatus === "question" && serverRound > currentRound)) {
         console.log(`[Polling] Transitioning to question - Round ${serverRound}`);
-        setGameStatus("question");
+        
+        // Show transition loading to mask any flash
+        setIsTransitioningToQuestion(true);
+        
+        // First reset all answer-related state BEFORE updating content
+        setCorrectPlayerIds([]);
+        setCorrectContentId(null);
+        setRoundResults([]);
+        setHasAnswered(false);
+        setSelectedPlayers([]);
+        setSelectedContentId(null);
+        
+        // Clear snapshot to prevent stale data
+        setResultsSnapshot(null);
+        
+        // Then update content and round info
+        setContent(data.content);
+        setContent2(data.content2 || null);
         setCurrentRound(serverRound);
         setIsLightningRound(data.gameState.isLightningRound || false);
         setTimeLeft(data.gameState.timeLeft || 20);
         setTotalTime(data.room?.roundDuration || 20);
-        setContent(data.content);
-        setContent2(data.content2 || null);
-        setHasAnswered(false);
-        setSelectedPlayers([]);
-        setSelectedContentId(null);
-        setCorrectPlayerIds([]);
-        setCorrectContentId(null);
-        setRoundResults([]);
         if (data.gameState.gameMode) {
           setGameMode(data.gameState.gameMode);
         }
+        
+        // Transition to question after a brief delay
+        if (transitionTimeoutRef.current) {
+          clearTimeout(transitionTimeoutRef.current);
+        }
+        transitionTimeoutRef.current = setTimeout(() => {
+          setGameStatus("question");
+          setIsTransitioningToQuestion(false);
+        }, 100);
       }
       // Also sync timeLeft during question phase
       else if (gameStatus === "question" && serverRound === currentRound && data.gameState.timeLeft !== undefined) {
@@ -595,7 +635,19 @@ export default function Game() {
         </div>
       )}
 
-      {gameStatus === "question" && content && (
+      {/* Transition loading - prevents any flash during round changes */}
+      {isTransitioningToQuestion && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+            className="h-10 w-10 border-3 border-primary/30 border-t-primary rounded-full"
+          />
+          <p className="text-sm text-muted-foreground">Sonraki Tur...</p>
+        </div>
+      )}
+
+      {gameStatus === "question" && content && !isTransitioningToQuestion && (
         <div className="flex flex-col h-full bg-gradient-to-b from-background to-background/95">
           {/* Premium Header Strip */}
           <header className="shrink-0 px-4 py-3">
