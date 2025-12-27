@@ -282,17 +282,47 @@ export default function Game() {
     if (!gameQuery.data) return;
     
     const data = gameQuery.data;
-    // Handle results state from query
+    // Handle results state from query - also sync results data from polling
     if (data.gameState?.status === "results" && gameStatus !== "results") {
       setGameStatus("results");
       setCurrentRound(data.gameState.currentRound || 1);
+      // Sync results data from polling fallback
+      if (data.gameState.correctUserIds) {
+        setCorrectPlayerIds(data.gameState.correctUserIds);
+      }
+      if (data.gameState.correctContentId !== undefined) {
+        setCorrectContentId(data.gameState.correctContentId);
+      }
+      if (data.gameState.results) {
+        setRoundResults(data.gameState.results);
+        const newScores = new Map<string, number>();
+        data.gameState.results.forEach((r: RoundResult) => {
+          newScores.set(r.oderId, r.totalScore);
+        });
+        setPlayerScores(newScores);
+      }
+    }
+    // Also update results data if already in results state but missing data
+    if (data.gameState?.status === "results" && gameStatus === "results" && correctPlayerIds.length === 0 && data.gameState.correctUserIds?.length > 0) {
+      setCorrectPlayerIds(data.gameState.correctUserIds);
+      if (data.gameState.correctContentId !== undefined) {
+        setCorrectContentId(data.gameState.correctContentId);
+      }
+      if (data.gameState.results) {
+        setRoundResults(data.gameState.results);
+        const newScores = new Map<string, number>();
+        data.gameState.results.forEach((r: RoundResult) => {
+          newScores.set(r.oderId, r.totalScore);
+        });
+        setPlayerScores(newScores);
+      }
     }
     // Ensure content is set if missing during question phase
     if (data.gameState?.status === "question" && !content && data.content) {
       console.log("gameQuery: Setting missing content", data.content);
       setContent(data.content);
     }
-  }, [gameQuery.data, gameStatus, content]);
+  }, [gameQuery.data, gameStatus, content, correctPlayerIds.length]);
 
   useEffect(() => {
     const roomStatus = gameQuery.data?.room?.status;

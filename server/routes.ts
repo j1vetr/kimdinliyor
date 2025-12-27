@@ -23,6 +23,9 @@ interface GameState {
   playerStreaks: Map<string, number>;
   gameModes: string[];
   currentGameMode: string | null;
+  lastRoundCorrectUserIds: string[];
+  lastRoundCorrectContentId: string | null;
+  lastRoundResults: any[];
 }
 
 const gameStates = new Map<string, GameState>();
@@ -621,6 +624,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         playerStreaks: new Map(),
         gameModes: roomModes,
         currentGameMode: null,
+        lastRoundCorrectUserIds: [],
+        lastRoundCorrectContentId: null,
+        lastRoundResults: [],
       });
 
       // Update room status
@@ -1032,6 +1038,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Update round end time
     await storage.updateRound(currentRound.id, { endedAt: new Date() });
 
+    // Store results in gameState for polling fallback
+    gameState.lastRoundCorrectUserIds = correctUserIds;
+    gameState.lastRoundCorrectContentId = isComparisonMode ? correctContentId : null;
+    gameState.lastRoundResults = roundResults;
+
     // Broadcast round results
     broadcastToRoom(roomCode, {
       type: "round_ended",
@@ -1136,6 +1147,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           timeLeft: gameState.timeLeft,
           isLightningRound: gameState.isLightningRound,
           gameMode: gameState.currentGameMode,
+          // Include results data for polling fallback when in results state
+          correctUserIds: gameState.status === "results" ? gameState.lastRoundCorrectUserIds : undefined,
+          correctContentId: gameState.status === "results" ? gameState.lastRoundCorrectContentId : undefined,
+          results: gameState.status === "results" ? gameState.lastRoundResults : undefined,
         } : null,
         currentRound,
         content: content ? {
