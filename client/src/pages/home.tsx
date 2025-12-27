@@ -142,10 +142,10 @@ function LiveLobbyPreview() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-medium text-green-500">Canlı lobiler</span>
+            <span className="text-xs font-medium text-green-500">Canlı Lobiler</span>
           </div>
           <span className={`text-xs text-muted-foreground transition-all duration-300 ${isChanging ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-            {roomCount} aktif oda
+            {roomCount} Aktif Oda
           </span>
         </div>
 
@@ -186,9 +186,6 @@ function LiveLobbyPreview() {
           ))}
         </div>
         
-        <div className="pt-2 border-t border-border/50 flex items-center justify-center">
-          <span className="text-primary font-medium text-xs">Hemen katıl</span>
-        </div>
       </div>
     </div>
   );
