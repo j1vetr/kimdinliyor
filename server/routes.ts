@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile, getOldestLikedVideos, getTrendingVideos, getPopularChannels } from "./youtube";
+import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile, getOldestLikedVideos, getTrendingVideos, getPopularChannels, getCachedTrendingVideos, getCachedPopularChannels } from "./youtube";
 import type { Room, RoomPlayer, Content } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -579,26 +579,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       
       console.log(`[GAME START] Comparison modes - Video: ${hasVideoComparisonModes}, Channel: ${hasChannelComparisonModes}`);
       
-      // Fetch trending videos for video comparison modes
+      // Fetch trending videos for video comparison modes (using cached content)
       if (hasVideoComparisonModes) {
-        console.log(`[GAME START] Fetching trending videos for comparison modes...`);
-        const trendingVideos = await getTrendingVideos(50);
-        console.log(`[GAME START] Fetched ${trendingVideos.length} trending videos`);
+        console.log(`[GAME START] Fetching cached trending videos for comparison modes...`);
+        const cachedVideos = await getCachedTrendingVideos(50, []);
+        console.log(`[GAME START] Got ${cachedVideos.length} cached trending videos`);
         
-        for (const video of trendingVideos) {
+        for (const video of cachedVideos) {
           // Public content has empty sourceUserIds - cannot be used for who_liked
           await storage.addContent({
             roomId: room.id,
-            contentId: `public_video_${video.id}`,
+            contentId: `public_video_${video.contentId}`,
             contentType: "video",
             title: video.title,
-            subtitle: video.channelTitle,
+            subtitle: video.subtitle || "",
             thumbnailUrl: video.thumbnailUrl,
             sourceUserIds: [], // Empty = public content
             viewCount: video.viewCount,
             subscriberCount: null,
             videoCount: null,
-            duration: String(video.duration), // Convert to string
+            duration: video.duration ? String(video.duration) : null,
             publishedAt: video.publishedAt,
             isOldestLike: false,
             isPublicContent: true, // Mark as public
@@ -606,20 +606,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
       
-      // Fetch popular channels for channel comparison modes
+      // Fetch popular channels for channel comparison modes (using cached content)
       if (hasChannelComparisonModes) {
-        console.log(`[GAME START] Fetching popular channels for comparison modes...`);
-        const popularChannels = await getPopularChannels(30);
-        console.log(`[GAME START] Fetched ${popularChannels.length} popular channels`);
+        console.log(`[GAME START] Fetching cached popular channels for comparison modes...`);
+        const cachedChannels = await getCachedPopularChannels(30, []);
+        console.log(`[GAME START] Got ${cachedChannels.length} cached popular channels`);
         
-        for (const channel of popularChannels) {
+        for (const channel of cachedChannels) {
           // Public content has empty sourceUserIds - cannot be used for who_subscribed
+          const subCount = channel.subscriberCount || "0";
           await storage.addContent({
             roomId: room.id,
-            contentId: `public_channel_${channel.id}`,
+            contentId: `public_channel_${channel.contentId}`,
             contentType: "channel",
             title: channel.title,
-            subtitle: `${parseInt(channel.subscriberCount).toLocaleString("tr-TR")} abone`,
+            subtitle: `${parseInt(subCount).toLocaleString("tr-TR")} abone`,
             thumbnailUrl: channel.thumbnailUrl,
             sourceUserIds: [], // Empty = public content
             viewCount: null,
