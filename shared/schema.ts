@@ -17,9 +17,9 @@ export const users = pgTable("users", {
 export const GAME_MODES = {
   WHO_LIKED: "who_liked",           // Kim Beğenmiş?
   WHO_SUBSCRIBED: "who_subscribed", // Kim Abone?
-  VIEW_COUNT: "view_count",         // Sayı Tahmini (izlenme)
-  WHICH_MORE: "which_more",         // Hangisi Daha...
-  SUBSCRIBER_COUNT: "subscriber_count", // Abone Sayısı
+  WHICH_OLDER: "which_older",       // Hangisi Daha Eski?
+  MOST_VIEWED: "most_viewed",       // En Çok Kim İzlenmiş?
+  OLDEST_LIKE: "oldest_like",       // Benim İlk Aşkım (En Eski Like)
 } as const;
 
 export type GameMode = typeof GAME_MODES[keyof typeof GAME_MODES];
@@ -74,6 +74,8 @@ export const contentCache = pgTable("content_cache", {
   viewCount: text("view_count"), // Video izlenme sayısı
   likeCount: text("like_count"), // Video beğeni sayısı
   subscriberCount: text("subscriber_count"), // Kanal abone sayısı
+  publishedAt: text("published_at"), // Video yayınlanma tarihi (ISO string)
+  likedAt: text("liked_at"), // Kullanıcının bu videoyu beğendiği tarih (oldest like için)
   createdAt: timestamp("created_at").defaultNow(),
 });
 

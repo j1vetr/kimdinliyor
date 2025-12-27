@@ -128,6 +128,7 @@ export interface YouTubeVideo {
   channelTitle: string;
   thumbnailUrl: string | null;
   description: string;
+  publishedAt: string | null; // ISO date string
 }
 
 export interface YouTubeChannel {
@@ -160,6 +161,7 @@ export async function getLikedVideos(accessToken: string, maxResults: number = 5
       channelTitle: item.snippet.channelTitle,
       thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
       description: item.snippet.description?.slice(0, 200) || "",
+      publishedAt: item.snippet.publishedAt || null,
     }));
   } catch (error) {
     console.error("Failed to get liked videos:", error);

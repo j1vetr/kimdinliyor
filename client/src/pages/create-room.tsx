@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, UsersRound, Check, ArrowRight, Play, Disc3, Radio } from "lucide-react";
+import { ArrowLeft, Lock, Globe, Users, Loader2, Timer, Zap, ThumbsUp, UserPlus, Eye, Clock, Trophy, Heart, Check, ArrowRight, Play, Disc3, Radio } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,9 @@ import { motion, AnimatePresence } from "framer-motion";
 const GAME_MODE_OPTIONS = [
   { id: "who_liked", label: "Kim Beğenmiş?", description: "Videoyu hangi oyuncu beğenmiş?", icon: ThumbsUp, color: "bg-red-500", glow: "shadow-red-500/30" },
   { id: "who_subscribed", label: "Kim Abone?", description: "Kanala hangi oyuncu abone?", icon: UserPlus, color: "bg-orange-500", glow: "shadow-orange-500/30" },
-  { id: "view_count", label: "Sayı Tahmini", description: "Videonun izlenme sayısını tahmin et.", icon: Eye, color: "bg-blue-500", glow: "shadow-blue-500/30" },
-  { id: "subscriber_count", label: "Abone Sayısı", description: "Kanalın abone sayısını tahmin et.", icon: UsersRound, color: "bg-emerald-500", glow: "shadow-emerald-500/30" },
+  { id: "which_older", label: "Hangisi Daha Eski?", description: "İki videodan hangisi daha önce yüklendi?", icon: Clock, color: "bg-blue-500", glow: "shadow-blue-500/30" },
+  { id: "most_viewed", label: "En Çok İzlenen", description: "Hangi video daha fazla izlenmiş?", icon: Trophy, color: "bg-emerald-500", glow: "shadow-emerald-500/30" },
+  { id: "oldest_like", label: "İlk Aşkım", description: "En eski beğenilen video kime ait?", icon: Heart, color: "bg-pink-500", glow: "shadow-pink-500/30" },
 ] as const;
 
 const STEPS = [
