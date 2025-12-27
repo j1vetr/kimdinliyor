@@ -83,6 +83,18 @@ interface WSMessage {
   timestamp?: number;
 }
 
+// Snapshot of results data - immutable during results phase
+interface ResultsSnapshot {
+  round: number;
+  content: Content;
+  content2: Content | null;
+  correctPlayerIds: string[];
+  correctContentId: string | null;
+  results: RoundResult[];
+  gameMode: GameMode;
+  isLightningRound: boolean;
+}
+
 export default function Game() {
   const params = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
@@ -103,15 +115,16 @@ export default function Game() {
   const [correctPlayerIds, setCorrectPlayerIds] = useState<string[]>([]);
   const [correctContentId, setCorrectContentId] = useState<string | null>(null);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
-  const [resultsForRound, setResultsForRound] = useState<number>(0); // Track which round the results are for
   const [gameMode, setGameMode] = useState<GameMode>("who_liked");
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const [resultsCountdown, setResultsCountdown] = useState(5);
   const [nextRoundAt, setNextRoundAt] = useState<number | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  
+  // CRITICAL: Immutable snapshot of results - prevents data leakage during transitions
+  const [resultsSnapshot, setResultsSnapshot] = useState<ResultsSnapshot | null>(null);
   
   // Determine if current mode is a comparison mode
   const isComparisonMode = gameMode === "which_older" || 
@@ -223,9 +236,21 @@ export default function Game() {
             break;
             
           case "round_ended":
+            // CRITICAL: Create immutable snapshot BEFORE changing status
+            // This prevents any race condition with content updates
+            if (content) {
+              setResultsSnapshot({
+                round: currentRound,
+                content: content,
+                content2: content2,
+                correctPlayerIds: message.correctUserIds || [],
+                correctContentId: message.correctContentId || null,
+                results: message.results || [],
+                gameMode: gameMode,
+                isLightningRound: isLightningRound,
+              });
+            }
             setGameStatus("results");
-            setResultsForRound(currentRound); // Lock results to current round
-            setIsTransitioning(false);
             setCorrectPlayerIds(message.correctUserIds || []);
             setCorrectContentId(message.correctContentId || null);
             setRoundResults(message.results || []);
@@ -290,22 +315,10 @@ export default function Game() {
     const timer = setInterval(() => {
       const remaining = Math.max(0, Math.ceil((nextRoundAt - Date.now()) / 1000));
       setResultsCountdown(remaining);
-      
-      // Start transitioning when countdown is done
-      if (remaining <= 0 && !isTransitioning) {
-        setIsTransitioning(true);
-      }
     }, 100);
 
     return () => clearInterval(timer);
-  }, [gameStatus, nextRoundAt, isTransitioning]);
-
-  // Reset transitioning state when entering question phase
-  useEffect(() => {
-    if (gameStatus === "question") {
-      setIsTransitioning(false);
-    }
-  }, [gameStatus]);
+  }, [gameStatus, nextRoundAt]);
 
   // gameQuery effect: Sync state for round transitions and results
   useEffect(() => {
@@ -346,10 +359,23 @@ export default function Game() {
     // Handle results state from query - also sync results data from polling
     if (serverStatus === "results" && gameStatus !== "results") {
       console.log(`[Polling] Transitioning to results - Round ${serverRound}`);
+      
+      // CRITICAL: Create snapshot from current content before any updates
+      if (content) {
+        setResultsSnapshot({
+          round: serverRound,
+          content: content,
+          content2: content2,
+          correctPlayerIds: data.gameState.correctUserIds || [],
+          correctContentId: data.gameState.correctContentId || null,
+          results: data.gameState.results || [],
+          gameMode: data.gameState.gameMode || gameMode,
+          isLightningRound: data.gameState.isLightningRound || false,
+        });
+      }
+      
       setGameStatus("results");
       setCurrentRound(serverRound);
-      setResultsForRound(serverRound); // Track which round these results are for
-      setIsTransitioning(false); // Reset transitioning when entering results
       // Set next round timing
       if (data.gameState.nextRoundAt) {
         setNextRoundAt(data.gameState.nextRoundAt);
@@ -790,14 +816,14 @@ export default function Game() {
         </div>
       )}
 
-      {gameStatus === "results" && content && (
+      {gameStatus === "results" && resultsSnapshot && (
         <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
           {/* Header Strip */}
           <header className="shrink-0 px-4 py-3 md:py-4">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {resultsForRound}/{totalRounds}</span>
-                {isLightningRound && (
+                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {resultsSnapshot.round}/{totalRounds}</span>
+                {resultsSnapshot.isLightningRound && (
                   <span className="text-[10px] md:text-xs text-amber-500 font-medium flex items-center gap-0.5">
                     <Zap className="h-2.5 w-2.5 md:h-3 md:w-3" /> 2x
                   </span>
@@ -811,62 +837,59 @@ export default function Game() {
             </div>
           </header>
 
-          {/* Show loading state during transition or when results are stale */}
-          {(isTransitioning || currentRound !== resultsForRound) ? (
-            <main className="flex-1 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">Sonraki tura geçiliyor...</span>
-              </div>
-            </main>
-          ) : (
           <main className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto space-y-3 md:space-y-4">
               
-              {/* Content Card */}
+              {/* Content Card - using snapshot */}
               <button 
                 type="button"
                 className="w-full rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden text-left"
-                onClick={openYouTubeLink}
+                onClick={() => {
+                  if (resultsSnapshot.content?.contentType === "video" && resultsSnapshot.content?.contentId) {
+                    window.open(`https://www.youtube.com/watch?v=${resultsSnapshot.content.contentId}`, "_blank");
+                  } else if (resultsSnapshot.content?.contentType === "channel" && resultsSnapshot.content?.contentId) {
+                    window.open(`https://www.youtube.com/channel/${resultsSnapshot.content.contentId}`, "_blank");
+                  }
+                }}
               >
                 <div className="flex items-center gap-3 p-3">
                   <div className="w-14 h-10 rounded-md overflow-hidden shrink-0 bg-muted">
-                    {content.thumbnailUrl && (
-                      <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                    {resultsSnapshot.content.thumbnailUrl && (
+                      <img src={resultsSnapshot.content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold line-clamp-1 text-foreground/90">{content.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{content.subtitle}</p>
+                    <p className="text-xs font-semibold line-clamp-1 text-foreground/90">{resultsSnapshot.content.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{resultsSnapshot.content.subtitle}</p>
                   </div>
                   <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
                 </div>
               </button>
 
-              {/* Correct Answer Card */}
+              {/* Correct Answer Card - using snapshot */}
               <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 overflow-hidden">
                 <div className="px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-500/20">
                   <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Doğru Cevap</span>
                 </div>
                 <div className="p-3">
-                  {isComparisonMode ? (
+                  {(resultsSnapshot.gameMode === "which_older" || resultsSnapshot.gameMode === "most_viewed" || resultsSnapshot.gameMode === "which_longer" || resultsSnapshot.gameMode === "which_more_subs" || resultsSnapshot.gameMode === "which_more_videos") ? (
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-9 rounded-md overflow-hidden shrink-0 bg-muted">
                         <img 
-                          src={(correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
+                          src={(resultsSnapshot.correctContentId === resultsSnapshot.content.id ? resultsSnapshot.content : resultsSnapshot.content2)?.thumbnailUrl || ''} 
                           alt="" 
                           className="w-full h-full object-cover" 
                         />
                       </div>
                       <p className="text-xs font-medium text-foreground/90 line-clamp-2">
-                        {(correctContentId === content.id ? content : content2)?.title}
+                        {(resultsSnapshot.correctContentId === resultsSnapshot.content.id ? resultsSnapshot.content : resultsSnapshot.content2)?.title}
                       </p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 flex-wrap">
-                      {correctPlayerIds.length > 0 ? (
+                      {resultsSnapshot.correctPlayerIds.length > 0 ? (
                         allPlayers
-                          .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
+                          .filter((p: any) => resultsSnapshot.correctPlayerIds.includes(p.userId || p.user?.id))
                           .map((player: any) => {
                             const avatarUrl = player.user?.avatarUrl;
                             const displayName = player.user?.displayName || player.displayName;
@@ -891,11 +914,11 @@ export default function Game() {
                 </div>
               </div>
 
-              {/* Player Results */}
+              {/* Player Results - using snapshot */}
               <div className="space-y-2">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">Oyuncu Skorları</span>
                 <div className="space-y-1.5">
-                  {[...roundResults].sort((a, b) => b.score - a.score).map((result, index) => {
+                  {[...resultsSnapshot.results].sort((a, b) => b.score - a.score).map((result, index) => {
                     const isSelf = result.oderId === userId;
                     const isTopScorer = index === 0 && result.score > 0;
                     
@@ -947,10 +970,10 @@ export default function Game() {
                             {isSelf && <span className="text-[9px] text-primary font-medium">(Sen)</span>}
                           </div>
                           <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                            {isComparisonMode ? (
+                            {(resultsSnapshot.gameMode === "which_older" || resultsSnapshot.gameMode === "most_viewed" || resultsSnapshot.gameMode === "which_longer" || resultsSnapshot.gameMode === "which_more_subs" || resultsSnapshot.gameMode === "which_more_videos") ? (
                               result.selectedContentId ? (
                                 <span className={result.isCorrect ? "text-emerald-500" : "text-muted-foreground"}>
-                                  {result.selectedContentId === content.id ? content.title?.slice(0, 20) : content2?.title?.slice(0, 20)}...
+                                  {result.selectedContentId === resultsSnapshot.content.id ? resultsSnapshot.content.title?.slice(0, 20) : resultsSnapshot.content2?.title?.slice(0, 20)}...
                                 </span>
                               ) : <span className="italic">Cevap vermedi</span>
                             ) : (
@@ -982,7 +1005,6 @@ export default function Game() {
               </div>
             </div>
           </main>
-          )}
         </div>
       )}
     </div>
