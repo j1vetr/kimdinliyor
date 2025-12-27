@@ -501,6 +501,18 @@ export default function Game() {
         }
       `}</style>
 
+      {/* Loading state after countdown completes but before content loads */}
+      {countdownComplete && gameStatus === "waiting" && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full"
+          />
+          <p className="text-muted-foreground">Tur yükleniyor...</p>
+        </div>
+      )}
+
       {gameStatus === "question" && content && (
         <>
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
