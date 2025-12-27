@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile } from "./youtube";
+import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile, getOldestLikedVideos } from "./youtube";
 import type { Room, RoomPlayer, Content } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -476,7 +476,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const likedVideos = await getLikedVideosWithStats(token.accessToken, 50);
           const subscriptions = await getSubscriptionsWithStats(token.accessToken, 50);
           
-          console.log(`[GAME START] Fetched ${likedVideos.length} liked videos and ${subscriptions.length} subscriptions for player ${player.userId}`);
+          // Fetch oldest liked videos for "Benim İlk Aşkım" mode
+          const oldestLikes = await getOldestLikedVideos(token.accessToken, 3);
+          const oldestLikeIds = new Set(oldestLikes.map(v => v.id));
+          
+          console.log(`[GAME START] Fetched ${likedVideos.length} liked videos, ${oldestLikes.length} oldest likes, and ${subscriptions.length} subscriptions for player ${player.userId}`);
           
           // Add videos to pool
           for (const video of likedVideos) {
@@ -485,8 +489,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               contentByUser.set(key, []);
             }
             const existing = contentByUser.get(key)!;
+            const isOldest = oldestLikeIds.has(video.id);
             if (!existing.some(e => e.userId === player.userId)) {
-              existing.push({ content: video, userId: player.userId, type: "video" });
+              existing.push({ content: video, userId: player.userId, type: "video", isOldestLike: isOldest });
+            }
+          }
+          
+          // Add oldest likes that might not be in the first 50 liked videos
+          for (const video of oldestLikes) {
+            const key = `video:${video.id}`;
+            if (!contentByUser.has(key)) {
+              contentByUser.set(key, []);
+            }
+            const existing = contentByUser.get(key)!;
+            if (!existing.some(e => e.userId === player.userId)) {
+              existing.push({ content: video, userId: player.userId, type: "video", isOldestLike: true });
             }
           }
           
@@ -514,8 +531,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const content = entries[0].content;
           const type = entries[0].type;
           const users = entries.map(e => e.userId);
+          // Mark as oldest_like ONLY if EXACTLY ONE user has it as their oldest like
+          // This ensures no ties in "Benim İlk Aşkım" mode
+          const oldestLikeUsers = entries.filter((e: any) => e.isOldestLike);
+          const isOldestLike = oldestLikeUsers.length === 1;
 
-          console.log(`[GAME START] Adding content: ${content.title} with sourceUserIds: ${JSON.stringify(users)}`);
+          console.log(`[GAME START] Adding content: ${content.title} with sourceUserIds: ${JSON.stringify(users)}, isOldestLike: ${isOldestLike}`);
 
           await storage.addContent({
             roomId: room.id,
@@ -527,6 +548,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             sourceUserIds: users,
             viewCount: type === "video" ? content.viewCount : null,
             subscriberCount: type === "channel" ? content.subscriberCount : null,
+            publishedAt: type === "video" ? content.publishedAt : null,
+            isOldestLike: isOldestLike,
           });
         }
       } else {
@@ -696,8 +719,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const contentType = content.contentType;
     let availableModes = gameState.gameModes.filter(mode => {
       // Video-only modes
-      if (mode === "who_liked" || mode === "which_older" || mode === "most_viewed" || mode === "oldest_like") {
+      if (mode === "who_liked" || mode === "which_older" || mode === "most_viewed") {
         return contentType === "video";
+      }
+      // oldest_like requires: video, isOldestLike flag, AND single owner for clear guessing
+      if (mode === "oldest_like") {
+        return contentType === "video" && 
+               content.isOldestLike === true && 
+               content.sourceUserIds.length === 1;
       }
       // Channel-only modes
       if (mode === "who_subscribed") return contentType === "channel";

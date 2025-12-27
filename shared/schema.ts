@@ -76,6 +76,7 @@ export const contentCache = pgTable("content_cache", {
   subscriberCount: text("subscriber_count"), // Kanal abone sayısı
   publishedAt: text("published_at"), // Video yayınlanma tarihi (ISO string)
   likedAt: text("liked_at"), // Kullanıcının bu videoyu beğendiği tarih (oldest like için)
+  isOldestLike: boolean("is_oldest_like").default(false), // "Benim İlk Aşkım" modu için işaret
   createdAt: timestamp("created_at").defaultNow(),
 });
 

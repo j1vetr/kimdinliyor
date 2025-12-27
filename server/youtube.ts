@@ -301,3 +301,123 @@ export async function getSubscriptionsWithStats(accessToken: string, maxResults:
     viewCount: stats.get(channel.id)?.viewCount || "0",
   }));
 }
+
+// Get the oldest liked video (first video the user ever liked)
+// YouTube API returns videos in reverse chronological order of when they were liked
+// So we need to paginate to the end to find the first/oldest like
+export async function getOldestLikedVideo(accessToken: string): Promise<YouTubeVideo | null> {
+  try {
+    let pageToken: string | undefined = undefined;
+    let lastVideos: YouTubeVideo[] = [];
+    let iterations = 0;
+    const maxIterations = 10; // Safety limit to avoid infinite loops
+    
+    // Paginate through all liked videos to find the oldest (last page, last item)
+    while (iterations < maxIterations) {
+      const url = pageToken 
+        ? `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50&pageToken=${pageToken}`
+        : `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50`;
+      
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to get liked videos for oldest:", await response.text());
+        break;
+      }
+
+      const data = await response.json();
+      const videos = (data.items || []).map((item: any) => ({
+        id: item.id,
+        title: item.snippet.title,
+        channelTitle: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+        description: item.snippet.description?.slice(0, 200) || "",
+        publishedAt: item.snippet.publishedAt || null,
+      }));
+
+      if (videos.length > 0) {
+        lastVideos = videos;
+      }
+
+      // If there's no next page, we've reached the end
+      if (!data.nextPageToken) {
+        break;
+      }
+      
+      pageToken = data.nextPageToken;
+      iterations++;
+    }
+
+    // Return the last video from the last page (oldest liked)
+    if (lastVideos.length > 0) {
+      return lastVideos[lastVideos.length - 1];
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Failed to get oldest liked video:", error);
+    return null;
+  }
+}
+
+// Get a few oldest liked videos (for variety in the game)
+export async function getOldestLikedVideos(accessToken: string, count: number = 5): Promise<YouTubeVideo[]> {
+  try {
+    let pageToken: string | undefined = undefined;
+    let lastPageVideos: YouTubeVideo[] = [];
+    let secondLastPageVideos: YouTubeVideo[] = [];
+    let iterations = 0;
+    const maxIterations = 20; // Allow more iterations for larger like histories
+    
+    while (iterations < maxIterations) {
+      const url = pageToken 
+        ? `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50&pageToken=${pageToken}`
+        : `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50`;
+      
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error("Failed to get liked videos:", await response.text());
+        break;
+      }
+
+      const data = await response.json();
+      const videos = (data.items || []).map((item: any) => ({
+        id: item.id,
+        title: item.snippet.title,
+        channelTitle: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+        description: item.snippet.description?.slice(0, 200) || "",
+        publishedAt: item.snippet.publishedAt || null,
+      }));
+
+      if (videos.length > 0) {
+        secondLastPageVideos = lastPageVideos;
+        lastPageVideos = videos;
+      }
+
+      if (!data.nextPageToken) {
+        break;
+      }
+      
+      pageToken = data.nextPageToken;
+      iterations++;
+    }
+
+    // Combine last two pages and take the oldest ones
+    const allOldest = [...secondLastPageVideos, ...lastPageVideos];
+    // Return the last 'count' videos (oldest liked)
+    return allOldest.slice(-count);
+  } catch (error) {
+    console.error("Failed to get oldest liked videos:", error);
+    return [];
+  }
+}
