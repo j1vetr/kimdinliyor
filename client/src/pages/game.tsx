@@ -490,514 +490,296 @@ export default function Game() {
 
       {gameStatus === "question" && content && (
         <div className="flex flex-col h-full overflow-hidden">
-          {/* Compact Header Bar - Timer + Round + Mode */}
-          <header className="shrink-0 flex items-center justify-between px-3 py-2 bg-gradient-to-r from-card/80 via-background to-card/80 border-b border-border/40">
-            {/* Timer Circle - Compact */}
+          {/* Ultra Compact Header */}
+          <header className="shrink-0 flex items-center justify-between px-2 py-1.5 border-b border-border/30 bg-card/50">
+            {/* Left: Timer + Round */}
             <div className="flex items-center gap-2">
-              <div className="relative w-10 h-10">
-                <svg className="w-10 h-10 -rotate-90" viewBox="0 0 40 40">
-                  <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted/20" />
-                  <motion.circle
-                    cx="20" cy="20" r="16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
-                    strokeDasharray={100.5} strokeDashoffset={100.5 * (1 - timerPercentage / 100)}
-                    className={isTimeLow ? "text-red-500" : "text-primary"}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={`text-sm font-black ${isTimeLow ? "text-red-500" : ""}`}>{timeLeft}</span>
-                </div>
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full ${isTimeLow ? "bg-red-500/20 text-red-500" : "bg-primary/10 text-primary"}`}>
+                <span className="text-xs font-bold">{timeLeft}</span>
               </div>
-              <div className="hidden sm:block">
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Tur</div>
-                <div className="text-sm font-black leading-none">{currentRound}<span className="text-muted-foreground font-normal">/{totalRounds}</span></div>
-              </div>
+              <span className="text-xs text-muted-foreground">{currentRound}/{totalRounds}</span>
             </div>
-
-            {/* Center - Content Type Badge */}
-            <div className="flex items-center gap-2">
-              {isLightningRound && (
-                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/15 border border-amber-500/30">
-                  <Zap className="h-3 w-3 text-amber-500" />
-                  <span className="text-[10px] font-bold text-amber-500">2x</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/40">
-                <ModeIcon className="h-3 w-3 text-muted-foreground" />
-                <span className="text-[10px] font-medium">{modeInfo?.badge}</span>
-              </div>
+            
+            {/* Center: Mode */}
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-muted/50">
+              <ModeIcon className="h-3 w-3 text-muted-foreground" />
+              <span className="text-[10px] font-medium text-muted-foreground">{modeInfo?.badge}</span>
+              {isLightningRound && <Zap className="h-3 w-3 text-amber-500" />}
             </div>
-
-            {/* Right - Equalizer Bars */}
-            <div className="flex items-center gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  animate={{ height: [3, 10 + Math.random() * 6, 3] }}
-                  transition={{ duration: 0.3 + Math.random() * 0.2, repeat: Infinity, delay: i * 0.05 }}
-                  className={`w-0.5 rounded-full ${isTimeLow ? "bg-red-500" : "bg-emerald-500"}`}
-                  style={{ height: 3 }}
-                />
-              ))}
-            </div>
+            
+            {/* Right: Visual indicator */}
+            <div className={`w-2 h-2 rounded-full ${isTimeLow ? "bg-red-500 animate-pulse" : "bg-emerald-500"}`} />
           </header>
 
-          {/* Main Content Area - Flexible */}
-          <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+          {/* Main Content */}
+          <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-2">
             {isComparisonMode && content2 ? (
-              /* Comparison Mode UI - Compact Side by Side */
-              <div className="flex-1 flex flex-col p-2 lg:p-3 min-h-0">
-                {/* Question Prompt - Compact */}
-                <div className="flex items-center gap-2 mb-2 shrink-0">
-                  <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                    <ModeIcon className="h-3 w-3 text-white" />
-                  </div>
-                  <p className="text-xs lg:text-sm font-bold flex-1">{modeInfo?.question}</p>
-                </div>
-
-                {/* Two Videos Side by Side - Compact */}
-                <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch">
-                  {/* Video 1 */}
+              /* Comparison Mode - Ultra Compact */
+              <div className="flex-1 flex flex-col gap-2">
+                {/* Question */}
+                <p className="text-xs font-semibold text-center text-muted-foreground">{modeInfo?.question}</p>
+                
+                {/* VS Cards - Horizontal */}
+                <div className="flex-1 flex items-center gap-1.5 min-h-0">
+                  {/* Card 1 */}
                   <motion.button
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => !hasAnswered && setSelectedContentId(content.id)}
                     disabled={hasAnswered}
-                    className={`flex-1 flex flex-col rounded-lg p-2 border-2 transition-all max-w-[50%] ${
-                      hasAnswered ? "opacity-60" : ""
-                    } ${
+                    className={`flex-1 h-full flex flex-col rounded-md overflow-hidden transition-all ${
                       selectedContentId === content.id
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                        : "border-border/50 bg-card/50 hover:border-primary/50"
-                    }`}
+                        ? "ring-2 ring-primary shadow-lg"
+                        : "ring-1 ring-border/50 hover:ring-primary/50"
+                    } ${hasAnswered ? "opacity-60" : ""}`}
                     data-testid="button-select-video-1"
                   >
-                    <div className="relative w-full rounded-md overflow-hidden mb-1.5 shrink-0" style={{ aspectRatio: '16/9', maxHeight: '120px' }}>
+                    <div className="relative flex-1 min-h-0">
                       {content.thumbnailUrl ? (
-                        <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
+                        <img src={content.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                          <SiYoutube className="w-6 h-6 text-red-500" />
+                        <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                          <SiYoutube className="w-6 h-6 text-red-500/50" />
                         </div>
                       )}
                       {selectedContentId === content.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
-                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-4 w-4 text-white" />
-                          </div>
+                        <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
+                          <Check className="h-6 w-6 text-white" />
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] lg:text-xs font-semibold line-clamp-2 text-left leading-tight">{content.title}</p>
+                    <div className="p-1.5 bg-card/95 backdrop-blur-sm">
+                      <p className="text-[10px] font-medium line-clamp-2 leading-tight">{content.title}</p>
+                    </div>
                   </motion.button>
 
-                  {/* VS Divider - Compact */}
-                  <div className="flex items-center justify-center shrink-0 px-1">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
-                      <span className="text-[9px] font-black text-white">VS</span>
-                    </div>
+                  {/* VS Badge */}
+                  <div className="shrink-0 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                    <span className="text-[8px] font-black text-white">VS</span>
                   </div>
 
-                  {/* Video 2 */}
+                  {/* Card 2 */}
                   <motion.button
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
                     disabled={hasAnswered}
-                    className={`flex-1 flex flex-col rounded-lg p-2 border-2 transition-all max-w-[50%] ${
-                      hasAnswered ? "opacity-60" : ""
-                    } ${
+                    className={`flex-1 h-full flex flex-col rounded-md overflow-hidden transition-all ${
                       selectedContentId === content2.id
-                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
-                        : "border-border/50 bg-card/50 hover:border-primary/50"
-                    }`}
+                        ? "ring-2 ring-primary shadow-lg"
+                        : "ring-1 ring-border/50 hover:ring-primary/50"
+                    } ${hasAnswered ? "opacity-60" : ""}`}
                     data-testid="button-select-video-2"
                   >
-                    <div className="relative w-full rounded-md overflow-hidden mb-1.5 shrink-0" style={{ aspectRatio: '16/9', maxHeight: '120px' }}>
+                    <div className="relative flex-1 min-h-0">
                       {content2.thumbnailUrl ? (
-                        <img src={content2.thumbnailUrl} alt={content2.title} className="w-full h-full object-cover" />
+                        <img src={content2.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                          <SiYoutube className="w-6 h-6 text-red-500" />
+                        <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                          <SiYoutube className="w-6 h-6 text-red-500/50" />
                         </div>
                       )}
                       {selectedContentId === content2.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
-                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-4 w-4 text-white" />
-                          </div>
+                        <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
+                          <Check className="h-6 w-6 text-white" />
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] lg:text-xs font-semibold line-clamp-2 text-left leading-tight">{content2.title}</p>
+                    <div className="p-1.5 bg-card/95 backdrop-blur-sm">
+                      <p className="text-[10px] font-medium line-clamp-2 leading-tight">{content2.title}</p>
+                    </div>
                   </motion.button>
                 </div>
 
-                {/* Submit Button for Comparison */}
-                <div className="shrink-0 mt-3 pt-2 border-t border-border/20">
+                {/* Submit */}
+                <div className="shrink-0">
                   {hasAnswered ? (
-                    <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                      <Check className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm font-bold text-emerald-500">Gönderildi</span>
+                    <div className="flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10">
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-xs font-semibold text-emerald-500">Gönderildi</span>
                     </div>
                   ) : (
                     <Button
-                      className="w-full h-10 text-sm font-bold gap-2 bg-gradient-to-r from-primary to-red-600"
+                      size="sm"
+                      className="w-full gap-1.5 bg-primary"
                       onClick={handleSubmitAnswer}
                       disabled={!selectedContentId || answerMutation.isPending}
                       data-testid="button-submit-comparison"
                     >
-                      {answerMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4" />
-                          {selectedContentId ? "Kilitle" : "Video Seç"}
-                        </>
-                      )}
+                      {answerMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      <span className="text-xs">{selectedContentId ? "Kilitle" : "Seç"}</span>
                     </Button>
                   )}
                 </div>
               </div>
             ) : (
-              /* Player Selection Mode UI - Mixing Console Aesthetic */
-              <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-                {/* Left: Media Section - Now Playing Slab */}
-                <div className="flex-1 flex flex-col min-h-0 p-4 lg:p-6">
-                  {/* Now Playing Header with Equalizer */}
-                  <div className="flex items-center gap-3 mb-3 shrink-0">
-                    <div className="relative h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-primary via-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-primary/30">
-                      {content.contentType === "video" ? <Play className="h-5 w-5 lg:h-6 lg:w-6 text-white" /> : <SiYoutube className="h-5 w-5 lg:h-6 lg:w-6 text-white" />}
-                      <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] lg:text-xs font-bold uppercase tracking-wider text-primary">
-                          {content.contentType === "video" ? "Şimdi Çalıyor" : "Kanal"}
-                        </span>
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(4)].map((_, i) => (
-                            <motion.div
-                              key={i}
-                              animate={{ height: [4, 12 + Math.random() * 8, 4] }}
-                              transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, delay: i * 0.1 }}
-                              className="w-1 rounded-full bg-gradient-to-t from-emerald-500 to-emerald-400"
-                              style={{ height: 4 }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <h2 className="text-base lg:text-xl xl:text-2xl font-black leading-tight line-clamp-2" data-testid="text-content-title">
-                        {content.title}
-                      </h2>
-                      {content.subtitle && (
-                        <p className="text-xs lg:text-sm text-muted-foreground line-clamp-1 mt-0.5">{content.subtitle}</p>
-                      )}
-                    </div>
-                    <button 
-                      onClick={openYouTubeLink} 
-                      className="shrink-0 h-9 w-9 lg:h-10 lg:w-10 rounded-lg bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors" 
-                      data-testid="button-open-youtube-header"
-                    >
-                      <ExternalLink className="h-4 w-4 lg:h-5 lg:w-5 text-muted-foreground" />
-                    </button>
-                  </div>
-
-                  {/* Media Display - Flexible Height */}
-                  <div className="flex-1 flex items-center justify-center min-h-0">
-                    {content.contentType === "video" ? (
-                      <div className="relative w-full h-full max-h-[180px] lg:max-h-none lg:aspect-video rounded-2xl overflow-hidden ring-2 ring-primary/40 shadow-2xl shadow-primary/20" data-testid="video-player-container">
-                        <iframe
-                          src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0`}
-                          title={content.title}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
+              /* Player Selection Mode - Compact */
+              <div className="flex-1 flex flex-col gap-2 min-h-0">
+                {/* Content Preview - Compact */}
+                <div className="shrink-0 flex items-center gap-2 p-2 rounded-md bg-card/50 border border-border/30">
+                  <div className="relative w-12 h-12 rounded overflow-hidden shrink-0">
+                    {content.thumbnailUrl ? (
+                      <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <button onClick={openYouTubeLink} className="relative group" data-testid="button-open-youtube">
-                        <div className="w-28 h-28 lg:w-40 lg:h-40 xl:w-48 xl:h-48 rounded-2xl overflow-hidden ring-2 ring-primary/40 shadow-2xl shadow-primary/20 transition-transform group-hover:scale-105">
-                          {content.thumbnailUrl ? (
-                            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" data-testid="img-content-thumbnail" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                              <SiYoutube className="w-12 h-12 lg:w-16 lg:h-16 text-red-500" />
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <SiYoutube className="w-4 h-4 text-red-500" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold line-clamp-1">{content.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{modeInfo?.question}</p>
+                  </div>
+                  <button onClick={openYouTubeLink} className="shrink-0 p-1.5 rounded hover:bg-muted" data-testid="button-open-youtube-header">
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {/* Players Grid - Compact */}
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {allPlayers.map((player: any) => {
+                      const playerId = player.userId || player.user?.id;
+                      const displayName = player.user?.displayName || player.displayName;
+                      const avatarUrl = player.user?.avatarUrl;
+                      const isSelected = selectedPlayers.includes(playerId);
+                      const isSelf = playerId === userId;
+                      
+                      return (
+                        <motion.button
+                          key={playerId}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
+                          disabled={hasAnswered}
+                          className={`relative flex flex-col items-center p-2 rounded-md transition-all ${
+                            hasAnswered ? "opacity-50" : ""
+                          } ${
+                            isSelected 
+                              ? "bg-primary text-white ring-1 ring-primary" 
+                              : "bg-card hover:bg-muted ring-1 ring-border/30"
+                          }`}
+                          data-testid={`button-player-${playerId}`}
+                        >
+                          {isSelected && (
+                            <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+                              <Check className="h-2.5 w-2.5" />
                             </div>
                           )}
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
-                          <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
-                            <Play className="h-6 w-6 lg:h-7 lg:w-7 text-white fill-white" />
-                          </div>
-                        </div>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Vertical Divider - Desktop */}
-                <div className="hidden lg:flex flex-col items-center py-6">
-                  <div className="flex-1 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
-                  <div className="my-3 w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                    <Mic2 className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 w-px bg-gradient-to-b from-border via-border to-transparent" />
-                </div>
-
-                {/* Right: Selection Panel - Mixer Pad Style */}
-                <div className="shrink-0 lg:w-80 xl:w-96 flex flex-col p-4 lg:p-6 bg-gradient-to-t lg:bg-gradient-to-l from-muted/20 to-transparent border-t lg:border-t-0">
-                  {/* Question Prompt - Larger */}
-                  <div className="flex items-center gap-3 mb-4 shrink-0">
-                    <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                      <ModeIcon className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-[10px] lg:text-xs font-bold uppercase tracking-wider text-purple-500">Soru</span>
-                      <p className="text-sm lg:text-base xl:text-lg font-bold">{modeInfo?.question}</p>
-                    </div>
-                  </div>
-
-                  {/* Player Selection Grid - Mixer Pad Style */}
-                  <div className="flex-1 min-h-0 overflow-y-auto">
-                    <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 lg:gap-3">
-                      {allPlayers.map((player: any, index: number) => {
-                        const playerId = player.userId || player.user?.id;
-                        const displayName = player.user?.displayName || player.displayName;
-                        const avatarUrl = player.user?.avatarUrl;
-                        const isSelected = selectedPlayers.includes(playerId);
-                        const isSelf = playerId === userId;
-                        
-                        return (
-                          <motion.button
-                            key={playerId}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
-                            disabled={hasAnswered}
-                            className={`relative flex flex-col items-center justify-center p-3 lg:p-4 rounded-xl transition-all ${
-                              hasAnswered ? "opacity-50" : ""
-                            } ${
-                              isSelected 
-                                ? "bg-gradient-to-br from-primary/90 to-red-600/90 text-white shadow-lg shadow-primary/40 ring-2 ring-primary/50" 
-                                : "bg-card/80 hover:bg-card border border-border/50 hover:border-primary/50"
-                            }`}
-                            data-testid={`button-player-${playerId}`}
-                          >
-                            {/* Selection indicator */}
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
-                                <Check className="h-3 w-3 text-white" />
+                          <div className="relative mb-1">
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isSelected ? "bg-white/20" : "bg-muted"}`}>
+                                {displayName?.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            
-                            {/* Avatar */}
-                            <div className={`relative mb-2 ${isSelected ? "ring-2 ring-white/30" : "ring-2 ring-border/30"} rounded-full`}>
-                              {avatarUrl ? (
-                                <img src={avatarUrl} alt={displayName} className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover" />
-                              ) : (
-                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center text-base lg:text-lg font-bold ${
-                                  isSelected ? "bg-white/20 text-white" : "bg-muted text-foreground"
-                                }`}>
-                                  {displayName?.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              {/* Online indicator */}
-                              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${
-                                isSelected ? "border-primary bg-emerald-400" : "border-card bg-emerald-500"
-                              }`} />
-                            </div>
-                            
-                            {/* Name */}
-                            <span className={`text-xs lg:text-sm font-semibold text-center line-clamp-1 ${
-                              isSelected ? "text-white" : "text-foreground"
-                            }`}>
-                              {displayName}
-                            </span>
-                            {isSelf && (
-                              <span className={`text-[10px] lg:text-xs ${isSelected ? "text-white/70" : "text-muted-foreground"}`}>
-                                (Sen)
-                              </span>
-                            )}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
+                          </div>
+                          <span className="text-[10px] font-medium text-center line-clamp-1 w-full">
+                            {isSelf ? "Ben" : displayName?.split(' ')[0]}
+                          </span>
+                        </motion.button>
+                      );
+                    })}
                   </div>
+                </div>
 
-                  {/* Submit Button - Fixed at Bottom */}
-                  <div className="shrink-0 mt-4 pt-3 border-t border-border/30">
-                    {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40">
-                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                          <Check className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-sm lg:text-base font-bold text-emerald-500">Kilitlendi</span>
-                      </div>
-                    ) : (
-                      <Button
-                        className="w-full h-11 lg:h-12 text-sm lg:text-base font-bold gap-2 bg-gradient-to-r from-primary to-red-600 shadow-lg shadow-primary/30"
-                        onClick={handleSubmitAnswer}
-                        disabled={selectedPlayers.length === 0 || answerMutation.isPending}
-                        data-testid="button-submit-answer"
-                      >
-                        {answerMutation.isPending ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="h-5 w-5" />
-                            {selectedPlayers.length === 0 ? "Oyuncu Seç" : `Kilitle (${selectedPlayers.length})`}
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
+                {/* Submit */}
+                <div className="shrink-0">
+                  {hasAnswered ? (
+                    <div className="flex items-center justify-center gap-1.5 py-2 rounded-md bg-emerald-500/10">
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-xs font-semibold text-emerald-500">Kilitlendi</span>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="w-full gap-1.5 bg-primary"
+                      onClick={handleSubmitAnswer}
+                      disabled={selectedPlayers.length === 0 || answerMutation.isPending}
+                      data-testid="button-submit-answer"
+                    >
+                      {answerMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      <span className="text-xs">{selectedPlayers.length === 0 ? "Seç" : `Kilitle (${selectedPlayers.length})`}</span>
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
           </main>
 
-          {/* Time Low Warning Bar */}
-          {isTimeLow && (
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              className="h-0.5 bg-gradient-to-r from-red-500 via-red-400 to-red-500 origin-left shrink-0"
-            />
-          )}
+          {/* Time Warning */}
+          {isTimeLow && <div className="h-0.5 bg-red-500 animate-pulse shrink-0" />}
         </div>
       )}
 
       {gameStatus === "results" && content && (
-        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-background to-background/95">
-          <header className="relative flex items-center justify-center px-4 py-3 border-b border-border/50 shrink-0 bg-background/80 backdrop-blur-sm">
-            <div className="absolute left-4">
-              <Badge variant="outline" className="text-xs py-0.5 px-2.5 gap-1.5 bg-background/50">
-                <span className="text-muted-foreground">Tur</span>
-                <span className="font-bold">{currentRound}/{totalRounds}</span>
-              </Badge>
-            </div>
-            <Logo height={32} showAnimation={false} />
-            {isLightningRound && (
-              <div className="absolute right-4">
-                <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-500 border-yellow-500/40 text-xs py-0.5 px-2.5 gap-1.5">
-                  <Zap className="h-3.5 w-3.5" />
-                  2x Puan
-                </Badge>
-              </div>
-            )}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Compact Header */}
+          <header className="shrink-0 flex items-center justify-between px-2 py-1.5 border-b border-border/30 bg-card/50">
+            <span className="text-xs text-muted-foreground">{currentRound}/{totalRounds}</span>
+            <span className="text-[10px] font-medium text-muted-foreground">Sonuçlar</span>
+            {isLightningRound && <Zap className="h-3 w-3 text-amber-500" />}
           </header>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-2xl mx-auto space-y-5">
+          <main className="flex-1 overflow-y-auto p-2">
+            <div className="space-y-2">
+              {/* Content Card - Compact */}
               <button 
                 type="button"
-                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/50 hover:border-red-500/40 hover:bg-card transition-all text-left group shadow-lg"
+                className="w-full flex items-center gap-2 p-2 rounded-md bg-card/50 border border-border/30 text-left"
                 onClick={openYouTubeLink}
               >
-                <div className="relative w-20 h-14 md:w-24 md:h-16 rounded-xl overflow-hidden shrink-0 ring-2 ring-red-500/30 shadow-md">
+                <div className="w-12 h-8 rounded overflow-hidden shrink-0">
                   {content.thumbnailUrl ? (
-                    <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                      <SiYoutube className="w-6 h-6 text-red-500" />
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <SiYoutube className="w-4 h-4 text-red-500" />
                     </div>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                    <ExternalLink className="h-5 w-5 text-white" />
-                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5 gap-1">
-                      {content.contentType === "video" ? <><Play className="h-2.5 w-2.5" /> Video</> : <><SiYoutube className="h-2.5 w-2.5" /> Kanal</>}
-                    </Badge>
-                  </div>
-                  <p className="text-sm md:text-base font-bold line-clamp-2">{content.title}</p>
-                </div>
+                <p className="text-xs font-medium line-clamp-1 flex-1">{content.title}</p>
+                <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
               </button>
 
-              {/* Doğru Cevap Section - Conditionally renders based on mode */}
+              {/* Correct Answer - Compact */}
               {isComparisonMode ? (
-                /* Comparison Mode: Show correct content */
-                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/40 shadow-lg overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                  <div className="relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <Check className="h-3.5 w-3.5 text-green-500" />
+                <div className="p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-10 h-6 rounded overflow-hidden shrink-0">
+                        <img 
+                          src={(correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
+                          alt="" 
+                          className="w-full h-full object-cover" 
+                        />
                       </div>
-                      <h3 className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Doğru Cevap</h3>
-                    </div>
-                    <div className="flex items-center gap-3 p-2 rounded-xl bg-green-500/10 border border-green-500/20">
-                      <div className="relative w-16 h-10 rounded-lg overflow-hidden shrink-0 ring-1 ring-green-500/30">
-                        {(correctContentId === content.id ? content : content2)?.thumbnailUrl ? (
-                          <img 
-                            src={(correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
-                            alt="Doğru cevap" 
-                            className="w-full h-full object-cover" 
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-green-500/20">
-                            <SiYoutube className="w-4 h-4 text-green-500" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs font-semibold text-green-700 dark:text-green-300 line-clamp-2 flex-1">
-                        {(correctContentId === content.id ? content : content2)?.title || "Doğru içerik"}
+                      <p className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 line-clamp-1">
+                        {(correctContentId === content.id ? content : content2)?.title}
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
-                /* Tahmin Mode: Show correct players */
-                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/40 shadow-lg overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                  <div className="relative">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <Check className="h-3.5 w-3.5 text-green-500" />
-                      </div>
-                      <h3 className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">
-                        {gameMode === "who_liked" ? "Kim Beğenmiş?" : gameMode === "who_subscribed" ? "Kim Abone?" : "Doğru Cevap"}
-                      </h3>
-                    </div>
+                <div className="p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     {correctPlayerIds.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {allPlayers
-                          .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
-                          .map((player: any) => {
-                            const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
-                            const displayName = player.user?.displayName || player.displayName;
-                            return (
-                              <div key={player.userId || player.user?.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-green-500/20 backdrop-blur-sm border border-green-500/30">
-                                {avatarUrl ? (
-                                  <img src={avatarUrl} alt={displayName} className="w-6 h-6 rounded-md object-cover ring-1 ring-green-500/30" />
-                                ) : (
-                                  <div className="w-6 h-6 rounded-md bg-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-700 dark:text-green-300">
-                                    {displayName?.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                                <span className="text-xs font-semibold text-green-700 dark:text-green-300">{displayName}</span>
-                              </div>
-                            );
-                          })}
-                      </div>
+                      allPlayers
+                        .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
+                        .map((player: any) => (
+                          <span key={player.userId || player.user?.id} className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            {player.user?.displayName || player.displayName}
+                          </span>
+                        ))
                     ) : (
-                      <p className="text-xs text-muted-foreground italic">
-                        {content.contentType === "video" ? "Bu videoyu kimse beğenmemiş." : "Bu kanala kimse abone değil."}
-                      </p>
+                      <span className="text-[10px] text-muted-foreground italic">Kimse</span>
                     )}
                   </div>
                 </div>
               )}
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between px-1">
-                  <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                    Oyuncu Tahminleri
-                  </h3>
-                  <Badge variant="outline" className="text-[10px] py-0 px-2">
-                    {roundResults.length} oyuncu
-                  </Badge>
-                </div>
-                
+              {/* Player Results - Compact List */}
+              <div className="space-y-1">
                 {[...roundResults].sort((a, b) => b.score - a.score).map((result, index) => {
                   const isSelf = result.oderId === userId;
                   const isTopScorer = index === 0 && result.score > 0;
@@ -1005,109 +787,67 @@ export default function Game() {
                   return (
                     <div 
                       key={result.oderId} 
-                      className={`relative p-4 rounded-2xl border backdrop-blur-sm transition-all ${
+                      className={`flex items-center gap-2 p-2 rounded-md ${
                         result.isCorrect 
-                          ? "bg-green-500/10 border-green-500/40 shadow-green-500/5 shadow-lg" 
+                          ? "bg-emerald-500/10 border border-emerald-500/30" 
                           : result.isPartialCorrect 
-                            ? "bg-yellow-500/10 border-yellow-500/40 shadow-yellow-500/5 shadow-lg"
-                            : "bg-card/60 border-border/50"
-                      } ${isSelf ? "ring-2 ring-red-500/30" : ""}`}
+                            ? "bg-amber-500/10 border border-amber-500/30"
+                            : "bg-card/50 border border-border/30"
+                      } ${isSelf ? "ring-1 ring-primary" : ""}`}
                     >
-                      {isTopScorer && (
-                        <div className="absolute -top-2 -right-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
-                            <Trophy className="h-4 w-4 text-yellow-900" />
-                          </div>
+                      {/* Rank */}
+                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        {isTopScorer ? (
+                          <Trophy className="h-3 w-3 text-amber-500" />
+                        ) : (
+                          <span className="text-[10px] font-bold text-muted-foreground">{index + 1}</span>
+                        )}
+                      </div>
+                      
+                      {/* Avatar */}
+                      {result.avatarUrl ? (
+                        <img src={result.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold shrink-0">
+                          {result.displayName?.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div className="flex items-center gap-3">
-                        <div className="relative shrink-0">
-                          {result.avatarUrl ? (
-                            <img src={result.avatarUrl} alt={result.displayName} className="w-12 h-12 rounded-xl object-cover ring-2 ring-border/50" />
+                      
+                      {/* Name + Answer */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-semibold truncate">{result.displayName}</span>
+                          {isSelf && <span className="text-[8px] text-primary">(Sen)</span>}
+                          {result.streak >= 3 && <Flame className="h-3 w-3 text-orange-500" />}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground truncate">
+                          {isComparisonMode ? (
+                            result.selectedContentId ? (
+                              <span className={result.isCorrect ? "text-emerald-500" : "text-red-400"}>
+                                {result.selectedContentId === content.id ? content.title?.slice(0, 20) : content2?.title?.slice(0, 20)}...
+                              </span>
+                            ) : "Cevapsız"
                           ) : (
-                            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-base font-bold">
-                              {result.displayName?.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          {result.streak >= 3 && (
-                            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-                              <Flame className="h-3 w-3 text-white" />
-                            </div>
+                            result.selectedUserIds.length > 0 ? (
+                              result.selectedUserIds.map((id) => getPlayerName(id)?.split(' ')[0]).join(', ')
+                            ) : "Cevapsız"
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-base font-bold truncate">{result.displayName}</span>
-                            {isSelf && <Badge className="bg-red-500/20 text-red-500 border-red-500/30 text-[10px] py-0">Sen</Badge>}
-                            {result.streak >= 3 && (
-                              <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-500 border-orange-500/30 text-[10px] py-0 gap-1">
-                                <Flame className="h-2.5 w-2.5" />
-                                {result.streak} seri
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                            {isComparisonMode ? (
-                              /* Comparison Mode: Show selected content */
-                              result.selectedContentId ? (
-                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
-                                  result.isCorrect 
-                                    ? "bg-green-500/20 text-green-600 dark:text-green-400" 
-                                    : "bg-red-500/20 text-red-600 dark:text-red-400"
-                                }`}>
-                                  {result.selectedContentId === content.id ? content.title?.slice(0, 30) : content2?.title?.slice(0, 30)}...
-                                  {result.isCorrect ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                                </span>
-                              ) : (
-                                <span className="italic text-muted-foreground/60">Cevap vermedi</span>
-                              )
-                            ) : (
-                              /* Tahmin Mode: Show selected players */
-                              result.selectedUserIds.length > 0 ? (
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {result.selectedUserIds.map((selectedId) => {
-                                    const isCorrectSelection = correctPlayerIds.includes(selectedId);
-                                    const selectedName = getPlayerName(selectedId);
-                                    
-                                    return (
-                                      <span key={selectedId} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
-                                        isCorrectSelection 
-                                          ? "bg-green-500/20 text-green-600 dark:text-green-400" 
-                                          : "bg-red-500/20 text-red-600 dark:text-red-400"
-                                      }`}>
-                                        {selectedName}
-                                        {isCorrectSelection ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <span className="italic text-muted-foreground/60">Cevap vermedi</span>
-                              )
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0 pl-3 border-l border-border/50">
-                          <div className={`text-xl font-black ${
-                            result.score > 0 ? "text-green-500" : result.score < 0 ? "text-red-500" : "text-muted-foreground"
-                          }`}>
-                            {result.score > 0 && "+"}{result.score}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-medium">
-                            Toplam: <span className="font-bold text-foreground">{result.totalScore}</span>
-                          </div>
-                        </div>
+                      </div>
+                      
+                      {/* Score */}
+                      <div className={`text-xs font-bold shrink-0 ${result.score > 0 ? "text-emerald-500" : result.score < 0 ? "text-red-400" : "text-muted-foreground"}`}>
+                        {result.score > 0 ? `+${result.score}` : result.score}
                       </div>
                     </div>
                   );
                 })}
               </div>
-
-              <div className="flex items-center justify-center gap-3 py-6">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm font-medium text-muted-foreground">Sonraki tur 5 saniye içinde başlıyor...</span>
-                </div>
+              
+              {/* Next Round Indicator */}
+              <div className="flex items-center justify-center gap-2 py-3">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground">Sonraki tur...</span>
               </div>
             </div>
           </main>
