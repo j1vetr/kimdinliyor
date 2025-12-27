@@ -82,6 +82,30 @@ shared/
 - `playing`: Oyun aktif
 - `finished`: Oyun bitti
 
+## Oyun Faz Sistemi (Sunucu-odaklı)
+Oyun sırasında 3 faz döngüsü vardır (tümü sunucu tarafından yönetilir):
+1. **question**: Soru gösteriliyor, cevap bekleniyor
+   - Süre: roundDuration saniye (varsayılan 20)
+   - Cevaplar kabul ediliyor
+   - `correctAnswer` gizli tutulur (güvenlik)
+2. **reveal**: Doğru cevap ve puanlar gösteriliyor
+   - Süre: 3 saniye
+   - `revealData` içerir: correctUserIds, correctContentId, results
+3. **intermission**: Sonraki tura geçiş sayacı
+   - Süre: 2 saniye
+   - Sayaç animasyonu
+
+### WebSocket Mesajları
+- `phase_changed`: Tek mesaj tipi ile tüm faz geçişleri (question, reveal, intermission)
+  - `phase`, `phaseStartedAt`, `phaseEndsAt`, `round`, `content`, `revealData`
+- `game_finished`: Oyun sonu
+- `player_answered`: Oyuncu cevap verdi
+- `reaction`: Emoji tepkisi
+
+### İstemci Prensibi
+- İstemci sadece sunucudan gelen timestamp'leri (`phaseEndsAt`) kullanarak countdown hesaplar
+- Fazlar arası geçiş için yerel timer yok - tüm geçişler sunucu tarafından tetiklenir
+
 ## API Kotası
 - YouTube Data API: 10,000 units/gün
 - Liked videos: ~1 unit/request

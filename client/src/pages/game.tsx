@@ -63,19 +63,31 @@ interface RoundResult {
   streak: number;
 }
 
+type GamePhase = "waiting" | "question" | "reveal" | "intermission" | "finished";
+
+interface RevealData {
+  correctUserIds: string[];
+  correctContentId: string | null;
+  results: RoundResult[];
+}
+
 interface WSMessage {
   type: string;
+  phase?: GamePhase;
   round?: number;
   totalRounds?: number;
   content?: Content;
   content2?: Content;
-  timeLimit?: number;
+  phaseStartedAt?: number;
+  phaseEndsAt?: number;
   isLightningRound?: boolean;
+  revealData?: RevealData | null;
+  gameMode?: GameMode;
+  // Legacy support
   correctUserIds?: string[];
   correctContentId?: string;
   results?: RoundResult[];
   oderId?: string;
-  gameMode?: GameMode;
   userId?: string;
   displayName?: string;
   avatarUrl?: string | null;
@@ -102,50 +114,42 @@ export default function Game() {
   const roomCode = params.code?.toUpperCase();
   const userId = localStorage.getItem("userId");
 
-  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
-  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
-  const [hasAnswered, setHasAnswered] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(20);
-  const [totalTime, setTotalTime] = useState(20);
-  const [gameStatus, setGameStatus] = useState<string>("waiting");
+  // NEW SIMPLIFIED STATE: Server-driven phases
+  const [phase, setPhase] = useState<GamePhase>("waiting");
+  const [phaseEndsAt, setPhaseEndsAt] = useState<number>(0);
   const [currentRound, setCurrentRound] = useState(0);
+  const [totalRounds, setTotalRounds] = useState(10);
   const [isLightningRound, setIsLightningRound] = useState(false);
   const [content, setContent] = useState<Content | null>(null);
   const [content2, setContent2] = useState<Content | null>(null);
-  const [correctPlayerIds, setCorrectPlayerIds] = useState<string[]>([]);
-  const [correctContentId, setCorrectContentId] = useState<string | null>(null);
-  const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const [gameMode, setGameMode] = useState<GameMode>("who_liked");
+  const [revealData, setRevealData] = useState<RevealData | null>(null);
+  
+  // UI state
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const [hasAnswered, setHasAnswered] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
-  const [nextRoundAt, setNextRoundAt] = useState<number | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   
-  // CRITICAL: Immutable snapshot of results - prevents data leakage during transitions
-  const [resultsSnapshot, setResultsSnapshot] = useState<ResultsSnapshot | null>(null);
+  // Countdown derived from phaseEndsAt (updates every 100ms for smoothness)
+  const [timeLeft, setTimeLeft] = useState(0);
   
-  // Results screen timer: 5 seconds total, shows countdown last 2 seconds
-  const [resultsSecondsLeft, setResultsSecondsLeft] = useState(5);
-  const [pendingRoundData, setPendingRoundData] = useState<any>(null);
-  const resultsIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const transitionTriggeredRef = useRef(false);
-  
-  // Refs to track current values for WebSocket callbacks (avoids stale closure)
-  const contentRef = useRef<Content | null>(null);
-  const content2Ref = useRef<Content | null>(null);
-  const gameModeRef = useRef<GameMode>("who_liked");
-  const isLightningRoundRef = useRef(false);
-  const currentRoundRef = useRef(0);
-  const gameStatusRef = useRef<string>("waiting");
-  
-  // Keep refs in sync with state
-  useEffect(() => { contentRef.current = content; }, [content]);
-  useEffect(() => { content2Ref.current = content2; }, [content2]);
-  useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
-  useEffect(() => { isLightningRoundRef.current = isLightningRound; }, [isLightningRound]);
-  useEffect(() => { currentRoundRef.current = currentRound; }, [currentRound]);
-  useEffect(() => { gameStatusRef.current = gameStatus; }, [gameStatus]);
+  // Update countdown from phaseEndsAt
+  useEffect(() => {
+    if (phase === "waiting" || phase === "finished") return;
+    
+    const updateCountdown = () => {
+      const remaining = Math.max(0, Math.ceil((phaseEndsAt - Date.now()) / 1000));
+      setTimeLeft(remaining);
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 100);
+    return () => clearInterval(interval);
+  }, [phase, phaseEndsAt]);
   
   // Determine if current mode is a comparison mode
   const isComparisonMode = gameMode === "which_older" || 
@@ -154,32 +158,52 @@ export default function Game() {
                           gameMode === "which_more_subs" ||
                           gameMode === "which_more_videos";
 
-  // Simple polling for game state - runs continuously when waiting
+  // Apply phase data from API or WebSocket
+  const applyPhaseData = useCallback((data: any) => {
+    if (!data.gameState) return;
+    
+    const gs = data.gameState;
+    console.log("[PHASE] Applying phase data:", gs.phase, "round:", gs.currentRound);
+    
+    setPhase(gs.phase || "waiting");
+    setPhaseEndsAt(gs.phaseEndsAt || Date.now());
+    setCurrentRound(gs.currentRound || 0);
+    setIsLightningRound(gs.isLightningRound || false);
+    setGameMode(gs.gameMode || "who_liked");
+    setRevealData(gs.revealData || null);
+    
+    if (data.content) setContent(data.content);
+    if (data.content2) setContent2(data.content2);
+    if (data.room?.totalRounds) setTotalRounds(data.room.totalRounds);
+    
+    // Update scores from reveal data
+    if (gs.revealData?.results) {
+      const newScores = new Map<string, number>();
+      gs.revealData.results.forEach((r: RoundResult) => {
+        newScores.set(r.oderId, r.totalScore);
+      });
+      setPlayerScores(newScores);
+    }
+    
+    // Reset answer state on new question phase
+    if (gs.phase === "question") {
+      setHasAnswered(false);
+      setSelectedPlayers([]);
+      setSelectedContentId(null);
+    }
+  }, []);
+
+  // Poll for initial game state when waiting
   useEffect(() => {
-    if (!roomCode || gameStatus !== "waiting") return;
+    if (!roomCode || phase !== "waiting") return;
     
     const fetchGame = async () => {
       try {
         const response = await fetch(`/api/rooms/${roomCode}/game`);
         if (response.ok) {
           const data = await response.json();
-          
-          // Transition to question state when ready
-          if (data.gameState?.status === "question" && data.content) {
-            console.log("Transitioning to question");
-            setGameStatus("question");
-            setCurrentRound(data.gameState.currentRound || 1);
-            setIsLightningRound(data.gameState.isLightningRound || false);
-            setTimeLeft(data.gameState.timeLeft || 20);
-            setTotalTime(data.gameState.timeLeft || 20);
-            setContent(data.content);
-            setContent2(data.content2 || null);
-            if (data.gameState.gameMode) {
-              setGameMode(data.gameState.gameMode);
-            }
-          } else if (data.gameState?.status === "results") {
-            setGameStatus("results");
-            setCurrentRound(data.gameState.currentRound || 1);
+          if (data.gameState?.phase && data.gameState.phase !== "waiting") {
+            applyPhaseData(data);
           }
         }
       } catch (err) {
@@ -187,12 +211,10 @@ export default function Game() {
       }
     };
     
-    // Poll immediately and every 500ms
     fetchGame();
     const interval = setInterval(fetchGame, 500);
-    
     return () => clearInterval(interval);
-  }, [roomCode, gameStatus]);
+  }, [roomCode, phase, applyPhaseData]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -236,109 +258,47 @@ export default function Game() {
     ws.onmessage = (event) => {
       try {
         const message: WSMessage = JSON.parse(event.data);
+        console.log("[WS] Received message:", message.type, message.phase);
         
         switch (message.type) {
-          case "round_started":
-            console.log("[WS] round_started received, round:", message.round);
-            const newRoundData = {
-              content: message.content || null,
-              content2: message.content2 || null,
-              round: message.round || 1,
-              isLightningRound: message.isLightningRound || false,
-              timeLimit: message.timeLimit || 20,
-              totalTime: (message as any).totalTime || message.timeLimit || 20,
-              gameMode: message.gameMode || "who_liked",
-            };
+          case "phase_changed":
+            // NEW: Unified phase change handler
+            console.log("[PHASE_CHANGED] Phase:", message.phase, "Round:", message.round);
             
-            // If transition already happened or we're waiting, apply data directly
-            if (transitionTriggeredRef.current || gameStatusRef.current === "waiting") {
-              console.log("[WS] Applying round data directly (transition already triggered or waiting)");
-              setContent(newRoundData.content);
-              setContent2(newRoundData.content2);
-              setCurrentRound(newRoundData.round);
-              setIsLightningRound(newRoundData.isLightningRound);
-              setTimeLeft(newRoundData.timeLimit);
-              setTotalTime(newRoundData.totalTime);
-              setGameMode(newRoundData.gameMode);
-              setCorrectPlayerIds([]);
-              setCorrectContentId(null);
-              setRoundResults([]);
-              setHasAnswered(false);
-              setSelectedPlayers([]);
-              setSelectedContentId(null);
-              setResultsSnapshot(null);
-              setResultsSecondsLeft(5);
-              transitionTriggeredRef.current = false;
-              setGameStatus("question");
-            } else {
-              // Cache for later - countdown effect will apply it
-              console.log("[WS] Caching round data for transition effect");
-              setPendingRoundData(newRoundData);
-            }
-            break;
+            setPhase(message.phase || "waiting");
+            setPhaseEndsAt(message.phaseEndsAt || Date.now());
+            if (message.round) setCurrentRound(message.round);
+            if (message.totalRounds) setTotalRounds(message.totalRounds);
+            if (message.isLightningRound !== undefined) setIsLightningRound(message.isLightningRound);
+            if (message.gameMode) setGameMode(message.gameMode);
+            if (message.content) setContent(message.content);
+            if (message.content2 !== undefined) setContent2(message.content2 || null);
             
-          case "round_ended":
-            // CRITICAL: Create immutable snapshot using REFS (not stale state)
-            if (contentRef.current) {
-              setResultsSnapshot({
-                round: currentRoundRef.current,
-                content: contentRef.current,
-                content2: content2Ref.current,
-                correctPlayerIds: message.correctUserIds || [],
-                correctContentId: message.correctContentId || null,
-                results: message.results || [],
-                gameMode: gameModeRef.current,
-                isLightningRound: isLightningRoundRef.current,
-              });
-            }
-            
-            // Reset for new results phase
-            setPendingRoundData(null);
-            transitionTriggeredRef.current = false;
-            setGameStatus("results");
-            setCorrectPlayerIds(message.correctUserIds || []);
-            setCorrectContentId(message.correctContentId || null);
-            setRoundResults(message.results || []);
-            
-            if (message.results) {
+            // Handle reveal data
+            if (message.revealData) {
+              setRevealData(message.revealData);
+              // Update scores
               const newScores = new Map<string, number>();
-              message.results.forEach((r: RoundResult) => {
+              message.revealData.results.forEach((r: RoundResult) => {
                 newScores.set(r.oderId, r.totalScore);
               });
               setPlayerScores(newScores);
+            } else if (message.phase === "question") {
+              // Clear reveal data and reset for new question
+              setRevealData(null);
+              setHasAnswered(false);
+              setSelectedPlayers([]);
+              setSelectedContentId(null);
             }
-            
-            // Clear any existing timer
-            if (resultsIntervalRef.current) {
-              clearInterval(resultsIntervalRef.current);
-              resultsIntervalRef.current = null;
-            }
-            
-            // Start 5-second countdown using setInterval
-            console.log("[TIMER] Starting 5-second results countdown");
-            setResultsSecondsLeft(5);
-            
-            let countdown = 5;
-            resultsIntervalRef.current = setInterval(() => {
-              countdown--;
-              console.log("[TIMER] Countdown:", countdown);
-              setResultsSecondsLeft(countdown);
-              
-              if (countdown <= 0) {
-                console.log("[TIMER] Countdown complete, clearing interval");
-                if (resultsIntervalRef.current) {
-                  clearInterval(resultsIntervalRef.current);
-                  resultsIntervalRef.current = null;
-                }
-              }
-            }, 1000);
             break;
             
           case "game_finished":
+            setPhase("finished");
             setLocation(`/oyun/${roomCode}/results`);
             break;
             
           case "player_answered":
+            // Could show visual feedback that another player answered
             break;
             
           case "reaction":
@@ -369,162 +329,24 @@ export default function Game() {
     };
   }, [roomCode, setLocation]);
 
-  useEffect(() => {
-    if (gameStatus !== "question") return;
-    
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [gameStatus]);
-
-  // Handle transition when countdown reaches 0
-  useEffect(() => {
-    // Only trigger once when countdown hits 0 in results state
-    if (gameStatus !== "results") return;
-    if (resultsSecondsLeft > 0) return;
-    if (transitionTriggeredRef.current) return;
-    
-    // Mark as triggered to prevent multiple transitions
-    transitionTriggeredRef.current = true;
-    console.log("[TRANSITION] Countdown finished, transitioning to question, pendingData:", !!pendingRoundData);
-    
-    // Reset all answer-related state
-    setCorrectPlayerIds([]);
-    setCorrectContentId(null);
-    setRoundResults([]);
-    setHasAnswered(false);
-    setSelectedPlayers([]);
-    setSelectedContentId(null);
-    setResultsSnapshot(null);
-    
-    // Apply pending round data if available
-    if (pendingRoundData) {
-      console.log("[TRANSITION] Applying pending round data:", pendingRoundData.round);
-      setContent(pendingRoundData.content);
-      setContent2(pendingRoundData.content2);
-      setCurrentRound(pendingRoundData.round);
-      setIsLightningRound(pendingRoundData.isLightningRound);
-      setTimeLeft(pendingRoundData.timeLimit);
-      setTotalTime(pendingRoundData.totalTime || pendingRoundData.timeLimit);
-      setGameMode(pendingRoundData.gameMode);
-      setPendingRoundData(null);
-    }
-    
-    // Reset timer for next results phase
-    setResultsSecondsLeft(5);
-    setGameStatus("question");
-  }, [gameStatus, resultsSecondsLeft, pendingRoundData]);
-  
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (resultsIntervalRef.current) {
-        clearInterval(resultsIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // gameQuery effect: Sync state for round transitions and results
+  // SIMPLIFIED: Sync from gameQuery for phase data (backup to WebSocket)
   useEffect(() => {
     if (!gameQuery.data) return;
     
     const data = gameQuery.data;
-    const serverStatus = data.gameState?.status;
-    const serverRound = data.gameState?.currentRound || 0;
+    const serverPhase = data.gameState?.phase;
     
-    // CRITICAL: Handle transition from results to question (next round started)
-    if (serverStatus === "question" && data.content) {
-      // Check if this is a new round or we're in wrong state
-      if (gameStatus === "results" || gameStatus === "waiting" || (gameStatus === "question" && serverRound > currentRound)) {
-        console.log(`[Polling] Caching round data - Round ${serverRound}`);
-        
-        // Cache the round data - countdown effect will apply it
-        setPendingRoundData({
-          content: data.content,
-          content2: data.content2 || null,
-          round: serverRound,
-          isLightningRound: data.gameState.isLightningRound || false,
-          timeLimit: data.gameState.timeLeft || 20,
-          totalTime: data.room?.roundDuration || 20,
-          gameMode: data.gameState.gameMode || "who_liked",
-        });
-      }
-      // Also sync timeLeft during question phase
-      else if (gameStatus === "question" && serverRound === currentRound && data.gameState.timeLeft !== undefined) {
-        setTimeLeft(data.gameState.timeLeft);
-      }
+    // Only apply if server has newer data
+    if (serverPhase && serverPhase !== phase) {
+      console.log("[Query] Syncing phase from polling:", serverPhase);
+      applyPhaseData(data);
     }
     
-    // Handle results state from query - also sync results data from polling
-    if (serverStatus === "results" && gameStatus !== "results") {
-      console.log(`[Polling] Transitioning to results - Round ${serverRound}`);
-      
-      // CRITICAL: Create snapshot from current content before any updates
-      if (content) {
-        setResultsSnapshot({
-          round: serverRound,
-          content: content,
-          content2: content2,
-          correctPlayerIds: data.gameState.correctUserIds || [],
-          correctContentId: data.gameState.correctContentId || null,
-          results: data.gameState.results || [],
-          gameMode: data.gameState.gameMode || gameMode,
-          isLightningRound: data.gameState.isLightningRound || false,
-        });
-      }
-      
-      transitionTriggeredRef.current = false;
-      setGameStatus("results");
-      setCurrentRound(serverRound);
-      // Set next round timing
-      if (data.gameState.nextRoundAt) {
-        setNextRoundAt(data.gameState.nextRoundAt);
-        const remaining = Math.max(0, Math.ceil((data.gameState.nextRoundAt - Date.now()) / 1000));
-        setResultsSecondsLeft(remaining > 0 ? remaining : 5);
-      } else {
-        setResultsSecondsLeft(5);
-      }
-      // Sync results data from polling fallback
-      if (data.gameState.correctUserIds) {
-        setCorrectPlayerIds(data.gameState.correctUserIds);
-      }
-      if (data.gameState.correctContentId !== undefined) {
-        setCorrectContentId(data.gameState.correctContentId);
-      }
-      if (data.gameState.results) {
-        setRoundResults(data.gameState.results);
-        const newScores = new Map<string, number>();
-        data.gameState.results.forEach((r: RoundResult) => {
-          newScores.set(r.oderId, r.totalScore);
-        });
-        setPlayerScores(newScores);
-      }
-    }
-    // Also update results data if already in results state but missing data
-    if (serverStatus === "results" && gameStatus === "results" && correctPlayerIds.length === 0 && data.gameState.correctUserIds?.length > 0) {
-      setCorrectPlayerIds(data.gameState.correctUserIds);
-      if (data.gameState.correctContentId !== undefined) {
-        setCorrectContentId(data.gameState.correctContentId);
-      }
-      if (data.gameState.results) {
-        setRoundResults(data.gameState.results);
-        const newScores = new Map<string, number>();
-        data.gameState.results.forEach((r: RoundResult) => {
-          newScores.set(r.oderId, r.totalScore);
-        });
-        setPlayerScores(newScores);
-      }
-    }
-  }, [gameQuery.data, gameStatus, currentRound, correctPlayerIds.length]);
-
-  useEffect(() => {
-    const roomStatus = gameQuery.data?.room?.status;
-    if (roomStatus === "finished" && roomCode) {
+    // Check for finished state
+    if (data.room?.status === "finished" && roomCode) {
       setLocation(`/oyun/${roomCode}/results`);
     }
-  }, [gameQuery.data?.room?.status, roomCode, setLocation]);
+  }, [gameQuery.data, phase, roomCode, setLocation, applyPhaseData]);
 
   const handlePlayerToggle = useCallback((playerId: string, selected: boolean) => {
     if (hasAnswered) return;
@@ -612,10 +434,10 @@ export default function Game() {
 
   const room = gameQuery.data.room;
   const allPlayers = room?.players || [];
-  const totalRounds = room?.totalRounds || 10;
   const modeInfo = GAME_MODE_INFO[gameMode];
   const ModeIcon = modeInfo?.icon || ThumbsUp;
-  const timerPercentage = (timeLeft / totalTime) * 100;
+  const roundDuration = room?.roundDuration || 20;
+  const timerPercentage = (timeLeft / roundDuration) * 100;
   const isTimeLow = timeLeft <= 5;
 
   const sendReaction = (emoji: string) => {
@@ -672,7 +494,7 @@ export default function Game() {
       `}</style>
 
       {/* Loading state while waiting for game data */}
-      {gameStatus === "waiting" && (
+      {phase === "waiting" && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <motion.div
             animate={{ rotate: 360 }}
@@ -683,11 +505,11 @@ export default function Game() {
         </div>
       )}
 
-      {/* Countdown screen - shows 2...1 before next question */}
-      {gameStatus === "results" && resultsSecondsLeft <= 2 && resultsSecondsLeft > 0 && (
+      {/* Countdown screen - shows countdown before next question */}
+      {phase === "intermission" && (
         <div className="flex-1 flex flex-col items-center justify-center">
           <motion.div
-            key={resultsSecondsLeft}
+            key={timeLeft}
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 1.5, opacity: 0 }}
@@ -695,7 +517,7 @@ export default function Game() {
             className="flex flex-col items-center gap-4"
           >
             <span className="text-8xl md:text-9xl font-bold text-primary">
-              {resultsSecondsLeft}
+              {timeLeft}
             </span>
             <p className="text-sm md:text-base text-muted-foreground font-medium">
               Sonraki Soru Geliyor...
@@ -704,7 +526,7 @@ export default function Game() {
         </div>
       )}
 
-      {gameStatus === "question" && content && (
+      {phase === "question" && content && (
         <div className="flex flex-col h-full bg-gradient-to-b from-background to-background/95">
           {/* Premium Header Strip */}
           <header className="shrink-0 px-4 py-3">
@@ -939,21 +761,22 @@ export default function Game() {
         </div>
       )}
 
-      {gameStatus === "results" && resultsSnapshot && resultsSecondsLeft > 2 && (
+      {phase === "reveal" && revealData && content && (
         <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
           {/* Header Strip */}
           <header className="shrink-0 px-4 py-3 md:py-4">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {resultsSnapshot.round}/{totalRounds}</span>
-                {resultsSnapshot.isLightningRound && (
+                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
+                {isLightningRound && (
                   <span className="text-[10px] md:text-xs text-amber-500 font-medium flex items-center gap-0.5">
                     <Zap className="h-2.5 w-2.5 md:h-3 md:w-3" /> 2x
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-muted/30 border border-border/20">
-                <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+                <Trophy className="h-3 w-3 text-emerald-500" />
+                <span className="text-[10px] md:text-xs font-medium text-emerald-500 uppercase tracking-wide">
                   Sonuçlar
                 </span>
               </div>
@@ -963,56 +786,56 @@ export default function Game() {
           <main className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto space-y-3 md:space-y-4">
               
-              {/* Content Card - using snapshot */}
+              {/* Content Card */}
               <button 
                 type="button"
                 className="w-full rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden text-left"
                 onClick={() => {
-                  if (resultsSnapshot.content?.contentType === "video" && resultsSnapshot.content?.contentId) {
-                    window.open(`https://www.youtube.com/watch?v=${resultsSnapshot.content.contentId}`, "_blank");
-                  } else if (resultsSnapshot.content?.contentType === "channel" && resultsSnapshot.content?.contentId) {
-                    window.open(`https://www.youtube.com/channel/${resultsSnapshot.content.contentId}`, "_blank");
+                  if (content?.contentType === "video" && content?.contentId) {
+                    window.open(`https://www.youtube.com/watch?v=${content.contentId}`, "_blank");
+                  } else if (content?.contentType === "channel" && content?.contentId) {
+                    window.open(`https://www.youtube.com/channel/${content.contentId}`, "_blank");
                   }
                 }}
               >
                 <div className="flex items-center gap-3 p-3">
                   <div className="w-14 h-10 rounded-md overflow-hidden shrink-0 bg-muted">
-                    {resultsSnapshot.content.thumbnailUrl && (
-                      <img src={resultsSnapshot.content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                    {content.thumbnailUrl && (
+                      <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold line-clamp-1 text-foreground/90">{resultsSnapshot.content.title}</p>
-                    <p className="text-[10px] text-muted-foreground">{resultsSnapshot.content.subtitle}</p>
+                    <p className="text-xs font-semibold line-clamp-1 text-foreground/90">{content.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{content.subtitle}</p>
                   </div>
                   <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
                 </div>
               </button>
 
-              {/* Correct Answer Card - using snapshot */}
+              {/* Correct Answer Card */}
               <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 overflow-hidden">
                 <div className="px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-500/20">
                   <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Doğru Cevap</span>
                 </div>
                 <div className="p-3">
-                  {(resultsSnapshot.gameMode === "which_older" || resultsSnapshot.gameMode === "most_viewed" || resultsSnapshot.gameMode === "which_longer" || resultsSnapshot.gameMode === "which_more_subs" || resultsSnapshot.gameMode === "which_more_videos") ? (
+                  {isComparisonMode && revealData.correctContentId ? (
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-9 rounded-md overflow-hidden shrink-0 bg-muted">
                         <img 
-                          src={(resultsSnapshot.correctContentId === resultsSnapshot.content.id ? resultsSnapshot.content : resultsSnapshot.content2)?.thumbnailUrl || ''} 
+                          src={(revealData.correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
                           alt="" 
                           className="w-full h-full object-cover" 
                         />
                       </div>
                       <p className="text-xs font-medium text-foreground/90 line-clamp-2">
-                        {(resultsSnapshot.correctContentId === resultsSnapshot.content.id ? resultsSnapshot.content : resultsSnapshot.content2)?.title}
+                        {(revealData.correctContentId === content.id ? content : content2)?.title}
                       </p>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 flex-wrap">
-                      {resultsSnapshot.correctPlayerIds.length > 0 ? (
+                      {revealData.correctUserIds.length > 0 ? (
                         allPlayers
-                          .filter((p: any) => resultsSnapshot.correctPlayerIds.includes(p.userId || p.user?.id))
+                          .filter((p: any) => revealData.correctUserIds.includes(p.userId || p.user?.id))
                           .map((player: any) => {
                             const avatarUrl = player.user?.avatarUrl;
                             const displayName = player.user?.displayName || player.displayName;
@@ -1037,11 +860,11 @@ export default function Game() {
                 </div>
               </div>
 
-              {/* Player Results - using snapshot */}
+              {/* Player Results */}
               <div className="space-y-2">
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">Oyuncu Skorları</span>
                 <div className="space-y-1.5">
-                  {[...resultsSnapshot.results].sort((a, b) => b.score - a.score).map((result, index) => {
+                  {[...revealData.results].sort((a, b) => b.score - a.score).map((result, index) => {
                     const isSelf = result.oderId === userId;
                     const isTopScorer = index === 0 && result.score > 0;
                     
@@ -1093,15 +916,15 @@ export default function Game() {
                             {isSelf && <span className="text-[9px] text-primary font-medium">(Sen)</span>}
                           </div>
                           <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                            {(resultsSnapshot.gameMode === "which_older" || resultsSnapshot.gameMode === "most_viewed" || resultsSnapshot.gameMode === "which_longer" || resultsSnapshot.gameMode === "which_more_subs" || resultsSnapshot.gameMode === "which_more_videos") ? (
+                            {isComparisonMode ? (
                               result.selectedContentId ? (
                                 <span className={result.isCorrect ? "text-emerald-500" : "text-muted-foreground"}>
-                                  {result.selectedContentId === resultsSnapshot.content.id ? resultsSnapshot.content.title?.slice(0, 20) : resultsSnapshot.content2?.title?.slice(0, 20)}...
+                                  {result.selectedContentId === content.id ? content.title?.slice(0, 20) : content2?.title?.slice(0, 20)}...
                                 </span>
                               ) : <span className="italic">Cevap vermedi</span>
                             ) : (
                               result.selectedUserIds.length > 0 ? (
-                                result.selectedUserIds.map((id) => getPlayerName(id)?.split(' ')[0]).join(', ')
+                                result.selectedUserIds.map((id: string) => getPlayerName(id)?.split(' ')[0]).join(', ')
                               ) : <span className="italic">Cevap vermedi</span>
                             )}
                           </div>
@@ -1119,12 +942,12 @@ export default function Game() {
                 </div>
               </div>
               
-              {/* Next Round Indicator */}
+              {/* Countdown Indicator */}
               <div className="flex items-center justify-center gap-2 py-4">
-                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm font-bold text-primary">{timeLeft}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">Sonraki tura geçiliyor...</span>
+                <span className="text-xs text-muted-foreground">saniye sonra devam ediyor</span>
               </div>
             </div>
           </main>

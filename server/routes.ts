@@ -753,6 +753,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       return;
     }
 
+    // CRITICAL: Clear any existing phase timeout to prevent overlapping timers
+    if ((gameState as any).phaseTimeoutId) {
+      clearTimeout((gameState as any).phaseTimeoutId);
+      (gameState as any).phaseTimeoutId = null;
+      console.log(`[startNextRound] Cleared previous phase timeout`);
+    }
+
     const nextRound = gameState.currentRound + 1;
     const totalRounds = room.totalRounds || 10;
     console.log(`[startNextRound] Current round in gameState: ${gameState.currentRound}`);
@@ -1257,6 +1264,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const gameState = gameStates.get(roomCode);
     if (!gameState || gameState.phase !== "reveal") return;
 
+    // Clear any existing timeout to prevent overlapping timers
+    if ((gameState as any).phaseTimeoutId) {
+      clearTimeout((gameState as any).phaseTimeoutId);
+      (gameState as any).phaseTimeoutId = null;
+    }
+
     const now = Date.now();
     gameState.phase = "intermission";
     gameState.phaseStartedAt = now;
@@ -1390,21 +1403,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const isLightning = currentRoundNum === 5 || currentRoundNum === 10;
         const currentMode = currentRoundData?.gameMode || roomModes[0];
         const now = Date.now();
+        const roundDurationMs = (room.roundDuration || 20) * 1000;
         
-        // Determine phase based on round data
+        // Determine phase based on round data, preserving elapsed time
         let phase: "question" | "reveal" | "intermission" | "finished" = "question";
-        let phaseEndsAt = now + ((room.roundDuration || 20) * 1000);
+        let phaseStartedAt = now;
+        let phaseEndsAt = now + roundDurationMs;
         
         if (currentRoundData?.endedAt) {
           // Round ended, go to reveal phase
           phase = "reveal";
           phaseEndsAt = now + REVEAL_DURATION_MS;
+        } else if (currentRoundData?.startedAt) {
+          // Round in progress - calculate remaining time from stored startedAt
+          const roundStartTime = new Date(currentRoundData.startedAt).getTime();
+          const elapsed = now - roundStartTime;
+          const remaining = Math.max(0, roundDurationMs - elapsed);
+          phaseStartedAt = roundStartTime;
+          phaseEndsAt = roundStartTime + roundDurationMs;
+          
+          // If time already expired, go directly to endRound
+          if (remaining <= 0) {
+            console.log(`[RECOVERY] Round time expired during restart, ending round`);
+            phase = "reveal";
+            phaseEndsAt = now + REVEAL_DURATION_MS;
+          }
         }
         
         const recoveredState: GameState = {
           phase,
           currentRound: currentRoundNum,
-          phaseStartedAt: now,
+          phaseStartedAt,
           phaseEndsAt,
           isLightningRound: isLightning,
           usedContentIds,
