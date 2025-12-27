@@ -5,7 +5,7 @@ const GOOGLE_REDIRECT_URI = process.env.NODE_ENV === "production"
   : "https://kimdinliyor.com/api/auth/google/callback";
 
 const YOUTUBE_SCOPES = [
-  "https://www.googleapis.com/auth/youtube.readonly",
+  "https://www.googleapis.com/auth/youtube.force-ssl",
   "https://www.googleapis.com/auth/userinfo.profile",
 ].join(" ");
 

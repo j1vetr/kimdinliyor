@@ -533,16 +533,6 @@ export default function Lobby() {
                   <div className="flex-1">
                     <p className="text-xs font-medium text-emerald-400">YouTube Bağlı</p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={connectGoogle}
-                    className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
-                    data-testid="button-refresh-google"
-                    title="Bağlantıyı yenile"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                  </Button>
                   <EqualizerBars active count={4} />
                 </div>
               )}
