@@ -164,7 +164,7 @@ export default function Game() {
       return response.json();
     },
     enabled: !!roomCode && !!userId,
-    refetchInterval: 2000,
+    refetchInterval: 1000,
   });
 
   const answerMutation = useMutation({
@@ -282,10 +282,42 @@ export default function Game() {
     if (!gameQuery.data) return;
     
     const data = gameQuery.data;
+    const serverStatus = data.gameState?.status;
+    const serverRound = data.gameState?.currentRound || 0;
+    
+    // CRITICAL: Handle transition from results to question (next round started)
+    if (serverStatus === "question" && data.content) {
+      // Check if this is a new round or we're in wrong state
+      if (gameStatus === "results" || gameStatus === "waiting" || (gameStatus === "question" && serverRound > currentRound)) {
+        console.log(`[Polling] Transitioning to question - Round ${serverRound}`);
+        setGameStatus("question");
+        setCurrentRound(serverRound);
+        setIsLightningRound(data.gameState.isLightningRound || false);
+        setTimeLeft(data.gameState.timeLeft || 20);
+        setTotalTime(data.room?.roundDuration || 20);
+        setContent(data.content);
+        setContent2(data.content2 || null);
+        setHasAnswered(false);
+        setSelectedPlayers([]);
+        setSelectedContentId(null);
+        setCorrectPlayerIds([]);
+        setCorrectContentId(null);
+        setRoundResults([]);
+        if (data.gameState.gameMode) {
+          setGameMode(data.gameState.gameMode);
+        }
+      }
+      // Also sync timeLeft during question phase
+      else if (gameStatus === "question" && serverRound === currentRound && data.gameState.timeLeft !== undefined) {
+        setTimeLeft(data.gameState.timeLeft);
+      }
+    }
+    
     // Handle results state from query - also sync results data from polling
-    if (data.gameState?.status === "results" && gameStatus !== "results") {
+    if (serverStatus === "results" && gameStatus !== "results") {
+      console.log(`[Polling] Transitioning to results - Round ${serverRound}`);
       setGameStatus("results");
-      setCurrentRound(data.gameState.currentRound || 1);
+      setCurrentRound(serverRound);
       // Sync results data from polling fallback
       if (data.gameState.correctUserIds) {
         setCorrectPlayerIds(data.gameState.correctUserIds);
@@ -303,7 +335,7 @@ export default function Game() {
       }
     }
     // Also update results data if already in results state but missing data
-    if (data.gameState?.status === "results" && gameStatus === "results" && correctPlayerIds.length === 0 && data.gameState.correctUserIds?.length > 0) {
+    if (serverStatus === "results" && gameStatus === "results" && correctPlayerIds.length === 0 && data.gameState.correctUserIds?.length > 0) {
       setCorrectPlayerIds(data.gameState.correctUserIds);
       if (data.gameState.correctContentId !== undefined) {
         setCorrectContentId(data.gameState.correctContentId);
@@ -317,12 +349,7 @@ export default function Game() {
         setPlayerScores(newScores);
       }
     }
-    // Ensure content is set if missing during question phase
-    if (data.gameState?.status === "question" && !content && data.content) {
-      console.log("gameQuery: Setting missing content", data.content);
-      setContent(data.content);
-    }
-  }, [gameQuery.data, gameStatus, content, correctPlayerIds.length]);
+  }, [gameQuery.data, gameStatus, currentRound, correctPlayerIds.length]);
 
   useEffect(() => {
     const roomStatus = gameQuery.data?.room?.status;
