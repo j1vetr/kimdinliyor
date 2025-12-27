@@ -137,6 +137,7 @@ export default function Game() {
   const gameModeRef = useRef<GameMode>("who_liked");
   const isLightningRoundRef = useRef(false);
   const currentRoundRef = useRef(0);
+  const gameStatusRef = useRef<string>("waiting");
   
   // Keep refs in sync with state
   useEffect(() => { contentRef.current = content; }, [content]);
@@ -144,6 +145,7 @@ export default function Game() {
   useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
   useEffect(() => { isLightningRoundRef.current = isLightningRound; }, [isLightningRound]);
   useEffect(() => { currentRoundRef.current = currentRound; }, [currentRound]);
+  useEffect(() => { gameStatusRef.current = gameStatus; }, [gameStatus]);
   
   // Determine if current mode is a comparison mode
   const isComparisonMode = gameMode === "which_older" || 
@@ -237,16 +239,42 @@ export default function Game() {
         
         switch (message.type) {
           case "round_started":
-            // If we're in countdown phase, cache the data for later
-            // The countdown effect will apply it when done
-            setPendingRoundData({
+            console.log("[WS] round_started received, round:", message.round);
+            const newRoundData = {
               content: message.content || null,
               content2: message.content2 || null,
               round: message.round || 1,
               isLightningRound: message.isLightningRound || false,
               timeLimit: message.timeLimit || 20,
+              totalTime: (message as any).totalTime || message.timeLimit || 20,
               gameMode: message.gameMode || "who_liked",
-            });
+            };
+            
+            // If transition already happened or we're waiting, apply data directly
+            if (transitionTriggeredRef.current || gameStatusRef.current === "waiting") {
+              console.log("[WS] Applying round data directly (transition already triggered or waiting)");
+              setContent(newRoundData.content);
+              setContent2(newRoundData.content2);
+              setCurrentRound(newRoundData.round);
+              setIsLightningRound(newRoundData.isLightningRound);
+              setTimeLeft(newRoundData.timeLimit);
+              setTotalTime(newRoundData.totalTime);
+              setGameMode(newRoundData.gameMode);
+              setCorrectPlayerIds([]);
+              setCorrectContentId(null);
+              setRoundResults([]);
+              setHasAnswered(false);
+              setSelectedPlayers([]);
+              setSelectedContentId(null);
+              setResultsSnapshot(null);
+              setResultsSecondsLeft(5);
+              transitionTriggeredRef.current = false;
+              setGameStatus("question");
+            } else {
+              // Cache for later - countdown effect will apply it
+              console.log("[WS] Caching round data for transition effect");
+              setPendingRoundData(newRoundData);
+            }
             break;
             
           case "round_ended":
