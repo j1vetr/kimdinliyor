@@ -178,16 +178,6 @@ export default function Home() {
               Tahmin et, puan topla, eğlen!
             </p>
 
-            <div className="hero-actions">
-              <Link href="/oda-olustur">
-                <Button className="hero-create-btn" data-testid="button-create-room">
-                  <Plus />
-                  Oda Oluştur
-                  <ArrowRight />
-                </Button>
-              </Link>
-            </div>
-
             <div className="hero-features">
               <div className="hero-feature-chip">
                 <Users className="hero-feature-icon" />
