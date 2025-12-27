@@ -163,43 +163,43 @@ export default function JoinRoom() {
           <div className="absolute bottom-20 left-10 w-48 h-48 rounded-full bg-emerald-500 blur-3xl" />
         </div>
 
-        <div className="relative w-full max-w-3xl mx-auto px-4 py-6 lg:py-8">
-          <div className="flex flex-col lg:flex-row gap-8">
+        <div className="relative w-full max-w-2xl mx-auto px-4 py-6 lg:py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
             
-            <form onSubmit={handleSubmit} className="flex-1 space-y-6">
+            <form onSubmit={handleSubmit} className="flex-1 space-y-5">
               
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="relative"
               >
-                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
-                <div className="pl-4">
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-                    <div className="flex items-center gap-4">
+                <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
+                <div className="pl-3">
+                  <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+                    <div className="flex items-center gap-3">
                       <motion.div 
                         animate={{ 
-                          boxShadow: ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 8px rgba(255,0,0,0.1)", "0 0 0 0 rgba(255,0,0,0)"]
+                          boxShadow: ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 6px rgba(255,0,0,0.1)", "0 0 0 0 rgba(255,0,0,0)"]
                         }}
                         transition={{ duration: 2, repeat: Infinity }}
-                        className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/30"
+                        className="h-11 w-11 lg:h-10 lg:w-10 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-md shadow-primary/25"
                       >
-                        <SiYoutube className="h-7 w-7 text-white" />
+                        <SiYoutube className="h-5 w-5 lg:h-4 lg:w-4 text-white" />
                       </motion.div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-primary font-medium mb-1">Aktif Oda</p>
-                        <h2 className="text-xl font-bold truncate">{room?.name || "Oda"}</h2>
+                        <p className="text-[10px] text-primary font-medium mb-0.5">Aktif Oda</p>
+                        <h2 className="text-base lg:text-sm font-bold truncate">{room?.name || "Oda"}</h2>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground mb-1">Katılım Kodu</p>
-                        <div className="flex gap-1">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Katılım Kodu</p>
+                        <div className="flex gap-0.5">
                           {roomCode?.split("").map((char, i) => (
                             <motion.div
                               key={i}
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: i * 0.05 }}
-                              className="h-8 w-7 rounded-md bg-muted flex items-center justify-center font-mono font-bold text-lg"
+                              className="h-7 w-5 lg:h-6 lg:w-5 rounded bg-muted flex items-center justify-center font-mono font-bold text-sm lg:text-xs"
                             >
                               {char}
                             </motion.div>
@@ -208,18 +208,18 @@ export default function JoinRoom() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 mt-4 pt-4 border-t border-primary/10">
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                        <Users className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-xs font-medium">{room?.maxPlayers} Oyuncu</span>
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-primary/10">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50">
+                        <Users className="h-3 w-3 text-primary" />
+                        <span className="text-[10px] font-medium">{room?.maxPlayers} Oyuncu</span>
                       </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                        <Zap className="h-3.5 w-3.5 text-amber-500" />
-                        <span className="text-xs font-medium">{room?.totalRounds} Tur</span>
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50">
+                        <Zap className="h-3 w-3 text-amber-500" />
+                        <span className="text-[10px] font-medium">{room?.totalRounds} Tur</span>
                       </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                        <Timer className="h-3.5 w-3.5 text-blue-500" />
-                        <span className="text-xs font-medium">{room?.roundDuration} Saniye</span>
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50">
+                        <Timer className="h-3 w-3 text-blue-500" />
+                        <span className="text-[10px] font-medium">{room?.roundDuration} sn</span>
                       </div>
                     </div>
                   </div>
@@ -232,15 +232,15 @@ export default function JoinRoom() {
                 transition={{ delay: 0.1 }}
                 className="relative"
               >
-                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 via-emerald-500/50 to-transparent rounded-full" />
-                <div className="pl-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                      <Mic2 className="h-5 w-5 text-white" />
+                <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-500 via-emerald-500/50 to-transparent rounded-full" />
+                <div className="pl-3">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="h-8 w-8 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-md shadow-emerald-500/20">
+                      <Mic2 className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold">Oyuncu Adın</h2>
-                      <p className="text-xs text-muted-foreground">Diğer Oyunculara Görünecek İsim</p>
+                      <h2 className="text-base font-bold">Oyuncu Adın</h2>
+                      <p className="text-[10px] text-muted-foreground">Diğer Oyunculara Görünecek İsim</p>
                     </div>
                   </div>
                   
@@ -250,16 +250,16 @@ export default function JoinRoom() {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       maxLength={20}
-                      className="h-14 text-lg pl-5 pr-20 bg-muted/30 border-border/50 focus:border-emerald-500/50 focus:bg-muted/50 transition-all"
+                      className="h-11 lg:h-10 text-sm lg:text-base pl-4 pr-16 bg-muted/30 border-border/50 focus:border-emerald-500/50 focus:bg-muted/50 transition-all"
                       data-testid="input-display-name"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                       <div className="flex gap-0.5">
                         {[1,2,3,4,5].map((i) => (
                           <motion.div
                             key={i}
                             animate={{ 
-                              height: displayName.length > 0 ? [8, 16, 8] : 8,
+                              height: displayName.length > 0 ? [6, 12, 6] : 6,
                               opacity: displayName.length > 0 ? 1 : 0.3
                             }}
                             transition={{ 
@@ -267,12 +267,12 @@ export default function JoinRoom() {
                               repeat: displayName.length > 0 ? Infinity : 0,
                               delay: i * 0.1 
                             }}
-                            className="w-1 rounded-full bg-emerald-500"
-                            style={{ height: 8 }}
+                            className="w-0.5 rounded-full bg-emerald-500"
+                            style={{ height: 6 }}
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-muted-foreground">{displayName.length}/20</span>
+                      <span className="text-[10px] text-muted-foreground">{displayName.length}/20</span>
                     </div>
                   </div>
                 </div>
@@ -286,15 +286,15 @@ export default function JoinRoom() {
                     exit={{ opacity: 0, height: 0 }}
                     className="relative overflow-hidden"
                   >
-                    <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-purple-500/50 to-transparent rounded-full" />
-                    <div className="pl-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                          <Lock className="h-5 w-5 text-white" />
+                    <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500 via-purple-500/50 to-transparent rounded-full" />
+                    <div className="pl-3">
+                      <div className="flex items-center gap-2.5 mb-3">
+                        <div className="h-8 w-8 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-md shadow-purple-500/20">
+                          <Lock className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                          <h2 className="text-lg font-bold">Oda Şifresi</h2>
-                          <p className="text-xs text-muted-foreground">Bu Oda Şifre Korumalı</p>
+                          <h2 className="text-base font-bold">Oda Şifresi</h2>
+                          <p className="text-[10px] text-muted-foreground">Bu Oda Şifre Korumalı</p>
                         </div>
                       </div>
                       
@@ -303,7 +303,7 @@ export default function JoinRoom() {
                         placeholder="Şifreyi Gir"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="h-14 text-lg pl-5 bg-muted/30 border-border/50 focus:border-purple-500/50 focus:bg-muted/50 transition-all"
+                        className="h-11 lg:h-10 text-sm lg:text-base pl-4 bg-muted/30 border-border/50 focus:border-purple-500/50 focus:bg-muted/50 transition-all"
                         data-testid="input-room-password"
                       />
                     </div>
@@ -317,22 +317,22 @@ export default function JoinRoom() {
                 transition={{ delay: 0.2 }}
                 className="relative"
               >
-                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent rounded-full" />
-                <div className="pl-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                      <Shield className="h-5 w-5 text-white" />
+                <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent rounded-full" />
+                <div className="pl-3">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="h-8 w-8 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md shadow-amber-500/20">
+                      <Shield className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold">Veri Kullanım Onayı</h2>
-                      <p className="text-xs text-muted-foreground">YouTube Verilerinin Kullanımı</p>
+                      <h2 className="text-base font-bold">Veri Kullanım Onayı</h2>
+                      <p className="text-[10px] text-muted-foreground">YouTube Verilerinin Kullanımı</p>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => setConsentGiven(!consentGiven)}
-                    className={`w-full flex items-start gap-4 p-4 rounded-2xl transition-all text-left ${
+                    className={`w-full flex items-start gap-3 p-3 lg:p-2.5 rounded-xl transition-all text-left ${
                       consentGiven
                         ? "bg-gradient-to-br from-amber-500/15 to-amber-500/5 border-2 border-amber-500/30"
                         : "bg-muted/20 border-2 border-transparent hover:border-border/50"
@@ -341,17 +341,17 @@ export default function JoinRoom() {
                   >
                     <motion.div 
                       animate={{ scale: consentGiven ? [1, 1.2, 1] : 1 }}
-                      className={`h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-all ${
+                      className={`h-6 w-6 rounded-md flex items-center justify-center shrink-0 transition-all ${
                         consentGiven ? "bg-amber-500" : "bg-muted border-2 border-border"
                       }`}
                     >
-                      {consentGiven && <Check className="h-4 w-4 text-white" />}
+                      {consentGiven && <Check className="h-3.5 w-3.5 text-white" />}
                     </motion.div>
                     <div className="flex-1">
-                      <p className={`text-sm font-semibold mb-1 ${consentGiven ? "text-foreground" : "text-muted-foreground"}`}>
+                      <p className={`text-xs lg:text-sm font-semibold mb-0.5 ${consentGiven ? "text-foreground" : "text-muted-foreground"}`}>
                         Kabul Ediyorum
                       </p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
+                      <p className="text-[10px] lg:text-xs text-muted-foreground leading-relaxed">
                         YouTube hesabımdaki beğendiğim videoların ve abone olduğum kanalların bu oyunda kullanılmasını kabul ediyorum.
                       </p>
                     </div>
@@ -365,33 +365,32 @@ export default function JoinRoom() {
                 transition={{ delay: 0.3 }}
                 className="relative pt-4"
               >
-                <div className="flex flex-col sm:flex-row items-center gap-4 p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                      <UserPlus className="h-6 w-6 text-emerald-500" />
+                <div className="flex flex-col sm:flex-row items-center gap-3 p-4 lg:p-3 rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="h-10 w-10 lg:h-9 lg:w-9 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                      <UserPlus className="h-5 w-5 lg:h-4 lg:w-4 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Katılmaya Hazır</p>
-                      <p className="text-lg font-bold">{room?.name}</p>
+                      <p className="text-xs text-muted-foreground">Katılmaya Hazır</p>
+                      <p className="text-base lg:text-sm font-bold">{room?.name}</p>
                     </div>
                   </div>
                   
                   <Button
                     type="submit"
-                    size="lg"
-                    className="w-full sm:w-auto min-w-[160px] h-12 text-base font-semibold gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25"
+                    className="w-full sm:w-auto min-w-[140px] lg:min-w-[120px] h-10 lg:h-9 text-sm font-semibold gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-md shadow-emerald-500/20"
                     disabled={joinMutation.isPending || !isFormValid}
                     data-testid="button-join"
                   >
                     {joinMutation.isPending ? (
                       <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         Katılınıyor...
                       </>
                     ) : (
                       <>
                         Odaya Katıl
-                        <ArrowRight className="h-5 w-5" />
+                        <ArrowRight className="h-4 w-4" />
                       </>
                     )}
                   </Button>
@@ -399,21 +398,21 @@ export default function JoinRoom() {
               </motion.div>
             </form>
 
-            <div className="hidden lg:block w-72">
-              <div className="sticky top-24">
+            <div className="hidden lg:block w-56">
+              <div className="sticky top-20">
                 <motion.div 
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="relative p-6 rounded-2xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30 overflow-hidden"
+                  className="relative p-4 rounded-xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30 overflow-hidden"
                 >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                   
                   <div className="relative">
-                    <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center gap-2 mb-4">
                       <div className="relative">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 flex items-center justify-center">
-                          <Radio className="h-6 w-6 text-white" />
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 flex items-center justify-center">
+                          <Radio className="h-4 w-4 text-white" />
                         </div>
                         <motion.div
                           animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
@@ -422,32 +421,32 @@ export default function JoinRoom() {
                         />
                       </div>
                       <div>
-                        <p className="text-xs text-emerald-500 font-medium">Aktif</p>
-                        <p className="font-bold">Lobi Bekliyor</p>
+                        <p className="text-[10px] text-emerald-500 font-medium">Aktif</p>
+                        <p className="text-sm font-bold">Lobi Bekliyor</p>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="p-3 rounded-xl bg-muted/30">
-                        <p className="text-xs text-muted-foreground mb-2">Katılım Durumu</p>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${displayName.trim() ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
-                            <span className={`text-sm ${displayName.trim() ? "text-foreground" : "text-muted-foreground"}`}>
+                    <div className="space-y-3">
+                      <div className="p-2.5 rounded-lg bg-muted/30">
+                        <p className="text-[10px] text-muted-foreground mb-1.5">Katılım Durumu</p>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <div className={`h-1.5 w-1.5 rounded-full ${displayName.trim() ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
+                            <span className={`text-xs ${displayName.trim() ? "text-foreground" : "text-muted-foreground"}`}>
                               İsim Girildi
                             </span>
                           </div>
                           {requiresPassword && (
-                            <div className="flex items-center gap-2">
-                              <div className={`h-2 w-2 rounded-full ${password.trim() ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
-                              <span className={`text-sm ${password.trim() ? "text-foreground" : "text-muted-foreground"}`}>
+                            <div className="flex items-center gap-1.5">
+                              <div className={`h-1.5 w-1.5 rounded-full ${password.trim() ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
+                              <span className={`text-xs ${password.trim() ? "text-foreground" : "text-muted-foreground"}`}>
                                 Şifre Girildi
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${consentGiven ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
-                            <span className={`text-sm ${consentGiven ? "text-foreground" : "text-muted-foreground"}`}>
+                          <div className="flex items-center gap-1.5">
+                            <div className={`h-1.5 w-1.5 rounded-full ${consentGiven ? "bg-emerald-500" : "bg-muted-foreground/30"}`} />
+                            <span className={`text-xs ${consentGiven ? "text-foreground" : "text-muted-foreground"}`}>
                               Onay Verildi
                             </span>
                           </div>

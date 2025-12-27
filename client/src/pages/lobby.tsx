@@ -474,47 +474,47 @@ export default function Lobby() {
           <div className="absolute bottom-20 right-10 w-56 h-56 rounded-full bg-emerald-500 blur-3xl" />
         </div>
 
-        <div className="relative w-full max-w-5xl mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row gap-6">
+        <div className="relative w-full max-w-4xl mx-auto px-4 py-5 lg:py-6">
+          <div className="flex flex-col lg:flex-row gap-5">
             
-            <div className="flex-1 space-y-5">
+            <div className="flex-1 space-y-4">
               
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="relative"
               >
-                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
-                <div className="pl-4">
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-                    <div className="flex items-center justify-between gap-4 mb-4">
-                      <div className="flex items-center gap-4">
+                <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
+                <div className="pl-3">
+                  <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3">
                         <motion.div 
                           animate={{ 
-                            boxShadow: ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 8px rgba(255,0,0,0.15)", "0 0 0 0 rgba(255,0,0,0)"]
+                            boxShadow: ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 6px rgba(255,0,0,0.15)", "0 0 0 0 rgba(255,0,0,0)"]
                           }}
                           transition={{ duration: 2, repeat: Infinity }}
-                          className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/30"
+                          className="h-11 w-11 lg:h-10 lg:w-10 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-md shadow-primary/25"
                         >
-                          <Tv className="h-7 w-7 text-white" />
+                          <Tv className="h-5 w-5 lg:h-4 lg:w-4 text-white" />
                         </motion.div>
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
                             <motion.div 
                               animate={{ opacity: [1, 0.5, 1] }}
                               transition={{ duration: 1.5, repeat: Infinity }}
-                              className="h-2 w-2 rounded-full bg-red-500"
+                              className="h-1.5 w-1.5 rounded-full bg-red-500"
                             />
-                            <span className="text-xs text-red-500 font-medium">Aktif Oda</span>
+                            <span className="text-[10px] text-red-500 font-medium">Aktif Oda</span>
                           </div>
-                          <h2 className="text-xl font-bold">{room.name}</h2>
+                          <h2 className="text-base lg:text-sm font-bold">{room.name}</h2>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="outline" size="icon" onClick={copyRoomCode} data-testid="button-copy-code">
-                              <Copy className="h-4 w-4" />
+                              <Copy className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Kodu Kopyala</TooltipContent>
@@ -522,7 +522,7 @@ export default function Lobby() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="outline" size="icon" onClick={shareRoom} data-testid="button-share">
-                              <Share2 className="h-4 w-4" />
+                              <Share2 className="h-3.5 w-3.5" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Paylaş</TooltipContent>
@@ -530,13 +530,13 @@ export default function Lobby() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-4">
-                      <p className="text-xs text-muted-foreground">Katılım Kodu:</p>
-                      <div className="flex gap-1">
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <p className="text-[10px] text-muted-foreground">Katılım Kodu:</p>
+                      <div className="flex gap-0.5">
                         {roomCode?.split("").map((char, i) => (
                           <div
                             key={i}
-                            className="h-8 w-7 rounded-md bg-muted flex items-center justify-center font-mono font-bold"
+                            className="h-6 w-5 lg:h-5 lg:w-4 rounded bg-muted flex items-center justify-center font-mono font-bold text-xs lg:text-[10px]"
                           >
                             {char}
                           </div>
@@ -544,18 +544,18 @@ export default function Lobby() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted/50">
-                        <Users className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-primary" />
-                        <span className="text-[10px] sm:text-xs font-medium" data-testid="text-player-count">{playerCount}/{maxPlayers} <span className="hidden sm:inline">Oyuncu</span></span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50">
+                        <Users className="h-3 w-3 text-primary" />
+                        <span className="text-[10px] font-medium" data-testid="text-player-count">{playerCount}/{maxPlayers} <span className="hidden sm:inline">Oyuncu</span></span>
                       </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted/50">
-                        <Zap className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-amber-500" />
-                        <span className="text-[10px] sm:text-xs font-medium">{room.totalRounds} Tur</span>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50">
+                        <Zap className="h-3 w-3 text-amber-500" />
+                        <span className="text-[10px] font-medium">{room.totalRounds} Tur</span>
                       </div>
-                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-muted/50">
-                        <Timer className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-blue-500" />
-                        <span className="text-[10px] sm:text-xs font-medium">{room.roundDuration}sn</span>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50">
+                        <Timer className="h-3 w-3 text-blue-500" />
+                        <span className="text-[10px] font-medium">{room.roundDuration}sn</span>
                       </div>
                     </div>
                   </div>
@@ -568,46 +568,47 @@ export default function Lobby() {
                 transition={{ delay: 0.1 }}
                 className="relative"
               >
-                <div className={`absolute -left-4 top-0 bottom-0 w-1 rounded-full ${
+                <div className={`absolute -left-3 top-0 bottom-0 w-0.5 rounded-full ${
                   googleStatusQuery.data?.connected 
                     ? "bg-gradient-to-b from-emerald-500 via-emerald-500/50 to-transparent"
                     : "bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent"
                 }`} />
-                <div className="pl-4">
+                <div className="pl-3">
                   {!googleStatusQuery.data?.connected ? (
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
+                    <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
                           <div className="relative">
-                            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                              <SiYoutube className="h-6 w-6 text-white" />
+                            <div className="h-10 w-10 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md shadow-amber-500/20">
+                              <SiYoutube className="h-4 w-4 text-white" />
                             </div>
                             <motion.div
                               animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
                               transition={{ duration: 2, repeat: Infinity }}
-                              className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-amber-500 flex items-center justify-center"
+                              className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 flex items-center justify-center"
                             >
-                              <span className="text-[10px] text-white font-bold">!</span>
+                              <span className="text-[8px] text-white font-bold">!</span>
                             </motion.div>
                           </div>
                           <div>
-                            <h3 className="font-bold">YouTube Bağlantısı Gerekli</h3>
-                            <p className="text-xs text-muted-foreground">Oyuna Katılmak İçin Hesabını Bağla</p>
+                            <h3 className="text-sm font-bold">YouTube Bağlantısı Gerekli</h3>
+                            <p className="text-[10px] text-muted-foreground">Oyuna Katılmak İçin Hesabını Bağla</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Button
                             onClick={connectGoogle}
-                            className="bg-white hover:bg-gray-100 text-gray-900 font-semibold gap-2 border border-gray-300 shadow-lg"
+                            size="sm"
+                            className="bg-white hover:bg-gray-100 text-gray-900 font-semibold gap-1.5 border border-gray-300 shadow-md h-8 text-xs"
                             data-testid="button-connect-google"
                           >
-                            <SiGoogle className="h-4 w-4" />
+                            <SiGoogle className="h-3.5 w-3.5" />
                             Bağlan
                           </Button>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" data-testid="button-google-info">
-                                <Info className="h-4 w-4 text-muted-foreground" />
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="max-w-xs text-center">
@@ -618,19 +619,19 @@ export default function Lobby() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
-                      <div className="flex items-center gap-3">
+                    <div className="p-3.5 lg:p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
+                      <div className="flex items-center gap-2.5">
                         <div className="relative">
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
-                            <SiYoutube className="h-5 w-5 text-white" />
+                          <div className="h-9 w-9 lg:h-8 lg:w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
+                            <SiYoutube className="h-4 w-4 lg:h-3.5 lg:w-3.5 text-white" />
                           </div>
-                          <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-background">
-                            <Check className="h-3 w-3 text-white" />
+                          <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-background">
+                            <Check className="h-2.5 w-2.5 text-white" />
                           </div>
                         </div>
                         <div>
-                          <p className="font-semibold text-emerald-500">YouTube Bağlı</p>
-                          <p className="text-xs text-muted-foreground">Hesabın Başarıyla Bağlandı</p>
+                          <p className="text-sm font-semibold text-emerald-500">YouTube Bağlı</p>
+                          <p className="text-[10px] text-muted-foreground">Hesabın Başarıyla Bağlandı</p>
                         </div>
                       </div>
                     </div>
@@ -645,17 +646,17 @@ export default function Lobby() {
                   transition={{ delay: 0.2 }}
                   className="relative"
                 >
-                  <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 via-purple-500/50 to-transparent rounded-full" />
-                  <div className="pl-4">
-                    <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
-                            <Play className="h-6 w-6 text-white" />
+                  <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500 via-purple-500/50 to-transparent rounded-full" />
+                  <div className="pl-3">
+                    <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-md shadow-purple-500/20">
+                            <Play className="h-4 w-4 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-bold">Oda Kontrolü</h3>
-                            <p className="text-xs text-muted-foreground">
+                            <h3 className="text-sm font-bold">Oda Kontrolü</h3>
+                            <p className="text-[10px] text-muted-foreground">
                               {!canStart && playerCount < 2 && "En Az 2 Oyuncu Gerekli"}
                               {!canStart && playerCount >= 2 && !allGoogleConnected && `${connectedCount}/${playerCount} Oyuncu Bağlı`}
                               {canStart && "Tüm Oyuncular Hazır!"}
@@ -665,18 +666,19 @@ export default function Lobby() {
                         <Button
                           onClick={() => startGameMutation.mutate()}
                           disabled={!canStart || startGameMutation.isPending}
-                          className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-lg shadow-purple-500/25 gap-2"
+                          size="sm"
+                          className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-md shadow-purple-500/20 gap-1.5 h-8 text-xs"
                           data-testid="button-start-game"
                         >
                           {startGameMutation.isPending ? (
                             <>
-                              <Loader2 className="h-5 w-5 animate-spin" />
+                              <Loader2 className="h-4 w-4 animate-spin" />
                               Başlatılıyor...
                             </>
                           ) : (
                             <>
-                              <Play className="h-5 w-5" />
-                              Oyunu Başlat
+                              <Play className="h-4 w-4" />
+                              Başlat
                             </>
                           )}
                         </Button>
@@ -687,42 +689,42 @@ export default function Lobby() {
               )}
             </div>
 
-            <div className="w-full lg:w-96">
+            <div className="w-full lg:w-80">
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="sticky top-24"
+                className="sticky top-20"
               >
-                <div className="relative p-6 rounded-2xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30">
-                  <div className="absolute -left-1 top-4 bottom-4 w-1 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
+                <div className="relative p-4 lg:p-3.5 rounded-xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30">
+                  <div className="absolute -left-0.5 top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
                   
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-lg shadow-primary/25">
-                        <Users className="h-5 w-5 text-white" />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-9 w-9 lg:h-8 lg:w-8 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-md shadow-primary/20">
+                        <Users className="h-4 w-4 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">Oyuncular</h3>
-                        <p className="text-xs text-muted-foreground">{playerCount} Kişi Katıldı</p>
+                        <h3 className="font-bold text-sm">Oyuncular</h3>
+                        <p className="text-[10px] text-muted-foreground">{playerCount} Kişi Katıldı</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                       <motion.div 
                         animate={{ opacity: [1, 0.3, 1] }}
                         transition={{ duration: 1, repeat: Infinity }}
-                        className="h-2 w-2 rounded-full bg-emerald-500"
+                        className="h-1.5 w-1.5 rounded-full bg-emerald-500"
                       />
-                      <span className="text-xs font-medium text-emerald-500">{connectedCount}/{playerCount} Hazır</span>
+                      <span className="text-[10px] font-medium text-emerald-500">{connectedCount}/{playerCount} Hazır</span>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {players.length === 0 ? (
-                      <div className="p-8 text-center rounded-xl bg-muted/30 border border-dashed border-border/50">
-                        <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-sm font-medium text-muted-foreground">Oyuncu Bekleniyor...</p>
-                        <p className="text-xs text-muted-foreground mt-1">Kodu Paylaşarak Arkadaşlarını Davet Et</p>
+                      <div className="p-6 text-center rounded-lg bg-muted/30 border border-dashed border-border/50">
+                        <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-xs font-medium text-muted-foreground">Oyuncu Bekleniyor...</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Kodu Paylaşarak Arkadaşlarını Davet Et</p>
                       </div>
                     ) : (
                       players.map((player, index) => {
@@ -735,16 +737,16 @@ export default function Lobby() {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`relative flex items-center gap-4 p-4 rounded-2xl transition-all ${
+                            className={`relative flex items-center gap-3 p-3 lg:p-2.5 rounded-xl transition-all ${
                               player.user.googleConnected
-                                ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 border border-emerald-500/30 shadow-sm shadow-emerald-500/10"
+                                ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 border border-emerald-500/30"
                                 : "bg-muted/40 border border-border/40"
                             }`}
                           >
                             {isPlayerHost && (
-                              <div className="absolute -top-2 -left-2">
-                                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                                  <Crown className="h-4 w-4 text-white" />
+                              <div className="absolute -top-1.5 -left-1.5">
+                                <div className="h-5 w-5 rounded-md bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-md shadow-amber-500/25">
+                                  <Crown className="h-3 w-3 text-white" />
                                 </div>
                               </div>
                             )}
@@ -754,12 +756,12 @@ export default function Lobby() {
                                 <img 
                                   src={player.user.avatarUrl} 
                                   alt={player.user.displayName}
-                                  className={`h-14 w-14 rounded-xl object-cover ring-2 ${
+                                  className={`h-10 w-10 lg:h-9 lg:w-9 rounded-lg object-cover ring-2 ${
                                     player.user.googleConnected ? "ring-emerald-500/50" : "ring-border/50"
                                   }`}
                                 />
                               ) : (
-                                <div className={`h-14 w-14 rounded-xl flex items-center justify-center text-lg font-bold ${
+                                <div className={`h-10 w-10 lg:h-9 lg:w-9 rounded-lg flex items-center justify-center text-sm font-bold ${
                                   player.user.googleConnected 
                                     ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white" 
                                     : "bg-muted text-muted-foreground"
@@ -768,23 +770,23 @@ export default function Lobby() {
                                 </div>
                               )}
                               {player.user.googleConnected && (
-                                <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 rounded-lg flex items-center justify-center border-2 border-background shadow-sm">
-                                  <Check className="h-3 w-3 text-white" />
+                                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-md flex items-center justify-center border-2 border-background">
+                                  <Check className="h-2.5 w-2.5 text-white" />
                                 </div>
                               )}
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <p className="font-bold text-base truncate">{player.user.displayName}</p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <p className="font-bold text-sm truncate">{player.user.displayName}</p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
                                 {player.user.googleConnected ? (
-                                  <span className="text-xs font-medium text-emerald-500 flex items-center gap-1">
-                                    <SiYoutube className="h-3 w-3" />
+                                  <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-1">
+                                    <SiYoutube className="h-2.5 w-2.5" />
                                     YouTube Bağlı
                                   </span>
                                 ) : (
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
                                     Bağlantı Bekleniyor
                                   </span>
                                 )}
