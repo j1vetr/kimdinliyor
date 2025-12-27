@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage, generateUniqueRoomCode, generateUniqueName, hashPassword, verifyPassword } from "./storage";
-import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile, getOldestLikedVideos } from "./youtube";
+import { getGoogleAuthUrl, exchangeCodeForTokens, refreshAccessToken, getLikedVideosWithStats, getSubscriptionsWithStats, getUserProfile, getOldestLikedVideos, getTrendingVideos, getPopularChannels } from "./youtube";
 import type { Room, RoomPlayer, Content } from "@shared/schema";
 
 // WebSocket connections by room code
@@ -452,7 +452,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Fetch content from each player's YouTube account
       await storage.clearRoomContent(room.id);
       
-      const contentByUser = new Map<string, { content: any; userId: string; type: string }[]>();
+      const contentByUser = new Map<string, { content: any; userId: string; type: string; isOldestLike?: boolean }[]>();
       
       console.log(`[GAME START] Fetching content for ${players.length} players`);
       
@@ -567,8 +567,76 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             isOldestLike: isOldestLike,
           });
         }
-      } else {
-        // Create demo content if no YouTube content available
+      }
+      
+      // Check if comparison modes are selected - fetch public content for them
+      const comparisonVideoModes = ["which_older", "most_viewed", "which_longer"];
+      const comparisonChannelModes = ["which_more_subs", "which_more_videos"];
+      const gameModes = room.gameModes || ["who_liked", "who_subscribed"];
+      
+      const hasVideoComparisonModes = gameModes.some(m => comparisonVideoModes.includes(m));
+      const hasChannelComparisonModes = gameModes.some(m => comparisonChannelModes.includes(m));
+      
+      console.log(`[GAME START] Comparison modes - Video: ${hasVideoComparisonModes}, Channel: ${hasChannelComparisonModes}`);
+      
+      // Fetch trending videos for video comparison modes
+      if (hasVideoComparisonModes) {
+        console.log(`[GAME START] Fetching trending videos for comparison modes...`);
+        const trendingVideos = await getTrendingVideos(50);
+        console.log(`[GAME START] Fetched ${trendingVideos.length} trending videos`);
+        
+        for (const video of trendingVideos) {
+          // Public content has empty sourceUserIds - cannot be used for who_liked
+          await storage.addContent({
+            roomId: room.id,
+            contentId: `public_video_${video.id}`,
+            contentType: "video",
+            title: video.title,
+            subtitle: video.channelTitle,
+            thumbnailUrl: video.thumbnailUrl,
+            sourceUserIds: [], // Empty = public content
+            viewCount: video.viewCount,
+            subscriberCount: null,
+            videoCount: null,
+            duration: String(video.duration), // Convert to string
+            publishedAt: video.publishedAt,
+            isOldestLike: false,
+            isPublicContent: true, // Mark as public
+          });
+        }
+      }
+      
+      // Fetch popular channels for channel comparison modes
+      if (hasChannelComparisonModes) {
+        console.log(`[GAME START] Fetching popular channels for comparison modes...`);
+        const popularChannels = await getPopularChannels(30);
+        console.log(`[GAME START] Fetched ${popularChannels.length} popular channels`);
+        
+        for (const channel of popularChannels) {
+          // Public content has empty sourceUserIds - cannot be used for who_subscribed
+          await storage.addContent({
+            roomId: room.id,
+            contentId: `public_channel_${channel.id}`,
+            contentType: "channel",
+            title: channel.title,
+            subtitle: `${parseInt(channel.subscriberCount).toLocaleString("tr-TR")} abone`,
+            thumbnailUrl: channel.thumbnailUrl,
+            sourceUserIds: [], // Empty = public content
+            viewCount: null,
+            subscriberCount: channel.subscriberCount,
+            videoCount: channel.videoCount,
+            duration: null,
+            publishedAt: null,
+            isOldestLike: false,
+            isPublicContent: true, // Mark as public
+          });
+        }
+      }
+      
+      // Fallback: Create demo content if no content available at all
+      const allContents = await storage.getContentByRoom(room.id);
+      if (allContents.length === 0) {
+        console.log(`[GAME START] No content available, creating demo content...`);
         const demoContent = [
           { id: "demo1", title: "Demo Video 1", subtitle: "Demo Channel", type: "video", viewCount: "1500000", subscriberCount: null },
           { id: "demo2", title: "Demo Video 2", subtitle: "Demo Channel", type: "video", viewCount: "2300000", subscriberCount: null },
@@ -733,29 +801,62 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const roundDuration = lightning ? 10 : (room.roundDuration || 20);
 
     // Select random game mode from enabled modes
-    // Filter modes based on content type
+    // Filter modes based on content type AND content ownership
     const contentType = content.contentType;
+    const isPublicContent = content.isPublicContent === true || content.sourceUserIds.length === 0;
+    
+    // User-specific modes (require user content with sourceUserIds)
+    const userSpecificModes = ["who_liked", "who_subscribed", "oldest_like"];
+    // Comparison modes (can use public content)
+    const comparisonModes = ["which_older", "most_viewed", "which_longer", "which_more_subs", "which_more_videos"];
+    
     let availableModes = gameState.gameModes.filter(mode => {
-      // Video-only modes
-      if (mode === "who_liked" || mode === "which_older" || mode === "most_viewed" || mode === "which_longer") {
+      // User-specific modes require non-public content with at least one user
+      if (userSpecificModes.includes(mode)) {
+        if (isPublicContent) return false; // Can't use public content for user-specific modes
+        
+        if (mode === "who_liked") {
+          return contentType === "video" && content.sourceUserIds.length > 0;
+        }
+        if (mode === "who_subscribed") {
+          return contentType === "channel" && content.sourceUserIds.length > 0;
+        }
+        if (mode === "oldest_like") {
+          return contentType === "video" && 
+                 content.isOldestLike === true && 
+                 content.sourceUserIds.length === 1;
+        }
+      }
+      
+      // Comparison modes - match content type
+      if (mode === "which_older" || mode === "most_viewed" || mode === "which_longer") {
         return contentType === "video";
       }
-      // oldest_like requires: video, isOldestLike flag, AND single owner for clear guessing
-      if (mode === "oldest_like") {
-        return contentType === "video" && 
-               content.isOldestLike === true && 
-               content.sourceUserIds.length === 1;
-      }
-      // Channel-only modes
-      if (mode === "who_subscribed" || mode === "which_more_subs" || mode === "which_more_videos") {
+      if (mode === "which_more_subs" || mode === "which_more_videos") {
         return contentType === "channel";
       }
-      return true;
+      
+      return false;
     });
+    
+    // Fallback: If public content but no comparison modes available, skip this content
+    if (availableModes.length === 0 && isPublicContent) {
+      // Try next content
+      setTimeout(() => startNextRound(roomCode, room), 100);
+      return;
+    }
     
     // Fallback to basic modes if no modes available for this content type
     if (availableModes.length === 0) {
-      availableModes = contentType === "video" ? ["who_liked"] : ["who_subscribed"];
+      if (contentType === "video" && !isPublicContent) {
+        availableModes = ["who_liked"];
+      } else if (contentType === "channel" && !isPublicContent) {
+        availableModes = ["who_subscribed"];
+      } else {
+        // Skip this content
+        setTimeout(() => startNextRound(roomCode, room), 100);
+        return;
+      }
     }
     
     // Select random mode

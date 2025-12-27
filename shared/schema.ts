@@ -82,6 +82,7 @@ export const contentCache = pgTable("content_cache", {
   publishedAt: text("published_at"), // Video yayınlanma tarihi (ISO string)
   likedAt: text("liked_at"), // Kullanıcının bu videoyu beğendiği tarih (oldest like için)
   isOldestLike: boolean("is_oldest_like").default(false), // "Benim İlk Aşkım" modu için işaret
+  isPublicContent: boolean("is_public_content").default(false), // Public içerik (karşılaştırma modları için)
   createdAt: timestamp("created_at").defaultNow(),
 });
 
