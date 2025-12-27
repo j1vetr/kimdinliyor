@@ -109,6 +109,7 @@ export default function Game() {
   const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const [resultsCountdown, setResultsCountdown] = useState(5);
   const [nextRoundAt, setNextRoundAt] = useState<number | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   
   // Determine if current mode is a comparison mode
@@ -286,10 +287,22 @@ export default function Game() {
     const timer = setInterval(() => {
       const remaining = Math.max(0, Math.ceil((nextRoundAt - Date.now()) / 1000));
       setResultsCountdown(remaining);
+      
+      // Start transitioning when countdown is done
+      if (remaining <= 0 && !isTransitioning) {
+        setIsTransitioning(true);
+      }
     }, 100);
 
     return () => clearInterval(timer);
-  }, [gameStatus, nextRoundAt]);
+  }, [gameStatus, nextRoundAt, isTransitioning]);
+
+  // Reset transitioning state when entering question phase
+  useEffect(() => {
+    if (gameStatus === "question") {
+      setIsTransitioning(false);
+    }
+  }, [gameStatus]);
 
   // gameQuery effect: Sync state for round transitions and results
   useEffect(() => {
@@ -793,6 +806,15 @@ export default function Game() {
             </div>
           </header>
 
+          {/* Show loading state during transition */}
+          {isTransitioning ? (
+            <main className="flex-1 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Sonraki tura geçiliyor...</span>
+              </div>
+            </main>
+          ) : (
           <main className="flex-1 overflow-y-auto px-4 pb-4">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto space-y-3 md:space-y-4">
               
@@ -955,6 +977,7 @@ export default function Game() {
               </div>
             </div>
           </main>
+          )}
         </div>
       )}
     </div>
