@@ -15,8 +15,11 @@ const GAME_MODE_OPTIONS = [
   { id: "who_liked", label: "Kim Beğenmiş?", description: "Videoyu hangi oyuncu beğenmiş?", icon: ThumbsUp, color: "bg-red-500", glow: "shadow-red-500/30" },
   { id: "who_subscribed", label: "Kim Abone?", description: "Kanala hangi oyuncu abone?", icon: UserPlus, color: "bg-orange-500", glow: "shadow-orange-500/30" },
   { id: "which_older", label: "Hangisi Daha Eski?", description: "İki videodan hangisi daha önce yüklendi?", icon: Clock, color: "bg-blue-500", glow: "shadow-blue-500/30" },
-  { id: "most_viewed", label: "En Çok İzlenen", description: "Hangi video daha fazla izlenmiş?", icon: Trophy, color: "bg-emerald-500", glow: "shadow-emerald-500/30" },
+  { id: "most_viewed", label: "En Çok İzlenen", description: "Hangi video daha fazla izlenmiş?", icon: Eye, color: "bg-emerald-500", glow: "shadow-emerald-500/30" },
   { id: "oldest_like", label: "İlk Aşkım", description: "En eski beğenilen video kime ait?", icon: Heart, color: "bg-pink-500", glow: "shadow-pink-500/30" },
+  { id: "which_longer", label: "Hangisi Daha Uzun?", description: "İki videodan hangisi daha uzun süreli?", icon: Timer, color: "bg-purple-500", glow: "shadow-purple-500/30" },
+  { id: "which_more_subs", label: "Hangisi Daha Popüler?", description: "Hangi kanal daha fazla aboneye sahip?", icon: Users, color: "bg-cyan-500", glow: "shadow-cyan-500/30" },
+  { id: "which_more_videos", label: "Hangisi Daha Emektar?", description: "Hangi kanal daha fazla video yüklemiş?", icon: Disc3, color: "bg-amber-500", glow: "shadow-amber-500/30" },
 ] as const;
 
 const STEPS = [

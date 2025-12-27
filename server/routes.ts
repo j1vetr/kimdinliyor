@@ -32,6 +32,16 @@ function isLightningRound(roundNumber: number): boolean {
   return roundNumber % 5 === 0 && roundNumber > 0;
 }
 
+// Helper: Parse ISO 8601 duration (PT4M13S) to seconds
+function parseDuration(isoDuration: string): number {
+  const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const hours = parseInt(match[1] || "0");
+  const minutes = parseInt(match[2] || "0");
+  const seconds = parseInt(match[3] || "0");
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 // Scoring tiers for numeric modes based on percentage error
 interface NumericScoreResult {
   basePoints: number;
@@ -548,6 +558,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             sourceUserIds: users,
             viewCount: type === "video" ? content.viewCount : null,
             subscriberCount: type === "channel" ? content.subscriberCount : null,
+            videoCount: type === "channel" ? content.videoCount : null,
+            duration: type === "video" ? content.duration : null,
             publishedAt: type === "video" ? content.publishedAt : null,
             isOldestLike: isOldestLike,
           });
@@ -719,7 +731,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const contentType = content.contentType;
     let availableModes = gameState.gameModes.filter(mode => {
       // Video-only modes
-      if (mode === "who_liked" || mode === "which_older" || mode === "most_viewed") {
+      if (mode === "who_liked" || mode === "which_older" || mode === "most_viewed" || mode === "which_longer") {
         return contentType === "video";
       }
       // oldest_like requires: video, isOldestLike flag, AND single owner for clear guessing
@@ -729,7 +741,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                content.sourceUserIds.length === 1;
       }
       // Channel-only modes
-      if (mode === "who_subscribed") return contentType === "channel";
+      if (mode === "who_subscribed" || mode === "which_more_subs" || mode === "which_more_videos") {
+        return contentType === "channel";
+      }
       return true;
     });
     
@@ -741,21 +755,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Select random mode
     const selectedMode = availableModes[Math.floor(Math.random() * availableModes.length)];
     
-    // For comparison modes (which_older, most_viewed), we need a second video
+    // For comparison modes, we need a second content piece
     let secondContent: any = null;
     let secondContentId: string | null = null;
     
-    if (selectedMode === "which_older" || selectedMode === "most_viewed") {
+    // Video comparison modes
+    if (selectedMode === "which_older" || selectedMode === "most_viewed" || selectedMode === "which_longer") {
       // Find another unused video for comparison
       const otherVideos = unusedContents.filter(c => 
         c.id !== selectedContentId && 
         c.contentType === "video" &&
-        c.publishedAt // Must have publish date for comparison
+        (selectedMode === "which_older" ? c.publishedAt : true) &&
+        (selectedMode === "which_longer" ? c.duration : true)
       );
       
       if (otherVideos.length > 0) {
         const randomIdx = Math.floor(Math.random() * otherVideos.length);
         secondContent = otherVideos[randomIdx];
+        secondContentId = secondContent.id;
+        if (secondContentId) {
+          gameState.usedContentIds.add(secondContentId);
+        }
+      }
+    }
+    
+    // Channel comparison modes
+    if (selectedMode === "which_more_subs" || selectedMode === "which_more_videos") {
+      // Find another unused channel for comparison
+      const otherChannels = unusedContents.filter(c => 
+        c.id !== selectedContentId && 
+        c.contentType === "channel" &&
+        (selectedMode === "which_more_subs" ? c.subscriberCount : true) &&
+        (selectedMode === "which_more_videos" ? c.videoCount : true)
+      );
+      
+      if (otherChannels.length > 0) {
+        const randomIdx = Math.floor(Math.random() * otherChannels.length);
+        secondContent = otherChannels[randomIdx];
         secondContentId = secondContent.id;
         if (secondContentId) {
           gameState.usedContentIds.add(secondContentId);
@@ -787,6 +823,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const views1 = parseInt(content.viewCount || "0");
       const views2 = parseInt(secondContent.viewCount || "0");
       correctAnswer = views1 > views2 ? content.id : secondContent.id;
+    } else if (selectedMode === "which_longer" && secondContent) {
+      // Correct answer is the ID of the longer video (duration is stored as integer seconds)
+      const dur1 = content.duration || 0;
+      const dur2 = secondContent.duration || 0;
+      correctAnswer = dur1 > dur2 ? content.id : secondContent.id;
+    } else if (selectedMode === "which_more_subs" && secondContent) {
+      // Correct answer is the ID of the channel with more subscribers
+      const subs1 = parseInt(content.subscriberCount || "0");
+      const subs2 = parseInt(secondContent.subscriberCount || "0");
+      correctAnswer = subs1 > subs2 ? content.id : secondContent.id;
+    } else if (selectedMode === "which_more_videos" && secondContent) {
+      // Correct answer is the ID of the channel with more videos
+      const vids1 = parseInt(content.videoCount || "0");
+      const vids2 = parseInt(secondContent.videoCount || "0");
+      correctAnswer = vids1 > vids2 ? content.id : secondContent.id;
     } else if (selectedMode === "oldest_like") {
       // For oldest_like, the sourceUserIds are the correct answer
       roundCorrectUserIds = content.sourceUserIds;
@@ -824,6 +875,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         viewCount: content.viewCount,
         subscriberCount: content.subscriberCount,
         publishedAt: content.publishedAt,
+        duration: content.duration,
+        videoCount: content.videoCount,
       },
       content2: secondContent ? {
         id: secondContent.id,
@@ -835,6 +888,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         viewCount: secondContent.viewCount,
         subscriberCount: secondContent.subscriberCount,
         publishedAt: secondContent.publishedAt,
+        duration: secondContent.duration,
+        videoCount: secondContent.videoCount,
       } : null,
       timeLimit: roundDuration,
       isLightningRound: lightning,
@@ -879,7 +934,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const scoreMultiplier = gameState.isLightningRound ? 2 : 1;
 
     const roundResults: any[] = [];
-    const isComparisonMode = gameState.currentGameMode === "which_older" || gameState.currentGameMode === "most_viewed";
+    const isComparisonMode = gameState.currentGameMode === "which_older" || 
+                             gameState.currentGameMode === "most_viewed" || 
+                             gameState.currentGameMode === "which_longer" ||
+                             gameState.currentGameMode === "which_more_subs" ||
+                             gameState.currentGameMode === "which_more_videos";
     const isPlayerGuessMode = gameState.currentGameMode === "who_liked" || gameState.currentGameMode === "who_subscribed" || gameState.currentGameMode === "oldest_like";
     
     // Get correct answer for comparison modes

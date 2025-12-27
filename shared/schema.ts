@@ -15,11 +15,14 @@ export const users = pgTable("users", {
 
 // Game Modes - Oyun modları
 export const GAME_MODES = {
-  WHO_LIKED: "who_liked",           // Kim Beğenmiş?
-  WHO_SUBSCRIBED: "who_subscribed", // Kim Abone?
-  WHICH_OLDER: "which_older",       // Hangisi Daha Eski?
-  MOST_VIEWED: "most_viewed",       // En Çok Kim İzlenmiş?
-  OLDEST_LIKE: "oldest_like",       // Benim İlk Aşkım (En Eski Like)
+  WHO_LIKED: "who_liked",             // Kim Beğenmiş?
+  WHO_SUBSCRIBED: "who_subscribed",   // Kim Abone?
+  WHICH_OLDER: "which_older",         // Hangisi Daha Eski?
+  MOST_VIEWED: "most_viewed",         // En Çok Kim İzlenmiş?
+  OLDEST_LIKE: "oldest_like",         // Benim İlk Aşkım (En Eski Like)
+  WHICH_LONGER: "which_longer",       // Hangisi Daha Uzun? (Video süresi)
+  WHICH_MORE_SUBS: "which_more_subs", // Hangisi Daha Yüksek Abone?
+  WHICH_MORE_VIDEOS: "which_more_videos", // Hangisi Daha Emektar? (Kanal video sayısı)
 } as const;
 
 export type GameMode = typeof GAME_MODES[keyof typeof GAME_MODES];
@@ -74,6 +77,8 @@ export const contentCache = pgTable("content_cache", {
   viewCount: text("view_count"), // Video izlenme sayısı
   likeCount: text("like_count"), // Video beğeni sayısı
   subscriberCount: text("subscriber_count"), // Kanal abone sayısı
+  videoCount: text("video_count"), // Kanal video sayısı (Hangisi Daha Emektar için)
+  duration: text("duration"), // Video süresi ISO 8601 (Hangisi Daha Uzun için)
   publishedAt: text("published_at"), // Video yayınlanma tarihi (ISO string)
   likedAt: text("liked_at"), // Kullanıcının bu videoyu beğendiği tarih (oldest like için)
   isOldestLike: boolean("is_oldest_like").default(false), // "Benim İlk Aşkım" modu için işaret

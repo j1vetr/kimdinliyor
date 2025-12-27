@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Mic2 } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Mic2, Timer, Disc3 } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,9 +33,11 @@ interface Content {
   viewCount?: string;
   subscriberCount?: string;
   publishedAt?: string;
+  duration?: number;
+  videoCount?: number;
 }
 
-type GameMode = "who_liked" | "who_subscribed" | "which_older" | "most_viewed" | "oldest_like";
+type GameMode = "who_liked" | "who_subscribed" | "which_older" | "most_viewed" | "oldest_like" | "which_longer" | "which_more_subs" | "which_more_videos";
 
 const GAME_MODE_INFO: Record<GameMode, { question: string; icon: any; badge: string }> = {
   who_liked: { question: "Bu videoyu kim beğenmiş?", icon: ThumbsUp, badge: "Kim Beğenmiş?" },
@@ -43,6 +45,9 @@ const GAME_MODE_INFO: Record<GameMode, { question: string; icon: any; badge: str
   which_older: { question: "Hangisi daha eski?", icon: Clock, badge: "Hangisi Daha Eski?" },
   most_viewed: { question: "Hangisi daha çok izlenmiş?", icon: Eye, badge: "En Çok İzlenmiş" },
   oldest_like: { question: "Bu video kimin en eski beğenisi?", icon: Flame, badge: "Benim İlk Aşkım" },
+  which_longer: { question: "Hangisi daha uzun?", icon: Timer, badge: "Hangisi Daha Uzun?" },
+  which_more_subs: { question: "Hangisi daha popüler?", icon: Users, badge: "Daha Popüler?" },
+  which_more_videos: { question: "Hangisi daha emektar?", icon: Disc3, badge: "Daha Emektar?" },
 };
 
 interface RoundResult {
@@ -105,7 +110,11 @@ export default function Game() {
   const wsRef = useRef<WebSocket | null>(null);
   
   // Determine if current mode is a comparison mode
-  const isComparisonMode = gameMode === "which_older" || gameMode === "most_viewed";
+  const isComparisonMode = gameMode === "which_older" || 
+                          gameMode === "most_viewed" || 
+                          gameMode === "which_longer" ||
+                          gameMode === "which_more_subs" ||
+                          gameMode === "which_more_videos";
 
   // Simple polling for game state - runs continuously when waiting
   useEffect(() => {

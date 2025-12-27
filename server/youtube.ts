@@ -201,11 +201,13 @@ export async function getSubscriptions(accessToken: string, maxResults: number =
 export interface VideoStatistics {
   viewCount: string;
   likeCount: string;
+  duration: string; // ISO 8601 duration (e.g., PT4M13S)
 }
 
 export interface ChannelStatistics {
   subscriberCount: string;
   viewCount: string;
+  videoCount: string; // Kanal video sayısı
 }
 
 export async function getVideoStatistics(accessToken: string, videoIds: string[]): Promise<Map<string, VideoStatistics>> {
@@ -214,8 +216,9 @@ export async function getVideoStatistics(accessToken: string, videoIds: string[]
 
   try {
     const idsParam = videoIds.slice(0, 50).join(",");
+    // Request both statistics and contentDetails for duration
     const response = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${idsParam}`,
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,contentDetails&id=${idsParam}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -233,6 +236,7 @@ export async function getVideoStatistics(accessToken: string, videoIds: string[]
       result.set(item.id, {
         viewCount: item.statistics?.viewCount || "0",
         likeCount: item.statistics?.likeCount || "0",
+        duration: item.contentDetails?.duration || "PT0S",
       });
     }
     return result;
@@ -267,6 +271,7 @@ export async function getChannelStatistics(accessToken: string, channelIds: stri
       result.set(item.id, {
         subscriberCount: item.statistics?.subscriberCount || "0",
         viewCount: item.statistics?.viewCount || "0",
+        videoCount: item.statistics?.videoCount || "0",
       });
     }
     return result;
@@ -286,6 +291,7 @@ export async function getLikedVideosWithStats(accessToken: string, maxResults: n
     ...video,
     viewCount: stats.get(video.id)?.viewCount || "0",
     likeCount: stats.get(video.id)?.likeCount || "0",
+    duration: stats.get(video.id)?.duration || "PT0S",
   }));
 }
 
@@ -299,6 +305,7 @@ export async function getSubscriptionsWithStats(accessToken: string, maxResults:
     ...channel,
     subscriberCount: stats.get(channel.id)?.subscriberCount || "0",
     viewCount: stats.get(channel.id)?.viewCount || "0",
+    videoCount: stats.get(channel.id)?.videoCount || "0",
   }));
 }
 
