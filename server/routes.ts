@@ -695,9 +695,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Filter modes based on content type
     const contentType = content.contentType;
     let availableModes = gameState.gameModes.filter(mode => {
-      if (mode === "who_liked" || mode === "view_count") return contentType === "video";
-      if (mode === "who_subscribed" || mode === "subscriber_count") return contentType === "channel";
-      if (mode === "which_more") return true; // Works with both
+      // Video-only modes
+      if (mode === "who_liked" || mode === "which_older" || mode === "most_viewed" || mode === "oldest_like") {
+        return contentType === "video";
+      }
+      // Channel-only modes
+      if (mode === "who_subscribed") return contentType === "channel";
       return true;
     });
     
@@ -708,6 +711,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     
     // Select random mode
     const selectedMode = availableModes[Math.floor(Math.random() * availableModes.length)];
+    
+    // For comparison modes (which_older, most_viewed), we need a second video
+    let secondContent: any = null;
+    let secondContentId: string | null = null;
+    
+    if (selectedMode === "which_older" || selectedMode === "most_viewed") {
+      // Find another unused video for comparison
+      const otherVideos = unusedContents.filter(c => 
+        c.id !== selectedContentId && 
+        c.contentType === "video" &&
+        c.publishedAt // Must have publish date for comparison
+      );
+      
+      if (otherVideos.length > 0) {
+        const randomIdx = Math.floor(Math.random() * otherVideos.length);
+        secondContent = otherVideos[randomIdx];
+        secondContentId = secondContent.id;
+        if (secondContentId) {
+          gameState.usedContentIds.add(secondContentId);
+        }
+      }
+    }
 
     // Update game state
     gameState.currentRound = nextRound;
@@ -719,14 +744,35 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     gameState.isLightningRound = lightning;
     gameState.currentGameMode = selectedMode;
 
+    // Determine correct answer based on game mode
+    let correctAnswer: string | null = null;
+    let roundCorrectUserIds = content.sourceUserIds;
+    
+    if (selectedMode === "which_older" && secondContent) {
+      // Correct answer is the ID of the older video
+      const date1 = new Date(content.publishedAt || 0);
+      const date2 = new Date(secondContent.publishedAt || 0);
+      correctAnswer = date1 < date2 ? content.id : secondContent.id;
+    } else if (selectedMode === "most_viewed" && secondContent) {
+      // Correct answer is the ID of the most viewed video
+      const views1 = parseInt(content.viewCount || "0");
+      const views2 = parseInt(secondContent.viewCount || "0");
+      correctAnswer = views1 > views2 ? content.id : secondContent.id;
+    } else if (selectedMode === "oldest_like") {
+      // For oldest_like, the sourceUserIds are the correct answer
+      roundCorrectUserIds = content.sourceUserIds;
+      correctAnswer = null;
+    }
+    
     // Create round in database
     await storage.createRound({
       roomId: room.id,
       roundNumber: nextRound,
       gameMode: selectedMode,
       contentId: selectedContentId,
-      correctUserIds: content.sourceUserIds,
-      correctAnswer: content.viewCount || content.subscriberCount || null,
+      contentId2: secondContentId,
+      correctUserIds: roundCorrectUserIds,
+      correctAnswer: correctAnswer,
       startedAt: new Date(),
     });
 
@@ -748,7 +794,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         thumbnailUrl: content.thumbnailUrl,
         viewCount: content.viewCount,
         subscriberCount: content.subscriberCount,
+        publishedAt: content.publishedAt,
       },
+      content2: secondContent ? {
+        id: secondContent.id,
+        contentId: secondContent.contentId,
+        contentType: secondContent.contentType,
+        title: secondContent.title,
+        subtitle: secondContent.subtitle,
+        thumbnailUrl: secondContent.thumbnailUrl,
+        viewCount: secondContent.viewCount,
+        subscriberCount: secondContent.subscriberCount,
+        publishedAt: secondContent.publishedAt,
+      } : null,
       timeLimit: roundDuration,
       isLightningRound: lightning,
     });
@@ -792,58 +850,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const scoreMultiplier = gameState.isLightningRound ? 2 : 1;
 
     const roundResults: any[] = [];
-    const isNumericMode = gameState.currentGameMode === "view_count" || gameState.currentGameMode === "subscriber_count";
-
-    // For numeric modes, get the correct answer value
-    let correctAnswer: number | null = null;
-    if (isNumericMode && content) {
-      if (gameState.currentGameMode === "view_count") {
-        correctAnswer = typeof content.viewCount === 'string' ? parseInt(content.viewCount) : (content.viewCount || 0);
-      } else if (gameState.currentGameMode === "subscriber_count") {
-        correctAnswer = typeof content.subscriberCount === 'string' ? parseInt(content.subscriberCount) : (content.subscriberCount || 0);
-      }
-    }
-
-    // For numeric modes, find the best guess to award bonus
-    let bestGuessOderId: string | null = null;
-    let bestPercentageError = Infinity;
-    if (isNumericMode && correctAnswer !== null && correctAnswer > 0) {
-      for (const answer of answers) {
-        if (answer.numericAnswer) {
-          const guess = parseInt(answer.numericAnswer);
-          if (!isNaN(guess)) {
-            const percentageError = Math.abs(guess - correctAnswer) / correctAnswer * 100;
-            if (percentageError < bestPercentageError) {
-              bestPercentageError = percentageError;
-              bestGuessOderId = answer.oderId;
-            }
-          }
-        }
-      }
-    }
+    const isComparisonMode = gameState.currentGameMode === "which_older" || gameState.currentGameMode === "most_viewed";
+    const isPlayerGuessMode = gameState.currentGameMode === "who_liked" || gameState.currentGameMode === "who_subscribed" || gameState.currentGameMode === "oldest_like";
+    
+    // Get correct answer for comparison modes
+    const correctContentId = currentRound.correctAnswer;
 
     for (const player of players) {
       const answer = answers.find(a => a.oderId === player.userId);
       let score = 0;
       let isCorrect = false;
       let isPartialCorrect = false;
-      let percentageError: number | null = null;
-      let tier: string | null = null;
 
       if (answer) {
-        if (isNumericMode && correctAnswer !== null) {
-          // Numeric mode scoring
-          const guess = answer.numericAnswer ? parseInt(answer.numericAnswer) : 0;
-          const scoreResult = scoreNumericGuess(correctAnswer, guess);
+        if (isComparisonMode && correctContentId) {
+          // Comparison mode scoring (which_older, most_viewed)
+          const selectedContentId = answer.selectedContentId;
+          isCorrect = selectedContentId === correctContentId;
           
-          score = scoreResult.basePoints * scoreMultiplier;
-          percentageError = scoreResult.percentageError;
-          tier = scoreResult.tier;
-          isCorrect = scoreResult.isCorrectForStreak;
-          
-          // Best guess bonus (+1)
-          if (player.userId === bestGuessOderId && answers.length > 1) {
-            score += 1 * scoreMultiplier;
+          if (isCorrect) {
+            score = 5 * scoreMultiplier;
           }
           
           // Streak bonus
@@ -857,8 +883,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           } else {
             gameState.playerStreaks.set(player.userId, 0);
           }
-        } else {
-          // Player selection mode scoring
+        } else if (isPlayerGuessMode) {
+          // Player selection mode scoring (who_liked, who_subscribed, oldest_like)
           const selectedIds = answer.selectedUserIds || [];
           const correctSet = new Set(correctUserIds);
 
@@ -906,10 +932,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         displayName: player.user.displayName,
         avatarUrl: player.user.avatarUrl,
         selectedUserIds: playerAnswer?.selectedUserIds || [],
-        numericAnswer: playerAnswer?.numericAnswer || null,
-        percentageError,
-        tier,
-        isBestGuess: player.userId === bestGuessOderId,
+        selectedContentId: playerAnswer?.selectedContentId || null,
         score,
         isCorrect,
         isPartialCorrect,
@@ -925,7 +948,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     broadcastToRoom(roomCode, {
       type: "round_ended",
       correctUserIds,
-      correctAnswer: isNumericMode ? correctAnswer : null,
+      correctContentId: isComparisonMode ? correctContentId : null,
       gameMode: gameState.currentGameMode,
       results: roundResults,
       isLightningRound: gameState.isLightningRound,
@@ -939,7 +962,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/rooms/:code/answer", async (req, res) => {
     try {
       const { code } = req.params;
-      const { oderId, selectedUserIds, numericAnswer } = req.body;
+      const { oderId, selectedUserIds, numericAnswer, selectedContentId } = req.body;
 
       if (!oderId) {
         return res.status(400).json({ error: "Gerekli bilgiler eksik" });
@@ -964,12 +987,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Aktif tur bulunamadı" });
       }
 
-      // Save answer with support for numeric answers
+      // Save answer with support for comparison modes and numeric answers
       await storage.createAnswer({
         roundId: currentRound.id,
         oderId,
         selectedUserIds: selectedUserIds || [],
         numericAnswer: numericAnswer || null,
+        selectedContentId: selectedContentId || null,
       });
 
       gameState.answeredUsers.add(oderId);
@@ -1008,8 +1032,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const currentRound = await storage.getCurrentRound(room.id);
       
       let content = null;
+      let content2 = null;
       if (currentRound?.contentId) {
         content = await storage.getContentById(currentRound.contentId);
+      }
+      if (currentRound?.contentId2) {
+        content2 = await storage.getContentById(currentRound.contentId2);
       }
 
       res.json({
@@ -1029,6 +1057,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           title: content.title,
           subtitle: content.subtitle,
           thumbnailUrl: content.thumbnailUrl,
+          viewCount: content.viewCount,
+          publishedAt: content.publishedAt,
+        } : null,
+        content2: content2 ? {
+          id: content2.id,
+          contentId: content2.contentId,
+          contentType: content2.contentType,
+          title: content2.title,
+          subtitle: content2.subtitle,
+          thumbnailUrl: content2.thumbnailUrl,
+          viewCount: content2.viewCount,
+          publishedAt: content2.publishedAt,
         } : null,
       });
     } catch (error) {
