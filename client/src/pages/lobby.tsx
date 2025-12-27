@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, Tv, LogOut, Radio } from "lucide-react";
+import { ArrowLeft, Copy, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, Radio, LogOut } from "lucide-react";
 import { SiYoutube, SiGoogle, SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,15 +41,9 @@ export default function Lobby() {
       const response = await apiRequest("POST", `/api/rooms/${roomCode}/start`);
       return response.json();
     },
-    onSuccess: () => {
-      setLocation(`/oyun/${roomCode}/game`);
-    },
+    onSuccess: () => setLocation(`/oyun/${roomCode}/game`),
     onError: (error: Error) => {
-      toast({
-        title: "Hata",
-        description: error.message || "Oyun başlatılamadı.",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
     },
   });
 
@@ -63,17 +57,6 @@ export default function Lobby() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
-      toast({
-        title: "Oyuncu Atıldı",
-        description: "Oyuncu odadan çıkarıldı.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Hata",
-        description: error.message || "Oyuncu atılamadı.",
-        variant: "destructive",
-      });
     },
   });
 
@@ -89,29 +72,17 @@ export default function Lobby() {
 
   const handleQuickJoin = async () => {
     if (!joinName.trim() || !roomCode) return;
-    
     setIsJoining(true);
     try {
       const response = await apiRequest("POST", `/api/rooms/${roomCode}/join`, {
         displayName: joinName.trim(),
       });
       const data = await response.json();
-      
       localStorage.setItem("userId", data.userId);
       setUserId(data.userId);
-      
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
-      
-      toast({
-        title: "Lobiye Katıldın!",
-        description: "YouTube hesabını bağlamayı unutma.",
-      });
     } catch (error: any) {
-      toast({
-        title: "Hata",
-        description: error.message || "Lobiye katılınamadı.",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
     } finally {
       setIsJoining(false);
     }
@@ -121,115 +92,62 @@ export default function Lobby() {
     try {
       const response = await fetch(`/api/google/auth-url?userId=${userId}&roomCode=${roomCode}`);
       const data = await response.json();
-      if (data.authUrl) {
-        window.location.href = data.authUrl;
-      } else {
-        toast({
-          title: "Hata",
-          description: "Google bağlantı adresi alınamadı.",
-          variant: "destructive",
-        });
-      }
+      if (data.authUrl) window.location.href = data.authUrl;
     } catch {
-      toast({
-        title: "Hata",
-        description: "Google bağlantısı başlatılamadı.",
-        variant: "destructive",
-      });
+      toast({ title: "Hata", description: "Bağlantı başlatılamadı.", variant: "destructive" });
     }
   }, [userId, roomCode, toast]);
 
   useEffect(() => {
     const dataUpdatedAt = roomQuery.dataUpdatedAt || 0;
-    const isFreshData = dataUpdatedAt > mountTimeRef.current;
-    const isIdle = roomQuery.fetchStatus === "idle";
-    const isSuccess = roomQuery.status === "success";
-    
-    if (roomQuery.data?.status === "playing" && isFreshData && isIdle && isSuccess) {
+    if (roomQuery.data?.status === "playing" && dataUpdatedAt > mountTimeRef.current && roomQuery.fetchStatus === "idle") {
       setLocation(`/oyun/${roomCode}/game`);
     }
-  }, [roomQuery.data?.status, roomQuery.dataUpdatedAt, roomQuery.fetchStatus, roomQuery.status, roomCode, setLocation]);
+  }, [roomQuery.data?.status, roomQuery.dataUpdatedAt, roomQuery.fetchStatus, roomCode, setLocation]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("google_connected") === "true") {
-      toast({
-        title: "YouTube Bağlandı",
-        description: "Google hesabın başarıyla bağlandı.",
-      });
+      toast({ title: "YouTube Bağlandı" });
       window.history.replaceState({}, "", window.location.pathname);
       queryClient.invalidateQueries({ queryKey: ["/api/google/status", userId] });
       queryClient.invalidateQueries({ queryKey: ["/api/rooms", roomCode] });
     }
   }, [toast, userId, roomCode]);
 
-  const copyRoomCode = useCallback(async () => {
+  const copyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(roomCode!);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast({
-        title: "Hata",
-        description: "Kopyalanamadı.",
-        variant: "destructive",
-      });
-    }
-  }, [roomCode, toast]);
-
-  const shareRoom = useCallback(async () => {
-    const shareUrl = `${window.location.origin}/oyun/${roomCode}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: roomQuery.data?.name || "Kim Dinliyor?",
-          text: "Kim Dinliyor? oyununa katıl!",
-          url: shareUrl,
-        });
-      } catch {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Link Kopyalandı" });
-      }
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({ title: "Link Kopyalandı" });
-    }
-  }, [roomCode, roomQuery.data?.name, toast]);
-
-  const shareWhatsApp = useCallback(() => {
-    const shareUrl = `${window.location.origin}/oyun/${roomCode}`;
-    const text = `Kim Dinliyor? oyununa katıl! Oda: ${roomCode} - ${shareUrl}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    } catch {}
   }, [roomCode]);
 
-  // Loading state
+  const shareWhatsApp = useCallback(() => {
+    const url = `${window.location.origin}/oyun/${roomCode}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Kim Dinliyor? - Oda: ${roomCode} - ${url}`)}`, "_blank");
+  }, [roomCode]);
+
+  // Loading
   if (roomQuery.isLoading) {
     return (
-      <div className="lobby-shell">
-        <div className="lobby-loading">
-          <div className="lobby-spinner" />
+      <div className="deck-shell">
+        <div className="deck-loading">
+          <div className="deck-spinner" />
           <span>Yükleniyor...</span>
         </div>
       </div>
     );
   }
 
-  // Error state
+  // Error
   if (roomQuery.isError || !roomQuery.data) {
     return (
-      <div className="lobby-shell">
-        <div className="lobby-error">
-          <div className="lobby-error-icon">
-            <Tv />
-          </div>
+      <div className="deck-shell">
+        <div className="deck-error">
+          <Radio className="deck-error-icon" />
           <h2>Oda Bulunamadı</h2>
-          <p>Bu oda artık mevcut değil.</p>
-          <Link href="/">
-            <Button size="sm">
-              <ArrowLeft />
-              Ana Sayfa
-            </Button>
-          </Link>
+          <Link href="/"><Button size="sm"><ArrowLeft />Ana Sayfa</Button></Link>
         </div>
       </div>
     );
@@ -242,83 +160,74 @@ export default function Lobby() {
   const maxPlayers = room.maxPlayers || 8;
   
   const guessModes = ["who_liked", "who_subscribed", "oldest_like"];
-  const roomGameModes = room.gameModes || ["who_liked", "who_subscribed"];
+  const roomGameModes = room.gameModes || ["who_liked"];
   const hasGuessModes = roomGameModes.some(mode => guessModes.includes(mode));
-  
-  const allGoogleConnected = hasGuessModes 
-    ? players.every(p => p.user.googleConnected)
-    : true;
+  const allConnected = hasGuessModes ? players.every(p => p.user.googleConnected) : true;
   const connectedCount = players.filter(p => p.user.googleConnected).length;
-  const canStart = isHost && playerCount >= 2 && allGoogleConnected;
-  
+  const canStart = isHost && playerCount >= 2 && allConnected;
   const isUserInRoom = userId && players.some(p => p.userId === userId);
   const isFull = playerCount >= maxPlayers;
 
-  // Join screen
+  // Join Screen
   if (!isUserInRoom) {
     return (
-      <div className="lobby-shell">
-        <header className="lobby-header">
-          <Logo height={28} />
+      <div className="deck-shell">
+        <header className="deck-top-bar">
+          <Logo height={24} />
         </header>
         
-        <main className="lobby-join-main">
-          <div className="lobby-join-card">
-            <div className="lobby-join-status">
-              <div className="lobby-status-dot" />
+        <main className="deck-join-area">
+          <div className="deck-join-box">
+            <div className="deck-join-indicator">
+              <span className="deck-pulse" />
               <span>Aktif Lobi</span>
             </div>
             
-            <h1 className="lobby-join-title">{room.name}</h1>
+            <h1 className="deck-join-title">{room.name}</h1>
             
-            <div className="lobby-code-panel">
-              <div className="lobby-code-label">Oda Kodu</div>
-              <div className="lobby-code-display">
-                {roomCode?.split("").map((char, i) => (
-                  <div key={i} className="lobby-led-digit">{char}</div>
+            <div className="deck-code-unit">
+              <label className="deck-code-label">Oda Kodu</label>
+              <div className="deck-code-leds">
+                {roomCode?.split("").map((c, i) => (
+                  <div key={i} className="deck-led">{c}</div>
                 ))}
               </div>
-              <div className="lobby-code-meta">
-                <Users className="lobby-meta-icon" />
+              <div className="deck-code-info">
+                <Users className="deck-info-icon" />
                 <span>{playerCount}/{maxPlayers}</span>
               </div>
             </div>
 
             {!isFull ? (
-              <div className="lobby-join-form">
+              <div className="deck-join-form">
                 <Input
                   placeholder="Adın"
                   value={joinName}
                   onChange={(e) => setJoinName(e.target.value)}
                   maxLength={20}
-                  className="lobby-join-input"
+                  className="deck-join-input"
                   data-testid="input-join-name"
                   onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
                 />
-                <Button
-                  onClick={handleQuickJoin}
-                  disabled={!joinName.trim() || isJoining}
-                  className="lobby-join-btn"
-                  data-testid="button-quick-join"
-                >
+                <Button onClick={handleQuickJoin} disabled={!joinName.trim() || isJoining} className="deck-join-btn" data-testid="button-quick-join">
                   {isJoining ? <Loader2 className="animate-spin" /> : <ArrowRight />}
-                  {isJoining ? "Katılınıyor" : "Katıl"}
+                  Katıl
                 </Button>
               </div>
             ) : (
-              <div className="lobby-full-msg">Lobi dolu</div>
+              <div className="deck-full">Lobi dolu</div>
             )}
 
             {players.length > 0 && (
-              <div className="lobby-join-players">
-                <span className="lobby-join-players-label">Oyuncular</span>
-                <div className="lobby-join-players-list">
+              <div className="deck-join-roster">
+                <span className="deck-roster-label">Oyuncular</span>
+                <div className="deck-roster-chips">
                   {players.map((p) => (
-                    <div key={p.id} className={`lobby-player-chip ${p.user.googleConnected ? 'connected' : ''}`}>
-                      {p.userId === room.hostUserId && <Crown className="lobby-chip-crown" />}
-                      <span>{p.user.displayName}</span>
-                      {p.user.googleConnected && <Check className="lobby-chip-check" />}
-                    </div>
+                    <span key={p.id} className={`deck-chip ${p.user.googleConnected ? 'on' : ''}`}>
+                      {p.userId === room.hostUserId && <Crown className="deck-chip-icon" />}
+                      {p.user.displayName}
+                      {p.user.googleConnected && <Check className="deck-chip-check" />}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -329,182 +238,162 @@ export default function Lobby() {
     );
   }
 
-  // Main lobby
+  // Main Lobby - DJ Deck Style
   return (
-    <div className="lobby-shell">
-      {/* Header */}
-      <header className="lobby-header">
+    <div className="deck-shell">
+      {/* Top Bar */}
+      <header className="deck-top-bar">
         <Link href="/">
-          <Button variant="ghost" size="icon" className="lobby-back-btn" data-testid="button-back">
-            <ArrowLeft />
-          </Button>
+          <button className="deck-back" data-testid="button-back"><ArrowLeft /></button>
         </Link>
-        <Logo height={24} />
-        <div className="lobby-player-count">
-          <Users />
+        <Logo height={20} />
+        <div className="deck-meter">
+          <Users className="deck-meter-icon" />
           <span>{playerCount}/{maxPlayers}</span>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="lobby-main">
-        {/* Room Info Panel */}
-        <section className="lobby-room-panel">
-          <div className="lobby-room-info">
-            <h1 className="lobby-room-name" data-testid="text-room-name">{room.name}</h1>
-            <div className="lobby-room-meta">
-              <span>{room.totalRounds} tur</span>
-              <span className="lobby-meta-sep">|</span>
-              <span>{room.roundDuration} sn</span>
-            </div>
+      {/* Console Body */}
+      <main className="deck-console">
+        {/* Left Channel - Code + Share */}
+        <section className="deck-channel">
+          <div className="deck-channel-header">
+            <span className="deck-ch-label">Kanal A</span>
+            <span className="deck-ch-led on" />
           </div>
           
-          <div className="lobby-code-section">
-            <div className="lobby-code-tag">Oda Kodu</div>
-            <div className="lobby-code-box" data-testid="display-room-code">
-              {roomCode?.split("").map((char, i) => (
-                <div key={i} className="lobby-led-char">{char}</div>
+          <div className="deck-code-block">
+            <label className="deck-block-label">Oda Kodu</label>
+            <div className="deck-code-display" data-testid="display-room-code">
+              {roomCode?.split("").map((c, i) => (
+                <div key={i} className="deck-digit">{c}</div>
               ))}
             </div>
           </div>
 
-          <div className="lobby-share-row">
-            <button onClick={copyRoomCode} className="lobby-share-btn" data-testid="button-copy-code">
-              {copied ? <Check className="text-emerald-400" /> : <Copy />}
-              <span>{copied ? "Kopyalandı" : "Kopyala"}</span>
+          <div className="deck-share-buttons">
+            <button onClick={copyCode} className="deck-share-btn" data-testid="button-copy-code">
+              {copied ? <Check /> : <Copy />}
+              <span>{copied ? "OK" : "Kopyala"}</span>
             </button>
-            <button onClick={shareRoom} className="lobby-share-btn" data-testid="button-share">
-              <Share2 />
-              <span>Paylaş</span>
-            </button>
-            <button onClick={shareWhatsApp} className="lobby-share-btn whatsapp" data-testid="button-whatsapp">
+            <button onClick={shareWhatsApp} className="deck-share-btn whatsapp" data-testid="button-whatsapp">
               <SiWhatsapp />
             </button>
           </div>
         </section>
 
-        {/* YouTube Connection */}
-        {hasGuessModes && (
-          <section className="lobby-youtube-section">
-            {!googleStatusQuery.data?.connected ? (
-              <div className="lobby-youtube-warn">
-                <div className="lobby-youtube-icon warn">
-                  <SiYoutube />
-                </div>
-                <div className="lobby-youtube-text">
-                  <strong>YouTube Bağla</strong>
-                  <span>Tahmin modları için gerekli</span>
-                </div>
-                <Button size="sm" onClick={connectGoogle} className="lobby-google-btn" data-testid="button-connect-google">
-                  <SiGoogle />
-                  Bağlan
-                </Button>
+        {/* Center - Room Info + Players */}
+        <section className="deck-mixer">
+          <div className="deck-room-strip">
+            <h1 className="deck-room-name" data-testid="text-room-name">{room.name}</h1>
+            <div className="deck-room-knobs">
+              <div className="deck-knob">
+                <span className="deck-knob-value">{room.totalRounds}</span>
+                <span className="deck-knob-label">Tur</span>
               </div>
-            ) : (
-              <div className="lobby-youtube-ok">
-                <div className="lobby-youtube-icon ok">
-                  <Check />
-                </div>
-                <span>YouTube Bağlı</span>
-                <div className="lobby-signal-bars">
-                  <div className="bar" />
-                  <div className="bar" />
-                  <div className="bar" />
-                </div>
+              <div className="deck-knob">
+                <span className="deck-knob-value">{room.roundDuration}</span>
+                <span className="deck-knob-label">Saniye</span>
               </div>
-            )}
-          </section>
-        )}
-
-        {!hasGuessModes && (
-          <section className="lobby-mode-info">
-            <Radio className="lobby-mode-icon" />
-            <span>Karşılaştırma Modu - Giriş gerekmez</span>
-          </section>
-        )}
-
-        {/* Players */}
-        <section className="lobby-players-section">
-          <div className="lobby-players-header">
-            <span>Oyuncular</span>
-            {hasGuessModes && (
-              <span className="lobby-connected-count">{connectedCount}/{playerCount} bağlı</span>
-            )}
+            </div>
           </div>
-          
-          <div className="lobby-players-grid">
-            {players.map((player) => (
-              <div 
-                key={player.id} 
-                className={`lobby-player-card ${player.user.googleConnected || !hasGuessModes ? 'ready' : ''}`}
-                data-testid={`card-player-${player.userId}`}
-              >
-                <div className="lobby-player-avatar">
-                  {player.user.avatarUrl ? (
-                    <img src={player.user.avatarUrl} alt="" />
-                  ) : (
-                    <span>{player.user.displayName.charAt(0)}</span>
-                  )}
-                  {player.userId === room.hostUserId && (
-                    <div className="lobby-host-badge">
-                      <Crown />
-                    </div>
-                  )}
-                </div>
-                
-                <div className="lobby-player-info">
-                  <span className="lobby-player-name">{player.user.displayName}</span>
-                  {hasGuessModes && (
-                    <span className={`lobby-player-status ${player.user.googleConnected ? 'ok' : 'wait'}`}>
-                      {player.user.googleConnected ? 'Hazır' : 'Bekliyor'}
-                    </span>
-                  )}
-                </div>
 
-                {isHost && player.userId !== userId && (
-                  <button 
-                    onClick={() => kickPlayerMutation.mutate(player.userId)}
-                    className="lobby-kick-btn"
-                    data-testid={`button-kick-${player.userId}`}
-                  >
-                    <UserX />
-                  </button>
-                )}
-              </div>
-            ))}
+          {/* YouTube Connection */}
+          {hasGuessModes && (
+            <div className="deck-yt-strip">
+              {!googleStatusQuery.data?.connected ? (
+                <button onClick={connectGoogle} className="deck-yt-connect" data-testid="button-connect-google">
+                  <SiYoutube className="deck-yt-icon" />
+                  <span>YouTube Bağla</span>
+                  <SiGoogle className="deck-google-icon" />
+                </button>
+              ) : (
+                <div className="deck-yt-ok">
+                  <Check className="deck-yt-check" />
+                  <span>YouTube Bağlı</span>
+                  <div className="deck-signal">
+                    <span /><span /><span />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!hasGuessModes && (
+            <div className="deck-mode-strip">
+              <Radio className="deck-mode-icon" />
+              <span>Karşılaştırma Modu</span>
+            </div>
+          )}
+
+          {/* Players Faders */}
+          <div className="deck-faders">
+            <div className="deck-faders-header">
+              <span>Oyuncular</span>
+              {hasGuessModes && <span className="deck-faders-count">{connectedCount}/{playerCount}</span>}
+            </div>
+            <div className="deck-fader-list">
+              {players.map((player) => (
+                <div 
+                  key={player.id} 
+                  className={`deck-fader ${player.user.googleConnected || !hasGuessModes ? 'ready' : ''}`}
+                  data-testid={`card-player-${player.userId}`}
+                >
+                  <div className="deck-fader-avatar">
+                    {player.user.avatarUrl ? (
+                      <img src={player.user.avatarUrl} alt="" />
+                    ) : (
+                      player.user.displayName.charAt(0)
+                    )}
+                    {player.userId === room.hostUserId && (
+                      <Crown className="deck-fader-crown" />
+                    )}
+                  </div>
+                  <span className="deck-fader-name">{player.user.displayName}</span>
+                  <div className="deck-fader-meter">
+                    <span className={player.user.googleConnected || !hasGuessModes ? 'on' : ''} />
+                    <span className={player.user.googleConnected || !hasGuessModes ? 'on' : ''} />
+                    <span className={player.user.googleConnected || !hasGuessModes ? 'on' : ''} />
+                  </div>
+                  {isHost && player.userId !== userId && (
+                    <button 
+                      onClick={() => kickPlayerMutation.mutate(player.userId)}
+                      className="deck-fader-kick"
+                      data-testid={`button-kick-${player.userId}`}
+                    >
+                      <UserX />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </main>
 
       {/* Transport Bar */}
-      <footer className="lobby-transport">
+      <footer className="deck-transport">
         {isHost ? (
           <>
-            <div className="lobby-transport-info">
-              {!canStart && playerCount < 2 && <span>En az 2 oyuncu gerekli</span>}
-              {!canStart && playerCount >= 2 && !allGoogleConnected && hasGuessModes && (
-                <span>Herkes YouTube bağlamalı</span>
-              )}
-              {canStart && <span className="ready">Başlamaya hazır!</span>}
-            </div>
+            <span className="deck-transport-status">
+              {!canStart && playerCount < 2 && "2+ oyuncu gerekli"}
+              {!canStart && playerCount >= 2 && !allConnected && hasGuessModes && "Tüm oyuncular YouTube bağlamalı"}
+              {canStart && <span className="ready">Hazır!</span>}
+            </span>
             <Button
               onClick={() => startGameMutation.mutate()}
               disabled={!canStart || startGameMutation.isPending}
-              className="lobby-start-btn"
+              className="deck-play-btn"
               data-testid="button-start-game"
             >
-              {startGameMutation.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Play />
-              )}
-              <span>Oyunu Başlat</span>
+              {startGameMutation.isPending ? <Loader2 className="animate-spin" /> : <Play />}
+              Başlat
             </Button>
           </>
         ) : (
-          <div className="lobby-transport-wait">
+          <div className="deck-transport-wait">
             <Loader2 className="animate-spin" />
-            <span>Host oyunu başlatmayı bekliyor...</span>
+            <span>Host bekleniyor...</span>
           </div>
         )}
       </footer>
