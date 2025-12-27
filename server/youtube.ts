@@ -322,11 +322,11 @@ export async function getOldestLikedVideo(accessToken: string): Promise<YouTubeV
     
     // Paginate through all liked videos to find the oldest (last page, last item)
     while (iterations < maxIterations) {
-      const url = pageToken 
+      const url: string = pageToken 
         ? `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50&pageToken=${pageToken}`
         : `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50`;
       
-      const response = await fetch(url, {
+      const response: Response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -337,7 +337,7 @@ export async function getOldestLikedVideo(accessToken: string): Promise<YouTubeV
         break;
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       const videos = (data.items || []).map((item: any) => ({
         id: item.id,
         title: item.snippet.title,
@@ -382,11 +382,11 @@ export async function getOldestLikedVideos(accessToken: string, count: number = 
     const maxIterations = 20; // Allow more iterations for larger like histories
     
     while (iterations < maxIterations) {
-      const url = pageToken 
+      const url: string = pageToken 
         ? `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50&pageToken=${pageToken}`
         : `https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50`;
       
-      const response = await fetch(url, {
+      const response: Response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -397,7 +397,7 @@ export async function getOldestLikedVideos(accessToken: string, count: number = 
         break;
       }
 
-      const data = await response.json();
+      const data: any = await response.json();
       const videos = (data.items || []).map((item: any) => ({
         id: item.id,
         title: item.snippet.title,
@@ -431,6 +431,12 @@ export async function getOldestLikedVideos(accessToken: string, count: number = 
 }
 
 // ============= PUBLIC CONTENT (No user token needed) =============
+// Uses global cache with 30-minute TTL to avoid excessive API calls
+
+import { storage } from "./storage";
+import type { InsertGlobalTrending, GlobalTrending } from "@shared/schema";
+
+const CACHE_TTL_MINUTES = 30; // Refresh cache every 30 minutes
 
 export interface TrendingVideo {
   id: string;
@@ -589,5 +595,98 @@ export async function getRandomVideosForComparison(count: number = 30): Promise<
   } catch (error) {
     console.error("Failed to get random videos:", error);
     return [];
+  }
+}
+
+// ============= CACHED CONTENT FUNCTIONS =============
+// These functions use the global cache with TTL to minimize API usage
+
+/**
+ * Get cached trending videos. If cache is stale or empty, refresh from YouTube API.
+ * Returns content from global cache, ensuring variety across games.
+ */
+export async function getCachedTrendingVideos(count: number = 10, excludeIds: string[] = []): Promise<GlobalTrending[]> {
+  const cacheAge = await storage.getTrendingCacheAge("video");
+  
+  // If cache is empty or older than TTL, refresh it
+  if (cacheAge === null || cacheAge > CACHE_TTL_MINUTES) {
+    console.log(`Refreshing video cache (age: ${cacheAge} minutes, TTL: ${CACHE_TTL_MINUTES} minutes)`);
+    
+    const trendingVideos = await getTrendingVideos(50);
+    
+    if (trendingVideos.length > 0) {
+      const cacheItems: InsertGlobalTrending[] = trendingVideos.map(video => ({
+        contentId: video.id,
+        contentType: "video",
+        title: video.title,
+        subtitle: video.channelTitle,
+        thumbnailUrl: video.thumbnailUrl,
+        viewCount: video.viewCount,
+        duration: video.duration,
+        publishedAt: video.publishedAt,
+      }));
+      
+      await storage.refreshGlobalTrending("video", cacheItems);
+      console.log(`Cached ${cacheItems.length} trending videos`);
+    }
+  }
+  
+  // Get random content from cache, excluding already used IDs
+  return storage.getRandomTrendingContent("video", count, excludeIds);
+}
+
+/**
+ * Get cached popular channels. If cache is stale or empty, refresh from YouTube API.
+ */
+export async function getCachedPopularChannels(count: number = 10, excludeIds: string[] = []): Promise<GlobalTrending[]> {
+  const cacheAge = await storage.getTrendingCacheAge("channel");
+  
+  // If cache is empty or older than TTL, refresh it
+  if (cacheAge === null || cacheAge > CACHE_TTL_MINUTES) {
+    console.log(`Refreshing channel cache (age: ${cacheAge} minutes, TTL: ${CACHE_TTL_MINUTES} minutes)`);
+    
+    const popularChannels = await getPopularChannels(25);
+    
+    if (popularChannels.length > 0) {
+      const cacheItems: InsertGlobalTrending[] = popularChannels.map(channel => ({
+        contentId: channel.id,
+        contentType: "channel",
+        title: channel.title,
+        subtitle: channel.description,
+        thumbnailUrl: channel.thumbnailUrl,
+        subscriberCount: channel.subscriberCount,
+        videoCount: channel.videoCount,
+      }));
+      
+      await storage.refreshGlobalTrending("channel", cacheItems);
+      console.log(`Cached ${cacheItems.length} popular channels`);
+    }
+  }
+  
+  // Get random content from cache, excluding already used IDs
+  return storage.getRandomTrendingContent("channel", count, excludeIds);
+}
+
+/**
+ * Get content for a specific game mode from cache.
+ * Tracks used content IDs to ensure variety in subsequent games/rounds.
+ */
+export async function getContentForGameMode(
+  mode: string,
+  count: number,
+  usedContentIds: string[] = []
+): Promise<GlobalTrending[]> {
+  switch (mode) {
+    case "which_older":
+    case "most_viewed":
+    case "which_longer":
+      return getCachedTrendingVideos(count, usedContentIds);
+    
+    case "which_more_subs":
+    case "which_more_videos":
+      return getCachedPopularChannels(count, usedContentIds);
+    
+    default:
+      return [];
   }
 }
