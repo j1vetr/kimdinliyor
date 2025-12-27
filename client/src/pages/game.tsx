@@ -103,24 +103,76 @@ export default function Game() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
-  const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | "done">("preparing");
-  const [countdownComplete, setCountdownComplete] = useState(false);
-  const countdownCompleteRef = useRef(false);
-  const [pendingRoundData, setPendingRoundData] = useState<any>(null);
+  const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | "done" | "skipped">("preparing");
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Start countdown immediately on mount
-  useEffect(() => {
-    setCountdownPhase("preparing");
-    const timer1 = setTimeout(() => {
-      setCountdownPhase("counting");
-      setCountdownNumber(5);
-    }, 1000);
-    return () => clearTimeout(timer1);
+  // Helper to hydrate game state from server data
+  const hydrateFromServer = useCallback((data: any) => {
+    if (data.gameState?.status === "question" && data.content) {
+      console.log("Hydrating game state from server");
+      setGameStatus("question");
+      setCurrentRound(data.gameState.currentRound || 1);
+      setIsLightningRound(data.gameState.isLightningRound || false);
+      setTimeLeft(data.gameState.timeLeft || 20);
+      setTotalTime(data.gameState.timeLeft || 20);
+      setContent(data.content);
+      if (data.gameState.gameMode) {
+        setGameMode(data.gameState.gameMode);
+      }
+      return true;
+    } else if (data.gameState?.status === "results") {
+      setGameStatus("results");
+      setCurrentRound(data.gameState.currentRound || 1);
+      return true;
+    }
+    return false;
   }, []);
 
-  // Countdown timer logic
+  // On mount: Check if game is already in progress (e.g., page refresh)
   useEffect(() => {
+    if (!roomCode) return;
+    
+    const checkInitialState = async () => {
+      try {
+        const response = await fetch(`/api/rooms/${roomCode}/game`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Initial state check:", data.gameState?.status, "round:", data.gameState?.currentRound);
+          
+          // If game is already in progress (round > 0), skip countdown
+          if (data.gameState?.currentRound > 0 || data.gameState?.status === "question" || data.gameState?.status === "results") {
+            console.log("Game already in progress, skipping countdown");
+            setCountdownPhase("skipped");
+            hydrateFromServer(data);
+          } else {
+            // Fresh game start - show countdown
+            console.log("Fresh game start, showing countdown");
+            setShowCountdown(true);
+            setCountdownPhase("preparing");
+            setTimeout(() => {
+              setCountdownPhase("counting");
+              setCountdownNumber(5);
+            }, 1000);
+          }
+        }
+      } catch (err) {
+        console.error("Initial state check error:", err);
+        // On error, default to showing countdown
+        setShowCountdown(true);
+        setCountdownPhase("preparing");
+      }
+      setInitialCheckDone(true);
+    };
+    
+    checkInitialState();
+  }, [roomCode, hydrateFromServer]);
+
+  // Countdown timer logic (only runs if showCountdown is true)
+  useEffect(() => {
+    if (!showCountdown) return;
+    
     if (countdownPhase === "counting" && countdownNumber !== null && countdownNumber > 0) {
       const timer = setTimeout(() => {
         setCountdownNumber(countdownNumber - 1);
@@ -130,70 +182,36 @@ export default function Game() {
       setCountdownPhase("go");
       const goTimer = setTimeout(() => {
         setCountdownPhase("done");
-        setCountdownComplete(true);
-        countdownCompleteRef.current = true;
       }, 800);
       return () => clearTimeout(goTimer);
     }
-  }, [countdownPhase, countdownNumber]);
+  }, [countdownPhase, countdownNumber, showCountdown]);
 
-  // Apply pending round data after countdown completes
+  // After countdown completes, poll for game state
   useEffect(() => {
-    if (countdownComplete && pendingRoundData) {
-      console.log("Applying pending round data:", pendingRoundData);
-      setGameStatus("question");
-      setCurrentRound(pendingRoundData.round || 1);
-      setIsLightningRound(pendingRoundData.isLightningRound || false);
-      setContent(pendingRoundData.content || null);
-      setTimeLeft(pendingRoundData.timeLimit || 20);
-      setTotalTime(pendingRoundData.timeLimit || 20);
-      setHasAnswered(false);
-      setSelectedPlayers([]);
-      setCorrectPlayerIds([]);
-      setRoundResults([]);
-      setGameMode(pendingRoundData.gameMode || "who_liked");
-      setNumericAnswer("");
-      setCorrectAnswer(null);
-      setPendingRoundData(null);
-    }
-  }, [countdownComplete, pendingRoundData]);
-
-  // Fallback: Keep polling for game state after countdown if still waiting
-  useEffect(() => {
-    if (!countdownComplete || gameStatus !== "waiting") return;
+    if (countdownPhase !== "done" || gameStatus !== "waiting") return;
     
-    console.log("Countdown complete, starting game state polling...");
+    console.log("Countdown done, polling for game state...");
     
     const fetchGame = async () => {
       try {
         const response = await fetch(`/api/rooms/${roomCode}/game`);
         if (response.ok) {
           const data = await response.json();
-          console.log("Poll result:", data.gameState?.status, "content:", !!data.content);
-          if (data.gameState?.status === "question" && data.content) {
-            console.log("Got valid game state, transitioning to question");
-            setGameStatus("question");
-            setCurrentRound(data.gameState.currentRound || 1);
-            setIsLightningRound(data.gameState.isLightningRound || false);
-            setTimeLeft(data.gameState.timeLeft || 20);
-            setTotalTime(data.gameState.timeLeft || 20);
-            setContent(data.content);
-            if (data.gameState.gameMode) {
-              setGameMode(data.gameState.gameMode);
-            }
-          }
+          console.log("Post-countdown poll:", data.gameState?.status, "content:", !!data.content);
+          hydrateFromServer(data);
         }
       } catch (err) {
         console.error("Poll error:", err);
       }
     };
     
-    // Poll immediately and then every 500ms until we get game data
+    // Poll immediately and every 500ms until hydrated
     fetchGame();
     const interval = setInterval(fetchGame, 500);
     
     return () => clearInterval(interval);
-  }, [countdownComplete, gameStatus, roomCode]);
+  }, [countdownPhase, gameStatus, roomCode, hydrateFromServer]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -240,17 +258,8 @@ export default function Game() {
         
         switch (message.type) {
           case "round_started":
-            // For first round, queue data until countdown completes
-            if (!countdownCompleteRef.current && (message.round === 1 || currentRound === 0)) {
-              setPendingRoundData({
-                round: message.round,
-                isLightningRound: message.isLightningRound,
-                content: message.content,
-                timeLimit: message.timeLimit,
-                gameMode: message.gameMode,
-              });
-            } else {
-              // For subsequent rounds, apply immediately
+            // Apply round data (countdown phase handles waiting)
+            if (countdownPhase === "done" || countdownPhase === "skipped" || (message.round && message.round > 1)) {
               setGameStatus("question");
               setCurrentRound(message.round || 0);
               setIsLightningRound(message.isLightningRound || false);
@@ -265,6 +274,7 @@ export default function Game() {
               setNumericAnswer("");
               setCorrectAnswer(null);
             }
+            // If countdown still running for first round, polling will pick it up
             break;
             
           case "round_ended":
@@ -326,33 +336,24 @@ export default function Game() {
     return () => clearInterval(timer);
   }, [gameStatus]);
 
+  // gameQuery effect: Sync state for round transitions and results
   useEffect(() => {
-    // Only process game data AFTER countdown is fully complete
-    if (!countdownComplete) return;
     if (!gameQuery.data) return;
+    // Only use gameQuery for non-first-round updates or when countdown is complete
+    if (countdownPhase !== "done" && countdownPhase !== "skipped" && gameQuery.data.gameState?.currentRound <= 1) return;
     
     const data = gameQuery.data;
-    // Sync game state after countdown is complete
-    if (data.gameState?.status === "question" && data.content) {
-      // Only update if we're in waiting state or content changed
-      if (gameStatus === "waiting") {
-        console.log("gameQuery: Transitioning to question state", data);
-        setGameStatus("question");
-        setCurrentRound(data.gameState.currentRound || 1);
-        setIsLightningRound(data.gameState.isLightningRound || false);
-        setTimeLeft(data.gameState.timeLeft || 20);
-        setTotalTime(data.gameState.timeLeft || 20);
-        setContent(data.content);
-        if (data.gameState.gameMode) {
-          setGameMode(data.gameState.gameMode);
-        }
-      } else if (!content && data.content) {
-        // Ensure content is set if missing
-        console.log("gameQuery: Setting missing content", data.content);
-        setContent(data.content);
-      }
+    // Handle results state from query
+    if (data.gameState?.status === "results" && gameStatus !== "results") {
+      setGameStatus("results");
+      setCurrentRound(data.gameState.currentRound || 1);
     }
-  }, [gameQuery.data, gameStatus, content, countdownComplete]);
+    // Ensure content is set if missing during question phase
+    if (data.gameState?.status === "question" && !content && data.content) {
+      console.log("gameQuery: Setting missing content", data.content);
+      setContent(data.content);
+    }
+  }, [gameQuery.data, gameStatus, content, countdownPhase]);
 
   useEffect(() => {
     const roomStatus = gameQuery.data?.room?.status;
@@ -508,7 +509,7 @@ export default function Game() {
       `}</style>
 
       {/* Loading state after countdown completes but before content loads */}
-      {countdownComplete && gameStatus === "waiting" && (
+      {countdownPhase === "done" && gameStatus === "waiting" && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <motion.div
             animate={{ rotate: 360 }}
@@ -1040,7 +1041,19 @@ export default function Game() {
         </>
       )}
 
-      {gameStatus === "waiting" && (
+      {/* Initial loading state while checking server */}
+      {!initialCheckDone && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full"
+          />
+          <p className="text-muted-foreground">Oyun Yükleniyor...</p>
+        </div>
+      )}
+
+      {gameStatus === "waiting" && showCountdown && initialCheckDone && (
         <div className="flex-1 flex items-center justify-center overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
           
@@ -1246,7 +1259,7 @@ export default function Game() {
                 </motion.div>
               )}
 
-              {countdownPhase === "done" && !pendingRoundData && gameStatus === "waiting" && (
+              {countdownPhase === "done" && gameStatus === "waiting" && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
