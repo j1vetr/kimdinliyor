@@ -292,8 +292,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const code = await generateUniqueRoomCode();
       const passwordHash = password ? await hashPassword(password) : null;
 
-      // Validate game modes
-      const validModes = ["who_liked", "who_subscribed", "view_count", "which_more", "subscriber_count"];
+      // Validate game modes - must match frontend mode IDs
+      const validModes = [
+        // Tahmin modları
+        "who_liked", "who_subscribed", "oldest_like",
+        // Karşılaştırma modları
+        "which_older", "most_viewed", "which_longer", "which_more_subs", "which_more_videos"
+      ];
       const selectedModes = Array.isArray(gameModes) && gameModes.length > 0
         ? gameModes.filter((m: string) => validModes.includes(m))
         : ["who_liked", "who_subscribed"];
