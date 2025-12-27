@@ -589,11 +589,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Update room status
       await storage.updateRoom(room.id, { status: "playing", currentRound: 0 });
 
-      // Broadcast game start
-      broadcastToRoom(code.toUpperCase(), { type: "game_started" });
-
-      // Start first round after a short delay
-      setTimeout(() => startNextRound(code.toUpperCase(), room), 2000);
+      // Start first round immediately (no delay)
+      await startNextRound(code.toUpperCase(), room);
 
       res.json({ success: true });
     } catch (error) {

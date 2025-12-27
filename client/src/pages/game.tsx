@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Radio, Tv, Signal, Mic2 } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Mic2 } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,107 +102,21 @@ export default function Game() {
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
-  const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
-  const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | "done" | "skipped">("preparing");
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
-  const [showCountdown, setShowCountdown] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  // Helper to hydrate game state from server data
-  const hydrateFromServer = useCallback((data: any) => {
-    if (data.gameState?.status === "question" && data.content) {
-      console.log("Hydrating game state from server");
-      setGameStatus("question");
-      setCurrentRound(data.gameState.currentRound || 1);
-      setIsLightningRound(data.gameState.isLightningRound || false);
-      setTimeLeft(data.gameState.timeLeft || 20);
-      setTotalTime(data.gameState.timeLeft || 20);
-      setContent(data.content);
-      if (data.gameState.gameMode) {
-        setGameMode(data.gameState.gameMode);
-      }
-      return true;
-    } else if (data.gameState?.status === "results") {
-      setGameStatus("results");
-      setCurrentRound(data.gameState.currentRound || 1);
-      return true;
-    }
-    return false;
-  }, []);
-
-  // On mount: Check if game is already in progress (e.g., page refresh)
+  // Simple polling for game state - runs continuously when waiting
   useEffect(() => {
-    if (!roomCode) return;
-    
-    const checkInitialState = async () => {
-      try {
-        const response = await fetch(`/api/rooms/${roomCode}/game`);
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Initial state check:", data.gameState?.status, "round:", data.gameState?.currentRound);
-          
-          // If game is already in progress (round > 0), skip countdown
-          if (data.gameState?.currentRound > 0 || data.gameState?.status === "question" || data.gameState?.status === "results") {
-            console.log("Game already in progress, skipping countdown");
-            setCountdownPhase("skipped");
-            hydrateFromServer(data);
-          } else {
-            // Fresh game start - show countdown
-            console.log("Fresh game start, showing countdown");
-            setShowCountdown(true);
-            setCountdownPhase("preparing");
-            setTimeout(() => {
-              setCountdownPhase("counting");
-              setCountdownNumber(5);
-            }, 1000);
-          }
-        }
-      } catch (err) {
-        console.error("Initial state check error:", err);
-        // On error, default to showing countdown
-        setShowCountdown(true);
-        setCountdownPhase("preparing");
-      }
-      setInitialCheckDone(true);
-    };
-    
-    checkInitialState();
-  }, [roomCode, hydrateFromServer]);
-
-  // Countdown timer logic (only runs if showCountdown is true)
-  useEffect(() => {
-    if (!showCountdown) return;
-    
-    if (countdownPhase === "counting" && countdownNumber !== null && countdownNumber > 0) {
-      const timer = setTimeout(() => {
-        setCountdownNumber(countdownNumber - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (countdownPhase === "counting" && countdownNumber === 0) {
-      setCountdownPhase("go");
-      const goTimer = setTimeout(() => {
-        setCountdownPhase("done");
-      }, 800);
-      return () => clearTimeout(goTimer);
-    }
-  }, [countdownPhase, countdownNumber, showCountdown]);
-
-  // After countdown completes, poll for game state
-  useEffect(() => {
-    if (countdownPhase !== "done" || gameStatus !== "waiting") return;
-    
-    console.log("Countdown done, polling for game state...");
+    if (!roomCode || gameStatus !== "waiting") return;
     
     const fetchGame = async () => {
       try {
         const response = await fetch(`/api/rooms/${roomCode}/game`);
         if (response.ok) {
           const data = await response.json();
-          console.log("Poll result - gameState:", JSON.stringify(data.gameState), "hasContent:", !!data.content, "content:", data.content);
           
-          // Directly set state if conditions are met
+          // Transition to question state when ready
           if (data.gameState?.status === "question" && data.content) {
-            console.log("HYDRATING - setting gameStatus to question");
+            console.log("Transitioning to question");
             setGameStatus("question");
             setCurrentRound(data.gameState.currentRound || 1);
             setIsLightningRound(data.gameState.isLightningRound || false);
@@ -212,21 +126,22 @@ export default function Game() {
             if (data.gameState.gameMode) {
               setGameMode(data.gameState.gameMode);
             }
-          } else {
-            console.log("Not hydrating - status:", data.gameState?.status, "content exists:", !!data.content);
+          } else if (data.gameState?.status === "results") {
+            setGameStatus("results");
+            setCurrentRound(data.gameState.currentRound || 1);
           }
         }
       } catch (err) {
-        console.error("Poll error:", err);
+        console.error("Game fetch error:", err);
       }
     };
     
-    // Poll immediately and every 500ms until hydrated
+    // Poll immediately and every 500ms
     fetchGame();
     const interval = setInterval(fetchGame, 500);
     
     return () => clearInterval(interval);
-  }, [countdownPhase, gameStatus, roomCode]);
+  }, [roomCode, gameStatus]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -273,23 +188,20 @@ export default function Game() {
         
         switch (message.type) {
           case "round_started":
-            // Apply round data (countdown phase handles waiting)
-            if (countdownPhase === "done" || countdownPhase === "skipped" || (message.round && message.round > 1)) {
-              setGameStatus("question");
-              setCurrentRound(message.round || 0);
-              setIsLightningRound(message.isLightningRound || false);
-              setContent(message.content || null);
-              setTimeLeft(message.timeLimit || 20);
-              setTotalTime(message.timeLimit || 20);
-              setHasAnswered(false);
-              setSelectedPlayers([]);
-              setCorrectPlayerIds([]);
-              setRoundResults([]);
-              setGameMode(message.gameMode || "who_liked");
-              setNumericAnswer("");
-              setCorrectAnswer(null);
-            }
-            // If countdown still running for first round, polling will pick it up
+            // Apply round data immediately
+            setGameStatus("question");
+            setCurrentRound(message.round || 1);
+            setIsLightningRound(message.isLightningRound || false);
+            setContent(message.content || null);
+            setTimeLeft(message.timeLimit || 20);
+            setTotalTime(message.timeLimit || 20);
+            setHasAnswered(false);
+            setSelectedPlayers([]);
+            setCorrectPlayerIds([]);
+            setRoundResults([]);
+            setGameMode(message.gameMode || "who_liked");
+            setNumericAnswer("");
+            setCorrectAnswer(null);
             break;
             
           case "round_ended":
@@ -354,8 +266,6 @@ export default function Game() {
   // gameQuery effect: Sync state for round transitions and results
   useEffect(() => {
     if (!gameQuery.data) return;
-    // Only use gameQuery for non-first-round updates or when countdown is complete
-    if (countdownPhase !== "done" && countdownPhase !== "skipped" && gameQuery.data.gameState?.currentRound <= 1) return;
     
     const data = gameQuery.data;
     // Handle results state from query
@@ -368,7 +278,7 @@ export default function Game() {
       console.log("gameQuery: Setting missing content", data.content);
       setContent(data.content);
     }
-  }, [gameQuery.data, gameStatus, content, countdownPhase]);
+  }, [gameQuery.data, gameStatus, content]);
 
   useEffect(() => {
     const roomStatus = gameQuery.data?.room?.status;
@@ -523,15 +433,15 @@ export default function Game() {
         }
       `}</style>
 
-      {/* Loading state after countdown completes but before content loads */}
-      {countdownPhase === "done" && gameStatus === "waiting" && (
+      {/* Loading state while waiting for game data */}
+      {gameStatus === "waiting" && (
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full"
           />
-          <p className="text-muted-foreground">Tur yükleniyor...</p>
+          <p className="text-muted-foreground">Oyun Yükleniyor...</p>
         </div>
       )}
 
@@ -1054,256 +964,6 @@ export default function Game() {
             </div>
           </main>
         </>
-      )}
-
-      {/* Initial loading state while checking server */}
-      {!initialCheckDone && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full"
-          />
-          <p className="text-muted-foreground">Oyun Yükleniyor...</p>
-        </div>
-      )}
-
-      {gameStatus === "waiting" && showCountdown && initialCheckDone && (
-        <div className="flex-1 flex items-center justify-center overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
-          
-          <div className="absolute inset-0 overflow-hidden">
-            <motion.div
-              animate={{ x: ["100%", "-100%"] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
-            />
-            <motion.div
-              animate={{ x: ["-100%", "100%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 0.5 }}
-              className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"
-            />
-            <motion.div
-              animate={{ y: ["100%", "-100%"] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-              className="absolute left-1/4 top-0 h-full w-px bg-gradient-to-b from-transparent via-primary/20 to-transparent"
-            />
-            <motion.div
-              animate={{ y: ["-100%", "100%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "linear", delay: 1 }}
-              className="absolute right-1/4 top-0 h-full w-px bg-gradient-to-b from-transparent via-amber-500/20 to-transparent"
-            />
-          </div>
-
-          <div className="absolute top-6 left-6 flex items-center gap-3">
-            <motion.div 
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20"
-            >
-              <div className="h-2 w-2 rounded-full bg-primary" />
-              <span className="text-xs font-medium text-primary">Aktif Oyun</span>
-            </motion.div>
-          </div>
-
-          <div className="absolute top-6 right-6 flex items-center gap-2">
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                animate={{ 
-                  height: [8, 16 + Math.random() * 16, 8],
-                  opacity: [0.3, 1, 0.3]
-                }}
-                transition={{ 
-                  duration: 0.5 + Math.random() * 0.3, 
-                  repeat: Infinity,
-                  delay: i * 0.1
-                }}
-                className="w-1 bg-emerald-500 rounded-full"
-                style={{ height: 8 }}
-              />
-            ))}
-          </div>
-
-          <div className="absolute bottom-6 left-6 right-6">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Signal className="h-3 w-3" />
-                <span>Sinyal Güçlü</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Radio className="h-3 w-3" />
-                <span>Oda Hazırlanıyor</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 text-center">
-            <AnimatePresence mode="wait">
-              {countdownPhase === "preparing" && (
-                <motion.div
-                  key="preparing"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.2 }}
-                  className="flex flex-col items-center"
-                >
-                  <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    className="relative h-24 w-24 mb-6"
-                  >
-                    <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
-                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary" />
-                    <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-emerald-500" 
-                      style={{ animation: "spin 2s linear infinite reverse" }} 
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Tv className="h-8 w-8 text-primary" />
-                    </div>
-                  </motion.div>
-                  <h2 className="text-2xl font-bold mb-2">Oda Hazırlanıyor</h2>
-                  <p className="text-sm text-muted-foreground">Oyun Birkaç Saniye İçinde Başlayacak</p>
-                </motion.div>
-              )}
-
-              {countdownPhase === "counting" && countdownNumber !== null && (
-                <motion.div
-                  key={`count-${countdownNumber}`}
-                  initial={{ opacity: 0, scale: 2, rotateX: -90 }}
-                  animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-                  exit={{ opacity: 0, scale: 0.5, rotateX: 90 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="flex flex-col items-center"
-                >
-                  <div className="relative">
-                    <motion.div
-                      animate={{ 
-                        boxShadow: [
-                          "0 0 0 0 rgba(255,0,0,0)",
-                          "0 0 60px 20px rgba(255,0,0,0.3)",
-                          "0 0 0 0 rgba(255,0,0,0)"
-                        ]
-                      }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                      className="relative"
-                    >
-                      <div className="h-40 w-40 rounded-3xl bg-gradient-to-br from-primary via-red-600 to-red-700 flex items-center justify-center shadow-2xl shadow-primary/50">
-                        <span className="text-8xl font-black text-white" style={{ textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>
-                          {countdownNumber}
-                        </span>
-                      </div>
-                    </motion.div>
-                    
-                    <motion.div
-                      initial={{ scale: 1, opacity: 0.5 }}
-                      animate={{ scale: 2, opacity: 0 }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                      className="absolute inset-0 rounded-3xl border-2 border-primary"
-                    />
-                  </div>
-
-                  <motion.p 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-lg font-semibold mt-6 text-muted-foreground"
-                  >
-                    {countdownNumber === 5 && "Hazır Ol!"}
-                    {countdownNumber === 4 && "Konsantre Ol!"}
-                    {countdownNumber === 3 && "Dikkat!"}
-                    {countdownNumber === 2 && "Neredeyse Hazır..."}
-                    {countdownNumber === 1 && "Başlıyor!"}
-                  </motion.p>
-
-                  <div className="flex items-center gap-1 mt-4">
-                    {[5, 4, 3, 2, 1].map((num) => (
-                      <motion.div
-                        key={num}
-                        className={`h-2 w-8 rounded-full transition-all ${
-                          num > (countdownNumber || 0) 
-                            ? "bg-primary" 
-                            : "bg-muted"
-                        }`}
-                        animate={num === countdownNumber ? { scale: [1, 1.2, 1] } : {}}
-                        transition={{ duration: 0.3 }}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {countdownPhase === "go" && (
-                <motion.div
-                  key="go"
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ type: "spring", damping: 10, stiffness: 100 }}
-                  className="flex flex-col items-center"
-                >
-                  <motion.div
-                    animate={{ 
-                      scale: [1, 1.1, 1],
-                      boxShadow: [
-                        "0 0 0 0 rgba(16,185,129,0)",
-                        "0 0 80px 30px rgba(16,185,129,0.4)",
-                        "0 0 0 0 rgba(16,185,129,0)"
-                      ]
-                    }}
-                    transition={{ duration: 0.8, repeat: Infinity }}
-                    className="h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 flex items-center justify-center shadow-2xl shadow-emerald-500/50"
-                  >
-                    <Play className="h-20 w-20 text-white ml-2" fill="white" />
-                  </motion.div>
-                  <motion.h2 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-3xl font-black mt-6 text-emerald-500"
-                  >
-                    Başlıyoruz!
-                  </motion.h2>
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-sm text-muted-foreground mt-2"
-                  >
-                    Oyun Birkaç Saniye İçinde Başlayacak
-                  </motion.p>
-                </motion.div>
-              )}
-
-              {countdownPhase === "done" && gameStatus === "waiting" && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center"
-                >
-                  <div className="relative h-20 w-20 mb-4">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Radio className="h-8 w-8 text-primary" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium">Sonraki Tur Hazırlanıyor...</p>
-                  <p className="text-xs text-muted-foreground mt-1">Birazdan Başlıyor</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <style>{`
-            @keyframes spin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
       )}
 
       {gameStatus === "results" && content && (
