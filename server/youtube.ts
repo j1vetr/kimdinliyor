@@ -601,33 +601,45 @@ export async function getRandomVideosForComparison(count: number = 30): Promise<
 // ============= CACHED CONTENT FUNCTIONS =============
 // These functions use the global cache with TTL to minimize API usage
 
+// Simple lock to prevent concurrent cache refreshes
+const refreshLocks = {
+  video: false,
+  channel: false,
+};
+
 /**
  * Get cached trending videos. If cache is stale or empty, refresh from YouTube API.
  * Returns content from global cache, ensuring variety across games.
+ * Uses a lock to prevent concurrent refresh operations.
  */
 export async function getCachedTrendingVideos(count: number = 10, excludeIds: string[] = []): Promise<GlobalTrending[]> {
   const cacheAge = await storage.getTrendingCacheAge("video");
   
-  // If cache is empty or older than TTL, refresh it
-  if (cacheAge === null || cacheAge > CACHE_TTL_MINUTES) {
+  // If cache is empty or older than TTL, refresh it (with lock)
+  if ((cacheAge === null || cacheAge > CACHE_TTL_MINUTES) && !refreshLocks.video) {
+    refreshLocks.video = true;
     console.log(`Refreshing video cache (age: ${cacheAge} minutes, TTL: ${CACHE_TTL_MINUTES} minutes)`);
     
-    const trendingVideos = await getTrendingVideos(50);
-    
-    if (trendingVideos.length > 0) {
-      const cacheItems: InsertGlobalTrending[] = trendingVideos.map(video => ({
-        contentId: video.id,
-        contentType: "video",
-        title: video.title,
-        subtitle: video.channelTitle,
-        thumbnailUrl: video.thumbnailUrl,
-        viewCount: video.viewCount,
-        duration: video.duration,
-        publishedAt: video.publishedAt,
-      }));
+    try {
+      const trendingVideos = await getTrendingVideos(50);
       
-      await storage.refreshGlobalTrending("video", cacheItems);
-      console.log(`Cached ${cacheItems.length} trending videos`);
+      if (trendingVideos.length > 0) {
+        const cacheItems: InsertGlobalTrending[] = trendingVideos.map(video => ({
+          contentId: video.id,
+          contentType: "video",
+          title: video.title,
+          subtitle: video.channelTitle,
+          thumbnailUrl: video.thumbnailUrl,
+          viewCount: video.viewCount,
+          duration: video.duration,
+          publishedAt: video.publishedAt,
+        }));
+        
+        await storage.refreshGlobalTrending("video", cacheItems);
+        console.log(`Cached ${cacheItems.length} trending videos`);
+      }
+    } finally {
+      refreshLocks.video = false;
     }
   }
   
@@ -637,29 +649,35 @@ export async function getCachedTrendingVideos(count: number = 10, excludeIds: st
 
 /**
  * Get cached popular channels. If cache is stale or empty, refresh from YouTube API.
+ * Uses a lock to prevent concurrent refresh operations.
  */
 export async function getCachedPopularChannels(count: number = 10, excludeIds: string[] = []): Promise<GlobalTrending[]> {
   const cacheAge = await storage.getTrendingCacheAge("channel");
   
-  // If cache is empty or older than TTL, refresh it
-  if (cacheAge === null || cacheAge > CACHE_TTL_MINUTES) {
+  // If cache is empty or older than TTL, refresh it (with lock)
+  if ((cacheAge === null || cacheAge > CACHE_TTL_MINUTES) && !refreshLocks.channel) {
+    refreshLocks.channel = true;
     console.log(`Refreshing channel cache (age: ${cacheAge} minutes, TTL: ${CACHE_TTL_MINUTES} minutes)`);
     
-    const popularChannels = await getPopularChannels(25);
-    
-    if (popularChannels.length > 0) {
-      const cacheItems: InsertGlobalTrending[] = popularChannels.map(channel => ({
-        contentId: channel.id,
-        contentType: "channel",
-        title: channel.title,
-        subtitle: channel.description,
-        thumbnailUrl: channel.thumbnailUrl,
-        subscriberCount: channel.subscriberCount,
-        videoCount: channel.videoCount,
-      }));
+    try {
+      const popularChannels = await getPopularChannels(25);
       
-      await storage.refreshGlobalTrending("channel", cacheItems);
-      console.log(`Cached ${cacheItems.length} popular channels`);
+      if (popularChannels.length > 0) {
+        const cacheItems: InsertGlobalTrending[] = popularChannels.map(channel => ({
+          contentId: channel.id,
+          contentType: "channel",
+          title: channel.title,
+          subtitle: channel.description,
+          thumbnailUrl: channel.thumbnailUrl,
+          subscriberCount: channel.subscriberCount,
+          videoCount: channel.videoCount,
+        }));
+        
+        await storage.refreshGlobalTrending("channel", cacheItems);
+        console.log(`Cached ${cacheItems.length} popular channels`);
+      }
+    } finally {
+      refreshLocks.channel = false;
     }
   }
   
