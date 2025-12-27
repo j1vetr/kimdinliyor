@@ -307,7 +307,10 @@ export default function Home() {
                   </Badge>
                 </div>
                 <h3 className="modes-panel-title">Tahmin Modları</h3>
-                <p className="modes-panel-desc">Arkadaşlarının YouTube aktivitelerini tahmin et</p>
+                <p className="modes-panel-desc">
+                  Tahmin modları için YouTube hesabını bağlaman gerekiyor.<br />
+                  Arkadaşlarının beğenilerini ve aboneliklerini tahmin et.
+                </p>
                 <div className="modes-panel-list">
                   {TAHMIN_MODLARI.map((mode, idx) => {
                     const Icon = mode.icon;
@@ -317,10 +320,7 @@ export default function Home() {
                         <div className="modes-panel-icon">
                           <Icon />
                         </div>
-                        <div className="modes-panel-content">
-                          <span className="modes-panel-name">{mode.title}</span>
-                          <span className="modes-panel-hint">{mode.desc}</span>
-                        </div>
+                        <span className="modes-panel-name">{mode.title}</span>
                       </div>
                     );
                   })}
@@ -329,18 +329,21 @@ export default function Home() {
 
               <div className="modes-divider">
                 <span className="modes-divider-line" />
-                <span className="modes-divider-text">VS</span>
+                <span className="modes-divider-text">veya</span>
                 <span className="modes-divider-line" />
               </div>
 
               <div className="modes-category-panel modes-category-panel-alt">
                 <div className="modes-panel-header">
                   <Badge variant="secondary" className="modes-panel-badge-free">
-                    Herkes Oynayabilir
+                    Giriş Gerekmez
                   </Badge>
                 </div>
                 <h3 className="modes-panel-title">Karşılaştırma Modları</h3>
-                <p className="modes-panel-desc">Trend videolar ve popüler kanallarla yarış</p>
+                <p className="modes-panel-desc">
+                  YouTube hesabı olmadan herkes oynayabilir.<br />
+                  Trend videolar ve popüler kanallarla yarış.
+                </p>
                 <div className="modes-panel-list">
                   {KARSILASTIRMA_MODLARI.map((mode, idx) => {
                     const Icon = mode.icon;
@@ -350,10 +353,7 @@ export default function Home() {
                         <div className="modes-panel-icon">
                           <Icon />
                         </div>
-                        <div className="modes-panel-content">
-                          <span className="modes-panel-name">{mode.title}</span>
-                          <span className="modes-panel-hint">{mode.desc}</span>
-                        </div>
+                        <span className="modes-panel-name">{mode.title}</span>
                       </div>
                     );
                   })}
