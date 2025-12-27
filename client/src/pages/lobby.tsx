@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Zap, Timer, Check, ArrowRight, Radio, Tv } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Zap, Timer, Check, ArrowRight, Radio, Tv, RefreshCw } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -533,6 +533,16 @@ export default function Lobby() {
                   <div className="flex-1">
                     <p className="text-xs font-medium text-emerald-400">YouTube Bağlı</p>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={connectGoogle}
+                    className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground"
+                    data-testid="button-refresh-google"
+                    title="Bağlantıyı yenile"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
                   <EqualizerBars active count={4} />
                 </div>
               )}
