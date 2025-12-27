@@ -6,6 +6,7 @@ import {
   rounds,
   answers,
   googleTokens,
+  globalTrendingCache,
   type User,
   type InsertUser,
   type Room,
@@ -20,6 +21,8 @@ import {
   type InsertAnswer,
   type PlayerWithUser,
   type RoomWithPlayers,
+  type GlobalTrending,
+  type InsertGlobalTrending,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -76,6 +79,12 @@ export interface IStorage {
   getGoogleToken(userId: string): Promise<GoogleToken | undefined>;
   saveGoogleToken(userId: string, token: GoogleToken): Promise<void>;
   deleteGoogleToken(userId: string): Promise<void>;
+
+  // Global Trending Cache
+  getGlobalTrendingByType(contentType: string): Promise<GlobalTrending[]>;
+  getTrendingCacheAge(contentType: string): Promise<number | null>; // Returns age in minutes
+  refreshGlobalTrending(contentType: string, items: InsertGlobalTrending[]): Promise<void>;
+  getRandomTrendingContent(contentType: string, count: number, excludeIds?: string[]): Promise<GlobalTrending[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -288,6 +297,45 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGoogleToken(userId: string): Promise<void> {
     await db.delete(googleTokens).where(eq(googleTokens.userId, userId));
+  }
+
+  // Global Trending Cache
+  async getGlobalTrendingByType(contentType: string): Promise<GlobalTrending[]> {
+    return db.select().from(globalTrendingCache).where(eq(globalTrendingCache.contentType, contentType));
+  }
+
+  async getTrendingCacheAge(contentType: string): Promise<number | null> {
+    const [item] = await db
+      .select()
+      .from(globalTrendingCache)
+      .where(eq(globalTrendingCache.contentType, contentType))
+      .limit(1);
+    
+    if (!item || !item.fetchedAt) return null;
+    
+    const ageMs = Date.now() - item.fetchedAt.getTime();
+    return Math.floor(ageMs / (1000 * 60)); // Return age in minutes
+  }
+
+  async refreshGlobalTrending(contentType: string, items: InsertGlobalTrending[]): Promise<void> {
+    // Delete existing items of this type
+    await db.delete(globalTrendingCache).where(eq(globalTrendingCache.contentType, contentType));
+    
+    // Insert new items
+    if (items.length > 0) {
+      await db.insert(globalTrendingCache).values(items);
+    }
+  }
+
+  async getRandomTrendingContent(contentType: string, count: number, excludeIds: string[] = []): Promise<GlobalTrending[]> {
+    const allContent = await this.getGlobalTrendingByType(contentType);
+    
+    // Filter out excluded IDs
+    const available = allContent.filter(c => !excludeIds.includes(c.contentId));
+    
+    // Shuffle and take count items
+    const shuffled = available.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
   }
 }
 
