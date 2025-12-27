@@ -126,12 +126,10 @@ export default function Game() {
   // CRITICAL: Immutable snapshot of results - prevents data leakage during transitions
   const [resultsSnapshot, setResultsSnapshot] = useState<ResultsSnapshot | null>(null);
   
-  // Two-phase results: 3 seconds "reveal" + 2 seconds "countdown"
-  const [resultsPhase, setResultsPhase] = useState<"reveal" | "countdown">("reveal");
-  const [countdownValue, setCountdownValue] = useState(2);
+  // Simple 5-second countdown: first 3 seconds = reveal, last 2 seconds = countdown screen
+  const [resultsTimer, setResultsTimer] = useState(5);
   const [pendingRoundData, setPendingRoundData] = useState<any>(null);
-  const resultsPhaseTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const resultsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Refs to track current values for WebSocket callbacks (avoids stale closure)
   const contentRef = useRef<Content | null>(null);
@@ -266,9 +264,7 @@ export default function Game() {
               });
             }
             
-            // Start two-phase results: reveal for 3s, then countdown for 2s
-            setResultsPhase("reveal");
-            setCountdownValue(2);
+            // Reset pending data for new results
             setPendingRoundData(null);
             setGameStatus("results");
             setCorrectPlayerIds(message.correctUserIds || []);
@@ -283,32 +279,26 @@ export default function Game() {
               setPlayerScores(newScores);
             }
             
-            // Clear any existing timers
-            if (resultsPhaseTimerRef.current) {
-              clearTimeout(resultsPhaseTimerRef.current);
-            }
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
+            // Clear any existing timer
+            if (resultsIntervalRef.current) {
+              clearInterval(resultsIntervalRef.current);
             }
             
-            // After 3 seconds, switch to countdown phase
-            resultsPhaseTimerRef.current = setTimeout(() => {
-              setResultsPhase("countdown");
-              setCountdownValue(2);
-              
-              // Start 2-1 countdown
-              countdownIntervalRef.current = setInterval(() => {
-                setCountdownValue(prev => {
-                  if (prev <= 1) {
-                    if (countdownIntervalRef.current) {
-                      clearInterval(countdownIntervalRef.current);
-                    }
-                    return 0;
+            // Start simple 5-second countdown
+            console.log("[Timer] Starting 5-second results timer");
+            setResultsTimer(5);
+            resultsIntervalRef.current = setInterval(() => {
+              setResultsTimer(prev => {
+                const next = prev - 1;
+                console.log("[Timer] Results countdown:", next);
+                if (next <= 0) {
+                  if (resultsIntervalRef.current) {
+                    clearInterval(resultsIntervalRef.current);
                   }
-                  return prev - 1;
-                });
-              }, 1000);
-            }, 3000);
+                }
+                return next;
+              });
+            }, 1000);
             break;
             
           case "game_finished":
@@ -370,10 +360,11 @@ export default function Game() {
 
   // Handle countdown completion - apply pending round data and transition to question
   useEffect(() => {
-    if (resultsPhase !== "countdown" || countdownValue > 0) return;
+    console.log("[Effect] gameStatus:", gameStatus, "resultsTimer:", resultsTimer);
+    if (gameStatus !== "results" || resultsTimer > 0) return;
     
     // Countdown finished - transition to question
-    console.log("[Countdown] Finished, transitioning to question");
+    console.log("[Countdown] Finished, transitioning to question, pendingData:", !!pendingRoundData);
     
     // First reset all answer-related state
     setCorrectPlayerIds([]);
@@ -397,20 +388,16 @@ export default function Game() {
       setPendingRoundData(null);
     }
     
-    // Reset phase for next results
-    setResultsPhase("reveal");
-    setCountdownValue(2);
+    // Reset timer for next results
+    setResultsTimer(5);
     setGameStatus("question");
-  }, [resultsPhase, countdownValue, pendingRoundData]);
+  }, [gameStatus, resultsTimer, pendingRoundData]);
   
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (resultsPhaseTimerRef.current) {
-        clearTimeout(resultsPhaseTimerRef.current);
-      }
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
+      if (resultsIntervalRef.current) {
+        clearInterval(resultsIntervalRef.current);
       }
     };
   }, []);
@@ -671,11 +658,11 @@ export default function Game() {
         </div>
       )}
 
-      {/* Countdown screen - shows 2...1 before next question */}
-      {gameStatus === "results" && resultsPhase === "countdown" && (
+      {/* Countdown screen - shows 2...1 before next question (when resultsTimer <= 2) */}
+      {gameStatus === "results" && resultsTimer <= 2 && resultsTimer > 0 && (
         <div className="flex-1 flex flex-col items-center justify-center">
           <motion.div
-            key={countdownValue}
+            key={resultsTimer}
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 1.5, opacity: 0 }}
@@ -683,7 +670,7 @@ export default function Game() {
             className="flex flex-col items-center gap-4"
           >
             <span className="text-8xl md:text-9xl font-bold text-primary">
-              {countdownValue > 0 ? countdownValue : ""}
+              {resultsTimer}
             </span>
             <p className="text-sm md:text-base text-muted-foreground font-medium">
               Sonraki Soru Geliyor...
@@ -927,7 +914,7 @@ export default function Game() {
         </div>
       )}
 
-      {gameStatus === "results" && resultsSnapshot && resultsPhase === "reveal" && (
+      {gameStatus === "results" && resultsSnapshot && resultsTimer > 2 && (
         <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
           {/* Header Strip */}
           <header className="shrink-0 px-4 py-3 md:py-4">
@@ -942,7 +929,7 @@ export default function Game() {
               </div>
               <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-muted/30 border border-border/20">
                 <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {resultsCountdown > 0 ? `Sonraki ${resultsCountdown}s` : "Yükleniyor..."}
+                  Sonuçlar
                 </span>
               </div>
             </div>
