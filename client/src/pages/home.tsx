@@ -1,11 +1,11 @@
 import { Link } from "wouter";
-import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, Play, ChevronRight, HelpCircle } from "lucide-react";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, ChevronRight, Zap, Trophy } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 
 const TAHMIN_MODLARI = [
@@ -70,44 +70,22 @@ const KARSILASTIRMA_MODLARI = [
   },
 ];
 
-const ROTATING_QUESTIONS = [
-  { text: "Kim Beğenmiş?", color: "#ef4444" },
-  { text: "Kim Abone?", color: "#f97316" },
-  { text: "Hangisi Eski?", color: "#3b82f6" },
-  { text: "Hangisi Popüler?", color: "#06b6d4" },
-];
-
 const SAMPLE_PLAYERS = [
-  { name: "Ahmet", initial: "A", color: "#ef4444" },
-  { name: "Zeynep", initial: "Z", color: "#3b82f6" },
-  { name: "Mert", initial: "M", color: "#10b981" },
-  { name: "Elif", initial: "E", color: "#f59e0b" },
+  { name: "Beren", initial: "B", status: "Bekliyor", signal: true },
+  { name: "Selin", initial: "S", status: "Bekliyor", signal: false },
+  { name: "Duru", initial: "D", status: "Oyunda", signal: true },
+  { name: "Mert", initial: "M", status: "Bekliyor", signal: false },
 ];
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState("");
   const [, setLocation] = useLocation();
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setQuestionIndex((prev) => (prev + 1) % ROTATING_QUESTIONS.length);
-        setIsAnimating(false);
-      }, 300);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
       setLocation(`/oyun/${roomCode.trim().toUpperCase()}`);
     }
   };
-
-  const currentQuestion = ROTATING_QUESTIONS[questionIndex];
 
   return (
     <div className="home-page">
@@ -118,82 +96,103 @@ export default function Home() {
       </header>
 
       <main className="home-main">
+        {/* Hero Section - Matching Reference Image */}
         <section className="hero-section">
-          <div className="hero-game-visual">
-            <div className="hero-video-frame">
-              <div className="hero-video-screen">
-                <SiYoutube className="hero-video-icon" />
-                <div className="hero-video-bars">
-                  <div className="hero-bar" style={{ animationDelay: "0s" }} />
-                  <div className="hero-bar" style={{ animationDelay: "0.1s" }} />
-                  <div className="hero-bar" style={{ animationDelay: "0.2s" }} />
-                  <div className="hero-bar" style={{ animationDelay: "0.3s" }} />
-                  <div className="hero-bar" style={{ animationDelay: "0.4s" }} />
-                </div>
-              </div>
-              <div className="hero-video-label">Video</div>
-            </div>
-
-            <div className="hero-question-bubble">
-              <HelpCircle className="hero-question-icon" />
-              <span 
-                className={`hero-question-text ${isAnimating ? 'animating' : ''}`}
-                style={{ color: currentQuestion.color }}
-              >
-                {currentQuestion.text}
-              </span>
-            </div>
-
-            <div className="hero-players-row">
-              {SAMPLE_PLAYERS.map((player, i) => (
-                <div 
-                  key={player.name}
-                  className="hero-player-card"
-                  style={{ 
-                    animationDelay: `${i * 0.15}s`,
-                    borderColor: player.color 
-                  }}
-                >
-                  <div className="hero-player-avatar" style={{ background: player.color }}>
-                    {player.initial}
-                  </div>
-                  <span className="hero-player-name">{player.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="hero-content">
-            <div className="hero-badge">
+            <div className="hero-badge-white">
               <SiYoutube className="hero-badge-icon" />
               <span>YouTube Tahmin Yarışması</span>
             </div>
             
-            <h1 className="hero-title">
-              <span className="hero-title-kim">Kim</span>
-              <span className="hero-title-dinliyor">Dinliyor?</span>
+            <h1 className="hero-title-alt">
+              <span className="hero-title-white">Arkadaşların</span>
+              <span className="hero-title-white">Ne <span className="hero-title-red">İzliyor?</span></span>
             </h1>
             
-            <p className="hero-desc">
-              Arkadaşlarınla YouTube'dan sorular çöz, 
-              beğenileri ve abonelikleri tahmin et, 
-              <strong> en yüksek puanı topla!</strong>
+            <p className="hero-desc-alt">
+              YouTube hesabını bağla, arkadaşlarını davet et.<br />
+              Kim hangi videoyu beğenmiş, kime abone?<br />
+              Tahmin et, puan topla, eğlen!
             </p>
 
-            <div className="hero-stats">
-              <div className="hero-stat">
-                <span className="hero-stat-value">8</span>
-                <span className="hero-stat-label">Oyun Modu</span>
+            <div className="hero-actions">
+              <Link href="/oda-olustur">
+                <Button className="hero-create-btn" data-testid="button-create-room">
+                  <Plus />
+                  Oda Oluştur
+                  <ArrowRight />
+                </Button>
+              </Link>
+              <div className="hero-join-form">
+                <Input
+                  placeholder="ODA KODU"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
+                  maxLength={7}
+                  className="hero-join-input"
+                  data-testid="input-room-code"
+                />
+                <Button
+                  onClick={handleJoinRoom}
+                  disabled={!roomCode.trim()}
+                  variant="outline"
+                  className="hero-join-btn"
+                  data-testid="button-join-room"
+                >
+                  Katıl
+                </Button>
               </div>
-              <div className="hero-stat-divider" />
-              <div className="hero-stat">
-                <span className="hero-stat-value">2-12</span>
-                <span className="hero-stat-label">Oyuncu</span>
+            </div>
+
+            <div className="hero-features">
+              <div className="hero-feature-chip">
+                <Users className="hero-feature-icon" />
+                <span>2-12 Kişi</span>
               </div>
-              <div className="hero-stat-divider" />
-              <div className="hero-stat">
-                <span className="hero-stat-value hero-stat-live">Canlı</span>
-                <span className="hero-stat-label">Veriler</span>
+              <div className="hero-feature-chip">
+                <Zap className="hero-feature-icon" />
+                <span>8 Mod</span>
+              </div>
+              <div className="hero-feature-chip">
+                <Trophy className="hero-feature-icon" />
+                <span>Seri Bonus</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Lobby Preview Card */}
+          <div className="hero-lobby-preview">
+            <div className="hero-lobby-card">
+              <div className="hero-lobby-header">
+                <div className="hero-lobby-live">
+                  <span className="hero-live-dot" />
+                  <span>Canlı Lobiler</span>
+                </div>
+                <span className="hero-lobby-count">12 Aktif Oda</span>
+              </div>
+              
+              <div className="hero-lobby-room">
+                <span className="hero-room-name">Efsane Oda</span>
+              </div>
+
+              <div className="hero-lobby-players">
+                {SAMPLE_PLAYERS.map((player) => (
+                  <div key={player.name} className="hero-lobby-player">
+                    <div className="hero-lobby-avatar" style={{ background: player.status === "Oyunda" ? "#f59e0b" : "#3b82f6" }}>
+                      {player.initial}
+                    </div>
+                    <div className="hero-lobby-info">
+                      <span className="hero-lobby-name">{player.name}</span>
+                      <span className="hero-lobby-status">{player.status}</span>
+                    </div>
+                    {player.signal && (
+                      <div className="hero-lobby-signal">
+                        <span /><span /><span />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -212,7 +211,7 @@ export default function Home() {
                 Özel bir oda oluştur, arkadaşlarını davet et. Kendi aranızda eğlenceli bir yarışma başlat!
               </p>
               <Link href="/oda-olustur">
-                <Button className="play-option-btn" data-testid="button-create-room">
+                <Button className="play-option-btn" data-testid="button-create-room-2">
                   <Plus />
                   Oda Oluştur
                   <ChevronRight />
@@ -238,14 +237,14 @@ export default function Home() {
                   onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
                   maxLength={7}
                   className="join-input"
-                  data-testid="input-room-code"
+                  data-testid="input-room-code-2"
                 />
                 <Button
                   onClick={handleJoinRoom}
                   disabled={!roomCode.trim()}
                   variant="outline"
                   className="join-btn"
-                  data-testid="button-join-room"
+                  data-testid="button-join-room-2"
                 >
                   Katıl
                 </Button>
