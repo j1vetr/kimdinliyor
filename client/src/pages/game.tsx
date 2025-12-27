@@ -32,16 +32,17 @@ interface Content {
   thumbnailUrl: string | null;
   viewCount?: string;
   subscriberCount?: string;
+  publishedAt?: string;
 }
 
-type GameMode = "who_liked" | "who_subscribed" | "view_count" | "which_more" | "subscriber_count";
+type GameMode = "who_liked" | "who_subscribed" | "which_older" | "most_viewed" | "oldest_like";
 
 const GAME_MODE_INFO: Record<GameMode, { question: string; icon: any; badge: string }> = {
-  who_liked: { question: "Bu videoyu kim beğenmiş?", icon: ThumbsUp, badge: "Video Beğeni" },
-  who_subscribed: { question: "Bu kanala kim abone?", icon: UserPlus, badge: "Kanal Abonelik" },
-  view_count: { question: "Bu videonun kaç izlenmesi var?", icon: Eye, badge: "İzlenme Tahmini" },
-  which_more: { question: "Hangisi daha popüler?", icon: Trophy, badge: "Karşılaştırma" },
-  subscriber_count: { question: "Bu kanalın kaç abonesi var?", icon: UsersRound, badge: "Abone Tahmini" },
+  who_liked: { question: "Bu videoyu kim beğenmiş?", icon: ThumbsUp, badge: "Kim Beğenmiş?" },
+  who_subscribed: { question: "Bu kanala kim abone?", icon: UserPlus, badge: "Kim Abone?" },
+  which_older: { question: "Hangisi daha eski?", icon: Clock, badge: "Hangisi Daha Eski?" },
+  most_viewed: { question: "Hangisi daha çok izlenmiş?", icon: Eye, badge: "En Çok İzlenmiş" },
+  oldest_like: { question: "Bu video kimin en eski beğenisi?", icon: Flame, badge: "Benim İlk Aşkım" },
 };
 
 interface RoundResult {
@@ -49,10 +50,7 @@ interface RoundResult {
   displayName: string;
   avatarUrl?: string | null;
   selectedUserIds: string[];
-  numericAnswer?: string | null;
-  percentageError?: number | null;
-  tier?: string | null;
-  isBestGuess?: boolean;
+  selectedContentId?: string | null;
   score: number;
   isCorrect: boolean;
   isPartialCorrect: boolean;
@@ -65,13 +63,14 @@ interface WSMessage {
   round?: number;
   totalRounds?: number;
   content?: Content;
+  content2?: Content;
   timeLimit?: number;
   isLightningRound?: boolean;
   correctUserIds?: string[];
+  correctContentId?: string;
   results?: RoundResult[];
   oderId?: string;
   gameMode?: GameMode;
-  correctAnswer?: string;
   userId?: string;
   displayName?: string;
   avatarUrl?: string | null;
@@ -87,6 +86,7 @@ export default function Game() {
   const userId = localStorage.getItem("userId");
 
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20);
   const [totalTime, setTotalTime] = useState(20);
@@ -94,15 +94,18 @@ export default function Game() {
   const [currentRound, setCurrentRound] = useState(0);
   const [isLightningRound, setIsLightningRound] = useState(false);
   const [content, setContent] = useState<Content | null>(null);
+  const [content2, setContent2] = useState<Content | null>(null);
   const [correctPlayerIds, setCorrectPlayerIds] = useState<string[]>([]);
+  const [correctContentId, setCorrectContentId] = useState<string | null>(null);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
   const [gameMode, setGameMode] = useState<GameMode>("who_liked");
-  const [numericAnswer, setNumericAnswer] = useState("");
-  const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
+  const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const wsRef = useRef<WebSocket | null>(null);
+  
+  // Determine if current mode is a comparison mode
+  const isComparisonMode = gameMode === "which_older" || gameMode === "most_viewed";
 
   // Simple polling for game state - runs continuously when waiting
   useEffect(() => {
@@ -123,6 +126,7 @@ export default function Game() {
             setTimeLeft(data.gameState.timeLeft || 20);
             setTotalTime(data.gameState.timeLeft || 20);
             setContent(data.content);
+            setContent2(data.content2 || null);
             if (data.gameState.gameMode) {
               setGameMode(data.gameState.gameMode);
             }
@@ -155,11 +159,11 @@ export default function Game() {
   });
 
   const answerMutation = useMutation({
-    mutationFn: async (data: { selectedUserIds?: string[]; numericAnswer?: string }) => {
+    mutationFn: async (data: { selectedUserIds?: string[]; selectedContentId?: string }) => {
       const response = await apiRequest("POST", `/api/rooms/${roomCode}/answer`, {
         oderId: userId,
         selectedUserIds: data.selectedUserIds || [],
-        numericAnswer: data.numericAnswer,
+        selectedContentId: data.selectedContentId || null,
       });
       return response.json();
     },
@@ -193,22 +197,23 @@ export default function Game() {
             setCurrentRound(message.round || 1);
             setIsLightningRound(message.isLightningRound || false);
             setContent(message.content || null);
+            setContent2(message.content2 || null);
             setTimeLeft(message.timeLimit || 20);
             setTotalTime(message.timeLimit || 20);
             setHasAnswered(false);
             setSelectedPlayers([]);
+            setSelectedContentId(null);
             setCorrectPlayerIds([]);
+            setCorrectContentId(null);
             setRoundResults([]);
             setGameMode(message.gameMode || "who_liked");
-            setNumericAnswer("");
-            setCorrectAnswer(null);
             break;
             
           case "round_ended":
             setGameStatus("results");
             setCorrectPlayerIds(message.correctUserIds || []);
+            setCorrectContentId(message.correctContentId || null);
             setRoundResults(message.results || []);
-            setCorrectAnswer(message.correctAnswer || null);
             if (message.results) {
               const newScores = new Map<string, number>();
               message.results.forEach((r: RoundResult) => {
@@ -295,19 +300,19 @@ export default function Game() {
   }, [hasAnswered]);
 
   const handleSubmitAnswer = useCallback(() => {
-    const isNumeric = gameMode === "view_count" || gameMode === "subscriber_count";
-    
-    if (isNumeric) {
-      if (!numericAnswer.trim()) {
+    if (isComparisonMode) {
+      // Comparison mode: select content
+      if (!selectedContentId) {
         toast({
-          title: "Tahmin gir",
-          description: "Lütfen bir sayı tahmini gir.",
+          title: "Video seç",
+          description: "Lütfen bir video seç.",
           variant: "destructive",
         });
         return;
       }
-      answerMutation.mutate({ numericAnswer: numericAnswer.trim() });
+      answerMutation.mutate({ selectedContentId });
     } else {
+      // Player selection mode
       if (selectedPlayers.length === 0) {
         toast({
           title: "Oyuncu seç",
@@ -318,7 +323,7 @@ export default function Game() {
       }
       answerMutation.mutate({ selectedUserIds: selectedPlayers });
     }
-  }, [selectedPlayers, numericAnswer, gameMode, answerMutation, toast]);
+  }, [selectedPlayers, selectedContentId, isComparisonMode, answerMutation, toast]);
 
   const openYouTubeLink = () => {
     if (content?.contentType === "video" && content?.contentId) {
@@ -376,7 +381,6 @@ export default function Game() {
   const totalRounds = room?.totalRounds || 10;
   const modeInfo = GAME_MODE_INFO[gameMode];
   const ModeIcon = modeInfo?.icon || ThumbsUp;
-  const isNumericMode = gameMode === "view_count" || gameMode === "subscriber_count";
   const timerPercentage = (timeLeft / totalTime) * 100;
   const isTimeLow = timeLeft <= 5;
 
@@ -500,125 +504,226 @@ export default function Game() {
 
           {/* Main Content Area - Flexible */}
           <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-            {/* Left: Media Section */}
-            <div className="flex-1 flex flex-col min-h-0 p-3 lg:p-4">
-              {/* Content Title - Compact */}
-              <div className="flex items-center gap-2 mb-2 shrink-0">
-                <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shrink-0">
-                  {content.contentType === "video" ? <Play className="h-3.5 w-3.5 text-white" /> : <SiYoutube className="h-3.5 w-3.5 text-white" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-sm font-bold leading-tight line-clamp-1" data-testid="text-content-title">{content.title}</h2>
-                  {content.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1">{content.subtitle}</p>}
-                </div>
-                <button onClick={openYouTubeLink} className="shrink-0 p-1.5 rounded-md hover:bg-muted/50 transition-colors" data-testid="button-open-youtube-header">
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-              </div>
-
-              {/* Media Display - Flexible Height */}
-              <div className="flex-1 flex items-center justify-center min-h-0">
-                {content.contentType === "video" ? (
-                  <div className="relative w-full h-full max-h-[200px] lg:max-h-none lg:aspect-video rounded-xl overflow-hidden ring-1 ring-primary/30 shadow-lg" data-testid="video-player-container">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0`}
-                      title={content.title}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+            {isComparisonMode && content2 ? (
+              /* Comparison Mode UI - Two Videos Side by Side */
+              <div className="flex-1 flex flex-col p-3 lg:p-4 min-h-0">
+                {/* Question Prompt */}
+                <div className="flex items-center gap-2 mb-3 shrink-0">
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                    <ModeIcon className="h-3.5 w-3.5 text-white" />
                   </div>
-                ) : (
-                  <button onClick={openYouTubeLink} className="relative group" data-testid="button-open-youtube">
-                    <div className="w-24 h-24 lg:w-36 lg:h-36 rounded-2xl overflow-hidden ring-2 ring-primary/30 shadow-xl transition-transform group-hover:scale-105">
+                  <p className="text-sm font-bold flex-1">{modeInfo?.question}</p>
+                </div>
+
+                {/* Two Videos Side by Side */}
+                <div className="flex-1 flex flex-col sm:flex-row gap-3 min-h-0">
+                  {/* Video 1 */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => !hasAnswered && setSelectedContentId(content.id)}
+                    disabled={hasAnswered}
+                    className={`flex-1 flex flex-col rounded-xl p-3 border-2 transition-all ${
+                      hasAnswered ? "opacity-60" : ""
+                    } ${
+                      selectedContentId === content.id
+                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                        : "border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card/80"
+                    }`}
+                    data-testid="button-select-video-1"
+                  >
+                    <div className="relative aspect-video w-full rounded-lg overflow-hidden mb-2 shrink-0">
                       {content.thumbnailUrl ? (
-                        <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" data-testid="img-content-thumbnail" />
+                        <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
                           <SiYoutube className="w-10 h-10 text-red-500" />
                         </div>
                       )}
+                      {selectedContentId === content.id && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
+                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-5 w-5 text-white" />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
-                        <Play className="h-5 w-5 text-white fill-white" />
-                      </div>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </div>
+                    <p className="text-xs font-bold line-clamp-2 text-left">{content.title}</p>
+                    {content.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1 text-left mt-0.5">{content.subtitle}</p>}
+                  </motion.button>
 
-            {/* Vertical Divider - Desktop */}
-            <div className="hidden lg:block w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
-
-            {/* Right: Selection Panel */}
-            <div className="shrink-0 lg:w-72 xl:w-80 flex flex-col p-3 lg:p-4 bg-gradient-to-t from-muted/10 to-transparent border-t lg:border-t-0 lg:border-l border-border/30">
-              {/* Question Prompt - Compact */}
-              <div className="flex items-center gap-2 mb-2 shrink-0">
-                <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                  <ModeIcon className="h-3 w-3 text-white" />
-                </div>
-                <p className="text-xs font-bold flex-1">{modeInfo?.question}</p>
-              </div>
-
-              {/* Player Selection / Numeric Input */}
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                {isNumericMode ? (
-                  <div className="h-full flex flex-col justify-center">
-                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Sayı gir..."
-                        value={numericAnswer ? parseInt(numericAnswer).toLocaleString('tr-TR') : ''}
-                        onChange={(e) => setNumericAnswer(e.target.value.replace(/[^0-9]/g, ''))}
-                        disabled={hasAnswered}
-                        className="text-center text-lg font-bold h-12 bg-background/50 border-purple-500/30"
-                        data-testid="input-numeric-answer"
-                      />
+                  {/* VS Divider */}
+                  <div className="flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                      <span className="text-xs font-black text-white">VS</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5 content-start">
-                    {allPlayers.map((player: any) => {
-                      const playerId = player.userId || player.user?.id;
-                      const displayName = player.user?.displayName || player.displayName;
-                      const avatarUrl = player.user?.avatarUrl;
-                      const isSelected = selectedPlayers.includes(playerId);
-                      const isSelf = playerId === userId;
-                      
-                      return (
-                        <motion.button
-                          key={playerId}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
-                          disabled={hasAnswered}
-                          className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full transition-all ${
-                            hasAnswered ? "opacity-50" : ""
-                          } ${
-                            isSelected 
-                              ? "bg-primary text-primary-foreground shadow-md shadow-primary/25" 
-                              : "bg-muted/50 hover:bg-muted/80"
-                          }`}
-                          data-testid={`button-player-${playerId}`}
-                        >
-                          {avatarUrl ? (
-                            <img src={avatarUrl} alt={displayName} className="w-5 h-5 rounded-full object-cover" />
+
+                  {/* Video 2 */}
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
+                    disabled={hasAnswered}
+                    className={`flex-1 flex flex-col rounded-xl p-3 border-2 transition-all ${
+                      hasAnswered ? "opacity-60" : ""
+                    } ${
+                      selectedContentId === content2.id
+                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                        : "border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card/80"
+                    }`}
+                    data-testid="button-select-video-2"
+                  >
+                    <div className="relative aspect-video w-full rounded-lg overflow-hidden mb-2 shrink-0">
+                      {content2.thumbnailUrl ? (
+                        <img src={content2.thumbnailUrl} alt={content2.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
+                          <SiYoutube className="w-10 h-10 text-red-500" />
+                        </div>
+                      )}
+                      {selectedContentId === content2.id && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
+                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-5 w-5 text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs font-bold line-clamp-2 text-left">{content2.title}</p>
+                    {content2.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1 text-left mt-0.5">{content2.subtitle}</p>}
+                  </motion.button>
+                </div>
+
+                {/* Submit Button for Comparison */}
+                <div className="shrink-0 mt-3 pt-2 border-t border-border/20">
+                  {hasAnswered ? (
+                    <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <Check className="h-4 w-4 text-emerald-500" />
+                      <span className="text-sm font-bold text-emerald-500">Gönderildi</span>
+                    </div>
+                  ) : (
+                    <Button
+                      className="w-full h-10 text-sm font-bold gap-2 bg-gradient-to-r from-primary to-red-600"
+                      onClick={handleSubmitAnswer}
+                      disabled={!selectedContentId || answerMutation.isPending}
+                      data-testid="button-submit-comparison"
+                    >
+                      {answerMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          {selectedContentId ? "Kilitle" : "Video Seç"}
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Player Selection Mode UI - Original Layout */
+              <>
+                {/* Left: Media Section */}
+                <div className="flex-1 flex flex-col min-h-0 p-3 lg:p-4">
+                  {/* Content Title - Compact */}
+                  <div className="flex items-center gap-2 mb-2 shrink-0">
+                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shrink-0">
+                      {content.contentType === "video" ? <Play className="h-3.5 w-3.5 text-white" /> : <SiYoutube className="h-3.5 w-3.5 text-white" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-sm font-bold leading-tight line-clamp-1" data-testid="text-content-title">{content.title}</h2>
+                      {content.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1">{content.subtitle}</p>}
+                    </div>
+                    <button onClick={openYouTubeLink} className="shrink-0 p-1.5 rounded-md hover:bg-muted/50 transition-colors" data-testid="button-open-youtube-header">
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+
+                  {/* Media Display - Flexible Height */}
+                  <div className="flex-1 flex items-center justify-center min-h-0">
+                    {content.contentType === "video" ? (
+                      <div className="relative w-full h-full max-h-[200px] lg:max-h-none lg:aspect-video rounded-xl overflow-hidden ring-1 ring-primary/30 shadow-lg" data-testid="video-player-container">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0`}
+                          title={content.title}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <button onClick={openYouTubeLink} className="relative group" data-testid="button-open-youtube">
+                        <div className="w-24 h-24 lg:w-36 lg:h-36 rounded-2xl overflow-hidden ring-2 ring-primary/30 shadow-xl transition-transform group-hover:scale-105">
+                          {content.thumbnailUrl ? (
+                            <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" data-testid="img-content-thumbnail" />
                           ) : (
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                              {displayName?.charAt(0).toUpperCase()}
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
+                              <SiYoutube className="w-10 h-10 text-red-500" />
                             </div>
                           )}
-                          <span className="text-xs font-medium whitespace-nowrap">
-                            {displayName}{isSelf ? " (Sen)" : ""}
-                          </span>
-                          {isSelected && <Check className="h-3 w-3 shrink-0" />}
-                        </motion.button>
-                      );
-                    })}
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
+                            <Play className="h-5 w-5 text-white fill-white" />
+                          </div>
+                        </div>
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Vertical Divider - Desktop */}
+                <div className="hidden lg:block w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
+
+                {/* Right: Selection Panel */}
+                <div className="shrink-0 lg:w-72 xl:w-80 flex flex-col p-3 lg:p-4 bg-gradient-to-t from-muted/10 to-transparent border-t lg:border-t-0 lg:border-l border-border/30">
+                  {/* Question Prompt - Compact */}
+                  <div className="flex items-center gap-2 mb-2 shrink-0">
+                    <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                      <ModeIcon className="h-3 w-3 text-white" />
+                    </div>
+                    <p className="text-xs font-bold flex-1">{modeInfo?.question}</p>
+                  </div>
+
+                  {/* Player Selection - for player guess modes */}
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                    <div className="flex flex-wrap gap-1.5 content-start">
+                      {allPlayers.map((player: any) => {
+                        const playerId = player.userId || player.user?.id;
+                        const displayName = player.user?.displayName || player.displayName;
+                        const avatarUrl = player.user?.avatarUrl;
+                        const isSelected = selectedPlayers.includes(playerId);
+                        const isSelf = playerId === userId;
+                        
+                        return (
+                          <motion.button
+                            key={playerId}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
+                            disabled={hasAnswered}
+                            className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full transition-all ${
+                              hasAnswered ? "opacity-50" : ""
+                            } ${
+                              isSelected 
+                                ? "bg-primary text-primary-foreground shadow-md shadow-primary/25" 
+                                : "bg-muted/50 hover:bg-muted/80"
+                            }`}
+                            data-testid={`button-player-${playerId}`}
+                          >
+                            {avatarUrl ? (
+                              <img src={avatarUrl} alt={displayName} className="w-5 h-5 rounded-full object-cover" />
+                            ) : (
+                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                                {displayName?.charAt(0).toUpperCase()}
+                              </div>
+                        )}
+                        <span className="text-xs font-medium whitespace-nowrap">
+                          {displayName}{isSelf ? " (Sen)" : ""}
+                        </span>
+                        {isSelected && <Check className="h-3 w-3 shrink-0" />}
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Submit Button - Fixed at Bottom */}
@@ -632,7 +737,7 @@ export default function Game() {
                   <Button
                     className="w-full h-10 text-sm font-bold gap-2 bg-gradient-to-r from-primary to-red-600"
                     onClick={handleSubmitAnswer}
-                    disabled={(isNumericMode ? !numericAnswer.trim() : selectedPlayers.length === 0) || answerMutation.isPending}
+                    disabled={selectedPlayers.length === 0 || answerMutation.isPending}
                     data-testid="button-submit-answer"
                   >
                     {answerMutation.isPending ? (
@@ -640,13 +745,15 @@ export default function Game() {
                     ) : (
                       <>
                         <Send className="h-4 w-4" />
-                        {isNumericMode ? "Gönder" : selectedPlayers.length === 0 ? "Seç" : `Kilitle (${selectedPlayers.length})`}
+                        {selectedPlayers.length === 0 ? "Seç" : `Kilitle (${selectedPlayers.length})`}
                       </>
                     )}
                   </Button>
                 )}
               </div>
             </div>
+              </>
+            )}
           </main>
 
           {/* Time Low Warning Bar */}
@@ -718,16 +825,7 @@ export default function Game() {
                     </div>
                     <h3 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Doğru Cevap</h3>
                   </div>
-                  {isNumericMode && correctAnswer !== null ? (
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl md:text-4xl font-black text-green-600 dark:text-green-400">
-                        {Number(correctAnswer).toLocaleString('tr-TR')}
-                      </span>
-                      <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/40 text-xs py-1 px-2 gap-1.5">
-                        {gameMode === "view_count" ? <><Eye className="h-3 w-3" /> izlenme</> : <><UsersRound className="h-3 w-3" /> abone</>}
-                      </Badge>
-                    </div>
-                  ) : correctPlayerIds.length > 0 ? (
+                  {correctPlayerIds.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {allPlayers
                         .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
@@ -759,7 +857,7 @@ export default function Game() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-1">
                   <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">
-                    {isNumericMode ? "Tahminler" : "Oyuncu Tahminleri"}
+                    Oyuncu Tahminleri
                   </h3>
                   <Badge variant="outline" className="text-[10px] py-0 px-2">
                     {roundResults.length} oyuncu
@@ -815,44 +913,7 @@ export default function Game() {
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                            {isNumericMode ? (
-                              result.numericAnswer ? (
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                                    result.tier === "efsane" || result.tier === "harika" || result.tier === "iyi"
-                                      ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                                      : result.tier === "yakin" || result.tier === "uzak"
-                                        ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
-                                        : "bg-red-500/20 text-red-600 dark:text-red-400"
-                                  }`}>
-                                    {parseInt(result.numericAnswer).toLocaleString('tr-TR')}
-                                  </span>
-                                  <Badge variant="outline" className={`text-[10px] py-0 ${
-                                    result.tier === "efsane" ? "border-purple-500/50 text-purple-500" :
-                                    result.tier === "harika" ? "border-green-500/50 text-green-500" :
-                                    result.tier === "iyi" ? "border-blue-500/50 text-blue-500" :
-                                    result.tier === "yakin" ? "border-yellow-500/50 text-yellow-500" :
-                                    result.tier === "uzak" ? "border-orange-500/50 text-orange-500" :
-                                    "border-red-500/50 text-red-500"
-                                  }`}>
-                                    {result.tier === "efsane" ? "Efsane!" :
-                                     result.tier === "harika" ? "Harika" :
-                                     result.tier === "iyi" ? "İyi" :
-                                     result.tier === "yakin" ? "Yakın" :
-                                     result.tier === "uzak" ? "Uzak" :
-                                     result.tier === "riskli" ? "Riskli" : "Kaçırdın"}
-                                  </Badge>
-                                  {result.isBestGuess && (
-                                    <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-500 border-yellow-500/40 text-[10px] py-0 gap-1">
-                                      <Trophy className="h-2.5 w-2.5" />
-                                      En yakın
-                                    </Badge>
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="italic text-muted-foreground/60">Cevap vermedi</span>
-                              )
-                            ) : result.selectedUserIds.length > 0 ? (
+                            {result.selectedUserIds.length > 0 ? (
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {result.selectedUserIds.map((selectedId) => {
                                   const isCorrectSelection = correctPlayerIds.includes(selectedId);
