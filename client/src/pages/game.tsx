@@ -126,6 +126,20 @@ export default function Game() {
   // CRITICAL: Immutable snapshot of results - prevents data leakage during transitions
   const [resultsSnapshot, setResultsSnapshot] = useState<ResultsSnapshot | null>(null);
   
+  // Refs to track current values for WebSocket callbacks (avoids stale closure)
+  const contentRef = useRef<Content | null>(null);
+  const content2Ref = useRef<Content | null>(null);
+  const gameModeRef = useRef<GameMode>("who_liked");
+  const isLightningRoundRef = useRef(false);
+  const currentRoundRef = useRef(0);
+  
+  // Keep refs in sync with state
+  useEffect(() => { contentRef.current = content; }, [content]);
+  useEffect(() => { content2Ref.current = content2; }, [content2]);
+  useEffect(() => { gameModeRef.current = gameMode; }, [gameMode]);
+  useEffect(() => { isLightningRoundRef.current = isLightningRound; }, [isLightningRound]);
+  useEffect(() => { currentRoundRef.current = currentRound; }, [currentRound]);
+  
   // Determine if current mode is a comparison mode
   const isComparisonMode = gameMode === "which_older" || 
                           gameMode === "most_viewed" || 
@@ -236,18 +250,18 @@ export default function Game() {
             break;
             
           case "round_ended":
-            // CRITICAL: Create immutable snapshot BEFORE changing status
+            // CRITICAL: Create immutable snapshot using REFS (not stale state)
             // This prevents any race condition with content updates
-            if (content) {
+            if (contentRef.current) {
               setResultsSnapshot({
-                round: currentRound,
-                content: content,
-                content2: content2,
+                round: currentRoundRef.current,
+                content: contentRef.current,
+                content2: content2Ref.current,
                 correctPlayerIds: message.correctUserIds || [],
                 correctContentId: message.correctContentId || null,
                 results: message.results || [],
-                gameMode: gameMode,
-                isLightningRound: isLightningRound,
+                gameMode: gameModeRef.current,
+                isLightningRound: isLightningRoundRef.current,
               });
             }
             setGameStatus("results");
