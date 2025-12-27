@@ -103,6 +103,7 @@ export default function Game() {
   const [correctPlayerIds, setCorrectPlayerIds] = useState<string[]>([]);
   const [correctContentId, setCorrectContentId] = useState<string | null>(null);
   const [roundResults, setRoundResults] = useState<RoundResult[]>([]);
+  const [resultsForRound, setResultsForRound] = useState<number>(0); // Track which round the results are for
   const [gameMode, setGameMode] = useState<GameMode>("who_liked");
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -223,6 +224,8 @@ export default function Game() {
             
           case "round_ended":
             setGameStatus("results");
+            setResultsForRound(currentRound); // Lock results to current round
+            setIsTransitioning(false);
             setCorrectPlayerIds(message.correctUserIds || []);
             setCorrectContentId(message.correctContentId || null);
             setRoundResults(message.results || []);
@@ -345,6 +348,8 @@ export default function Game() {
       console.log(`[Polling] Transitioning to results - Round ${serverRound}`);
       setGameStatus("results");
       setCurrentRound(serverRound);
+      setResultsForRound(serverRound); // Track which round these results are for
+      setIsTransitioning(false); // Reset transitioning when entering results
       // Set next round timing
       if (data.gameState.nextRoundAt) {
         setNextRoundAt(data.gameState.nextRoundAt);
@@ -791,7 +796,7 @@ export default function Game() {
           <header className="shrink-0 px-4 py-3 md:py-4">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
+                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {resultsForRound}/{totalRounds}</span>
                 {isLightningRound && (
                   <span className="text-[10px] md:text-xs text-amber-500 font-medium flex items-center gap-0.5">
                     <Zap className="h-2.5 w-2.5 md:h-3 md:w-3" /> 2x
@@ -806,8 +811,8 @@ export default function Game() {
             </div>
           </header>
 
-          {/* Show loading state during transition */}
-          {isTransitioning ? (
+          {/* Show loading state during transition or when results are stale */}
+          {(isTransitioning || currentRound !== resultsForRound) ? (
             <main className="flex-1 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

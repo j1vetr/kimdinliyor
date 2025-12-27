@@ -1319,6 +1319,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ? gameState.resultsStartTime + RESULTS_DURATION_MS 
         : undefined;
 
+      // SECURITY: Hide correct answer during question phase
+      const safeCurrentRound = currentRound ? {
+        ...currentRound,
+        correctAnswer: gameState?.status === "results" ? currentRound.correctAnswer : undefined,
+        correctUserIds: gameState?.status === "results" ? currentRound.correctUserIds : undefined,
+      } : null;
+
       res.json({
         room,
         gameState: gameState ? {
@@ -1333,7 +1340,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           results: gameState.status === "results" ? gameState.lastRoundResults : undefined,
           nextRoundAt: nextRoundAt,
         } : null,
-        currentRound,
+        currentRound: safeCurrentRound,
         content: content ? {
           id: content.id,
           contentId: content.contentId,
