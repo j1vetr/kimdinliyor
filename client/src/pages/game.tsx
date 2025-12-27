@@ -323,27 +323,29 @@ export default function Game() {
   }, [gameStatus]);
 
   useEffect(() => {
-    if (gameQuery.data && countdownComplete) {
-      const data = gameQuery.data;
-      // Sync game state after countdown is complete
-      if (data.gameState?.status === "question" && data.content) {
-        // Only update if we're in waiting state or content changed
-        if (gameStatus === "waiting") {
-          console.log("gameQuery: Transitioning to question state", data);
-          setGameStatus("question");
-          setCurrentRound(data.gameState.currentRound || 1);
-          setIsLightningRound(data.gameState.isLightningRound || false);
-          setTimeLeft(data.gameState.timeLeft || 20);
-          setTotalTime(data.gameState.timeLeft || 20);
-          setContent(data.content);
-          if (data.gameState.gameMode) {
-            setGameMode(data.gameState.gameMode);
-          }
-        } else if (!content && data.content) {
-          // Ensure content is set if missing
-          console.log("gameQuery: Setting missing content", data.content);
-          setContent(data.content);
+    // Only process game data AFTER countdown is fully complete
+    if (!countdownComplete) return;
+    if (!gameQuery.data) return;
+    
+    const data = gameQuery.data;
+    // Sync game state after countdown is complete
+    if (data.gameState?.status === "question" && data.content) {
+      // Only update if we're in waiting state or content changed
+      if (gameStatus === "waiting") {
+        console.log("gameQuery: Transitioning to question state", data);
+        setGameStatus("question");
+        setCurrentRound(data.gameState.currentRound || 1);
+        setIsLightningRound(data.gameState.isLightningRound || false);
+        setTimeLeft(data.gameState.timeLeft || 20);
+        setTotalTime(data.gameState.timeLeft || 20);
+        setContent(data.content);
+        if (data.gameState.gameMode) {
+          setGameMode(data.gameState.gameMode);
         }
+      } else if (!content && data.content) {
+        // Ensure content is set if missing
+        console.log("gameQuery: Setting missing content", data.content);
+        setContent(data.content);
       }
     }
   }, [gameQuery.data, gameStatus, content, countdownComplete]);
