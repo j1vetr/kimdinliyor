@@ -140,6 +140,7 @@ export default function Game() {
   // Apply pending round data after countdown completes
   useEffect(() => {
     if (countdownComplete && pendingRoundData) {
+      console.log("Applying pending round data:", pendingRoundData);
       setGameStatus("question");
       setCurrentRound(pendingRoundData.round || 1);
       setIsLightningRound(pendingRoundData.isLightningRound || false);
@@ -156,6 +157,39 @@ export default function Game() {
       setPendingRoundData(null);
     }
   }, [countdownComplete, pendingRoundData]);
+
+  // Fallback: Force fetch game state after countdown if still waiting
+  useEffect(() => {
+    if (countdownComplete && gameStatus === "waiting" && !pendingRoundData) {
+      console.log("Countdown complete but no pending data, forcing refetch");
+      // Force immediate refetch
+      const fetchGame = async () => {
+        try {
+          const response = await fetch(`/api/rooms/${roomCode}/game`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Forced fetch result:", data);
+            if (data.gameState?.status === "question" && data.content) {
+              setGameStatus("question");
+              setCurrentRound(data.gameState.currentRound || 1);
+              setIsLightningRound(data.gameState.isLightningRound || false);
+              setTimeLeft(data.gameState.timeLeft || 20);
+              setTotalTime(data.gameState.timeLeft || 20);
+              setContent(data.content);
+              if (data.gameState.gameMode) {
+                setGameMode(data.gameState.gameMode);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Force fetch error:", err);
+        }
+      };
+      // Small delay to allow WebSocket to catch up
+      const timer = setTimeout(fetchGame, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [countdownComplete, gameStatus, pendingRoundData, roomCode]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
