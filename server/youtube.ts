@@ -458,7 +458,11 @@ export interface PopularChannel {
   videoCount: string;
 }
 
+// Minimum view count for videos to be considered "popular" (1 million)
+const MIN_VIDEO_VIEW_COUNT = 1000000;
+
 // Get trending videos from YouTube Turkey (public API, no OAuth needed)
+// Only returns videos with 1M+ views
 export async function getTrendingVideos(count: number = 50): Promise<TrendingVideo[]> {
   if (!YOUTUBE_API_KEY) {
     console.error("YOUTUBE_API_KEY not configured");
@@ -466,8 +470,8 @@ export async function getTrendingVideos(count: number = 50): Promise<TrendingVid
   }
   
   try {
-    // Step 1: Get trending video IDs
-    const trendingUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=TR&maxResults=${count}&key=${YOUTUBE_API_KEY}`;
+    // Get more videos to filter down to those with high view counts
+    const trendingUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=TR&maxResults=50&key=${YOUTUBE_API_KEY}`;
     
     const response = await fetch(trendingUrl);
     
@@ -478,16 +482,53 @@ export async function getTrendingVideos(count: number = 50): Promise<TrendingVid
     
     const data = await response.json();
     
-    return (data.items || []).map((item: any) => ({
-      id: item.id,
-      title: item.snippet.title,
-      channelTitle: item.snippet.channelTitle,
-      thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
-      description: item.snippet.description?.slice(0, 200) || "",
-      publishedAt: item.snippet.publishedAt || null,
-      viewCount: item.statistics?.viewCount || "0",
-      duration: parseDuration(item.contentDetails?.duration || "PT0S"),
-    }));
+    // Filter to only include videos with 1M+ views
+    const popularVideos = (data.items || [])
+      .filter((item: any) => {
+        const viewCount = parseInt(item.statistics?.viewCount || "0");
+        return viewCount >= MIN_VIDEO_VIEW_COUNT;
+      })
+      .map((item: any) => ({
+        id: item.id,
+        title: item.snippet.title,
+        channelTitle: item.snippet.channelTitle,
+        thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+        description: item.snippet.description?.slice(0, 200) || "",
+        publishedAt: item.snippet.publishedAt || null,
+        viewCount: item.statistics?.viewCount || "0",
+        duration: parseDuration(item.contentDetails?.duration || "PT0S"),
+      }));
+    
+    console.log(`[getTrendingVideos] Found ${popularVideos.length} videos with 1M+ views`);
+    
+    // If we don't have enough, also fetch from Music category (usually has popular videos)
+    if (popularVideos.length < count) {
+      const musicUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=TR&videoCategoryId=10&maxResults=50&key=${YOUTUBE_API_KEY}`;
+      
+      const musicResponse = await fetch(musicUrl);
+      
+      if (musicResponse.ok) {
+        const musicData = await musicResponse.json();
+        
+        for (const item of musicData.items || []) {
+          const viewCount = parseInt(item.statistics?.viewCount || "0");
+          if (viewCount >= MIN_VIDEO_VIEW_COUNT && !popularVideos.some((v: TrendingVideo) => v.id === item.id)) {
+            popularVideos.push({
+              id: item.id,
+              title: item.snippet.title,
+              channelTitle: item.snippet.channelTitle,
+              thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+              description: item.snippet.description?.slice(0, 200) || "",
+              publishedAt: item.snippet.publishedAt || null,
+              viewCount: item.statistics?.viewCount || "0",
+              duration: parseDuration(item.contentDetails?.duration || "PT0S"),
+            });
+          }
+        }
+      }
+    }
+    
+    return popularVideos.slice(0, count);
   } catch (error) {
     console.error("Failed to get trending videos:", error);
     return [];
@@ -506,7 +547,31 @@ function parseDuration(isoDuration: string): number {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
-// Get popular channels from Turkey (using search API)
+// Popular Turkish YouTuber channel IDs (well-known creators with 500K+ subs)
+const POPULAR_TURKISH_CHANNEL_IDS = [
+  "UCq-Fj5jknLsUf-MWSy4_brA", // Enes Batur
+  "UCiYlmvk0KjLrx5P-e09k22g", // Burak Oyunda
+  "UCVPYbobPRzz0BWh-SfZdr6g", // Orkun Işıtmak
+  "UCZ6iACaC7N-_r1lXbC0bU-Q", // Videoyun
+  "UC8GAUZkLBBJmSCURJxHqhFw", // Halil İbrahim Göker
+  "UCFWjEwhX6cSAKBQ28pufG3w", // Ruhi Çenet
+  "UCxHoBXkY88Tb8z1Sjk8J-Tg", // Reynmen
+  "UC7Qy6nK9RFcDKoFHhKPNWZw", // Berk Coşkun
+  "UCfap1JJZ4J8WCJ2h6lFFGhQ", // Danla Bilic
+  "UCJLbhfXA_7TldIFtq7cXamA", // Şehinşah
+  "UCPGvCfFddSgaMBJV6wQ6TKw", // Mesut Can Tomay
+  "UC_5qA4VElL1aL5H6c4i7LLQ", // WTCN
+  "UCxNlpqJK9JN8JRaKYDy3H7w", // Tuna Tavus
+  "UCfR8HhkbpDAwvYxrecNg4Mg", // Barış Özcan
+  "UCwCMqECRNcnCc6q9ekpJrDA", // MEMO
+  "UC0lT9K8Wfuc1KPqm6YjRf1A", // Duygu Özaslan
+  "UCVj6Gw-cL6GfnHTaUVNg--Q", // Sadakatsiz (dizi)
+  "UCNm0GhRUxBHqMpq4b27CmFg", // Ferit Karakaya
+  "UCK7B2nPQ2hc_VrWkrI8Lz9A", // Kafalar
+  "UCrAF_F3_X_FddJxF_D0cLtw", // Mert Sarıc
+];
+
+// Get popular channels from Turkey (using predefined list + search)
 export async function getPopularChannels(count: number = 25): Promise<PopularChannel[]> {
   if (!YOUTUBE_API_KEY) {
     console.error("YOUTUBE_API_KEY not configured");
@@ -514,45 +579,77 @@ export async function getPopularChannels(count: number = 25): Promise<PopularCha
   }
   
   try {
-    // Search for popular Turkish channels
-    const categories = ["music", "gaming", "entertainment", "comedy", "education", "sports"];
-    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    const allChannels: PopularChannel[] = [];
     
-    // Step 1: Search for channels
-    const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${randomCategory}&regionCode=TR&maxResults=${count}&order=viewCount&key=${YOUTUBE_API_KEY}`;
+    // Step 1: Get channel details for predefined popular Turkish YouTubers
+    const predefinedIds = POPULAR_TURKISH_CHANNEL_IDS.slice(0, 20).join(",");
+    const predefinedUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${predefinedIds}&key=${YOUTUBE_API_KEY}`;
     
-    const searchResponse = await fetch(searchUrl);
+    const predefinedResponse = await fetch(predefinedUrl);
     
-    if (!searchResponse.ok) {
-      console.error("Failed to search channels:", await searchResponse.text());
-      return [];
+    if (predefinedResponse.ok) {
+      const predefinedData = await predefinedResponse.json();
+      for (const item of predefinedData.items || []) {
+        const subCount = parseInt(item.statistics?.subscriberCount || "0");
+        // Only include channels with 500K+ subscribers
+        if (subCount >= 500000) {
+          allChannels.push({
+            id: item.id,
+            title: item.snippet.title,
+            thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+            description: item.snippet.description?.slice(0, 200) || "",
+            subscriberCount: item.statistics?.subscriberCount || "0",
+            videoCount: item.statistics?.videoCount || "0",
+          });
+        }
+      }
     }
     
-    const searchData = await searchResponse.json();
-    const channelIds = (searchData.items || []).map((item: any) => item.snippet.channelId).join(",");
-    
-    if (!channelIds) return [];
-    
-    // Step 2: Get channel statistics
-    const channelsUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelIds}&key=${YOUTUBE_API_KEY}`;
-    
-    const channelsResponse = await fetch(channelsUrl);
-    
-    if (!channelsResponse.ok) {
-      console.error("Failed to get channel details:", await channelsResponse.text());
-      return [];
+    // Step 2: If we need more, search for additional popular Turkish channels
+    if (allChannels.length < count) {
+      const searchTerms = ["türk youtuber", "türkiye youtube", "türk oyun", "türk müzik"];
+      const randomTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
+      
+      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(randomTerm)}&regionCode=TR&maxResults=25&order=viewCount&key=${YOUTUBE_API_KEY}`;
+      
+      const searchResponse = await fetch(searchUrl);
+      
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json();
+        const channelIds = (searchData.items || [])
+          .map((item: any) => item.snippet.channelId)
+          .filter((id: string) => !allChannels.some(c => c.id === id))
+          .join(",");
+        
+        if (channelIds) {
+          const channelsUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelIds}&key=${YOUTUBE_API_KEY}`;
+          const channelsResponse = await fetch(channelsUrl);
+          
+          if (channelsResponse.ok) {
+            const channelsData = await channelsResponse.json();
+            for (const item of channelsData.items || []) {
+              const subCount = parseInt(item.statistics?.subscriberCount || "0");
+              // Only include channels with 500K+ subscribers
+              if (subCount >= 500000) {
+                allChannels.push({
+                  id: item.id,
+                  title: item.snippet.title,
+                  thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+                  description: item.snippet.description?.slice(0, 200) || "",
+                  subscriberCount: item.statistics?.subscriberCount || "0",
+                  videoCount: item.statistics?.videoCount || "0",
+                });
+              }
+            }
+          }
+        }
+      }
     }
     
-    const channelsData = await channelsResponse.json();
+    console.log(`[getPopularChannels] Found ${allChannels.length} channels with 500K+ subscribers`);
     
-    return (channelsData.items || []).map((item: any) => ({
-      id: item.id,
-      title: item.snippet.title,
-      thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
-      description: item.snippet.description?.slice(0, 200) || "",
-      subscriberCount: item.statistics?.subscriberCount || "0",
-      videoCount: item.statistics?.videoCount || "0",
-    }));
+    // Shuffle and return
+    return allChannels.sort(() => Math.random() - 0.5).slice(0, count);
   } catch (error) {
     console.error("Failed to get popular channels:", error);
     return [];
@@ -560,6 +657,7 @@ export async function getPopularChannels(count: number = 25): Promise<PopularCha
 }
 
 // Get random videos for comparison (different from trending, more variety)
+// Only returns videos with 1M+ views
 export async function getRandomVideosForComparison(count: number = 30): Promise<TrendingVideo[]> {
   if (!YOUTUBE_API_KEY) {
     console.error("YOUTUBE_API_KEY not configured");
@@ -567,31 +665,45 @@ export async function getRandomVideosForComparison(count: number = 30): Promise<
   }
   
   try {
+    const allVideos: TrendingVideo[] = [];
+    
     // Get videos from different categories
-    const categoryIds = ["10", "20", "22", "23", "24", "25", "26", "27", "28"]; // Music, Gaming, People, Comedy, Entertainment, News, How-to, Education, Science
-    const randomCategoryId = categoryIds[Math.floor(Math.random() * categoryIds.length)];
+    const categoryIds = ["10", "20", "24"]; // Music, Gaming, Entertainment - most likely to have popular content
     
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=TR&videoCategoryId=${randomCategoryId}&maxResults=${count}&key=${YOUTUBE_API_KEY}`;
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      // Fallback to general trending if category fails
-      return getTrendingVideos(count);
+    for (const categoryId of categoryIds) {
+      const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=TR&videoCategoryId=${categoryId}&maxResults=50&key=${YOUTUBE_API_KEY}`;
+      
+      const response = await fetch(url);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        for (const item of data.items || []) {
+          const viewCount = parseInt(item.statistics?.viewCount || "0");
+          // Only include videos with 1M+ views
+          if (viewCount >= MIN_VIDEO_VIEW_COUNT && !allVideos.some(v => v.id === item.id)) {
+            allVideos.push({
+              id: item.id,
+              title: item.snippet.title,
+              channelTitle: item.snippet.channelTitle,
+              thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
+              description: item.snippet.description?.slice(0, 200) || "",
+              publishedAt: item.snippet.publishedAt || null,
+              viewCount: item.statistics?.viewCount || "0",
+              duration: parseDuration(item.contentDetails?.duration || "PT0S"),
+            });
+          }
+        }
+      }
+      
+      // If we have enough videos, stop fetching
+      if (allVideos.length >= count) break;
     }
     
-    const data = await response.json();
+    console.log(`[getRandomVideosForComparison] Found ${allVideos.length} videos with 1M+ views`);
     
-    return (data.items || []).map((item: any) => ({
-      id: item.id,
-      title: item.snippet.title,
-      channelTitle: item.snippet.channelTitle,
-      thumbnailUrl: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || null,
-      description: item.snippet.description?.slice(0, 200) || "",
-      publishedAt: item.snippet.publishedAt || null,
-      viewCount: item.statistics?.viewCount || "0",
-      duration: parseDuration(item.contentDetails?.duration || "PT0S"),
-    }));
+    // Shuffle and return
+    return allVideos.sort(() => Math.random() - 0.5).slice(0, count);
   } catch (error) {
     console.error("Failed to get random videos:", error);
     return [];
