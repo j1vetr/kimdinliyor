@@ -11,12 +11,17 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 
-const GAME_MODE_OPTIONS = [
+// Tahmin Modları - YouTube girişi zorunlu
+const GUESS_MODE_OPTIONS = [
   { id: "who_liked", label: "Kim Beğenmiş?", description: "Videoyu hangi oyuncu beğenmiş?", icon: ThumbsUp, color: "bg-red-500", glow: "shadow-red-500/30" },
   { id: "who_subscribed", label: "Kim Abone?", description: "Kanala hangi oyuncu abone?", icon: UserPlus, color: "bg-orange-500", glow: "shadow-orange-500/30" },
+  { id: "oldest_like", label: "İlk Aşkım", description: "En eski beğenilen video kime ait?", icon: Heart, color: "bg-pink-500", glow: "shadow-pink-500/30" },
+] as const;
+
+// Karşılaştırma Modları - YouTube girişi zorunlu değil
+const COMPARISON_MODE_OPTIONS = [
   { id: "which_older", label: "Hangisi Daha Eski?", description: "İki videodan hangisi daha önce yüklendi?", icon: Clock, color: "bg-blue-500", glow: "shadow-blue-500/30" },
   { id: "most_viewed", label: "En Çok İzlenen", description: "Hangi video daha fazla izlenmiş?", icon: Eye, color: "bg-emerald-500", glow: "shadow-emerald-500/30" },
-  { id: "oldest_like", label: "İlk Aşkım", description: "En eski beğenilen video kime ait?", icon: Heart, color: "bg-pink-500", glow: "shadow-pink-500/30" },
   { id: "which_longer", label: "Hangisi Daha Uzun?", description: "İki videodan hangisi daha uzun süreli?", icon: Timer, color: "bg-purple-500", glow: "shadow-purple-500/30" },
   { id: "which_more_subs", label: "Hangisi Daha Popüler?", description: "Hangi kanal daha fazla aboneye sahip?", icon: Users, color: "bg-cyan-500", glow: "shadow-cyan-500/30" },
   { id: "which_more_videos", label: "Hangisi Daha Emektar?", description: "Hangi kanal daha fazla video yüklemiş?", icon: Disc3, color: "bg-amber-500", glow: "shadow-amber-500/30" },
@@ -260,62 +265,140 @@ export default function CreateRoom() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                    {GAME_MODE_OPTIONS.map((mode, i) => {
-                      const Icon = mode.icon;
-                      const isSelected = gameModes.includes(mode.id);
-                      return (
-                        <motion.button
-                          key={mode.id}
-                          type="button"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.15 + i * 0.05 }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleGameMode(mode.id);
-                          }}
-                          className={`group relative flex flex-col items-center p-3 lg:p-2.5 rounded-xl cursor-pointer transition-all duration-300 ${
-                            isSelected
-                              ? `bg-gradient-to-b from-muted to-muted/50 border-2 border-primary/40 shadow-md ${mode.glow}`
-                              : "bg-muted/20 border-2 border-transparent hover:border-border/50 hover:bg-muted/40"
-                          }`}
-                          data-testid={`checkbox-mode-${mode.id}`}
-                        >
-                          <motion.div 
-                            className={`relative h-10 w-10 lg:h-9 lg:w-9 rounded-lg flex items-center justify-center mb-2 transition-all ${
-                              isSelected ? mode.color : "bg-muted"
-                            }`}
-                            animate={{ 
-                              rotate: isSelected ? [0, -5, 5, 0] : 0,
-                              scale: isSelected ? 1.05 : 1
-                            }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <Icon className={`h-5 w-5 lg:h-4 lg:w-4 ${isSelected ? "text-white" : "text-muted-foreground"}`} />
-                            <AnimatePresence>
-                              {isSelected && (
-                                <motion.div
-                                  initial={{ scale: 0 }}
-                                  animate={{ scale: 1 }}
-                                  exit={{ scale: 0 }}
-                                  className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center"
-                                >
-                                  <Check className="h-2.5 w-2.5 text-white" />
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </motion.div>
-                          <p className={`text-xs lg:text-[11px] font-semibold text-center ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
-                            {mode.label}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground text-center mt-0.5 leading-tight hidden sm:block">
-                            {mode.description}
-                          </p>
-                        </motion.button>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20">
+                          <SiYoutube className="h-3 w-3 text-red-500" />
+                          <span className="text-[10px] font-medium text-red-500">YouTube Girişi Zorunlu</span>
+                        </div>
+                        <span className="text-xs font-semibold text-foreground">Tahmin Modları</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {GUESS_MODE_OPTIONS.map((mode, i) => {
+                          const Icon = mode.icon;
+                          const isSelected = gameModes.includes(mode.id);
+                          return (
+                            <motion.button
+                              key={mode.id}
+                              type="button"
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.15 + i * 0.05 }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleGameMode(mode.id);
+                              }}
+                              className={`group relative flex flex-col items-center p-3 lg:p-2.5 rounded-xl cursor-pointer transition-all duration-300 ${
+                                isSelected
+                                  ? `bg-gradient-to-b from-muted to-muted/50 border-2 border-primary/40 shadow-md ${mode.glow}`
+                                  : "bg-muted/20 border-2 border-transparent hover:border-border/50 hover:bg-muted/40"
+                              }`}
+                              data-testid={`checkbox-mode-${mode.id}`}
+                            >
+                              <motion.div 
+                                className={`relative h-10 w-10 lg:h-9 lg:w-9 rounded-lg flex items-center justify-center mb-2 transition-all ${
+                                  isSelected ? mode.color : "bg-muted"
+                                }`}
+                                animate={{ 
+                                  rotate: isSelected ? [0, -5, 5, 0] : 0,
+                                  scale: isSelected ? 1.05 : 1
+                                }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <Icon className={`h-5 w-5 lg:h-4 lg:w-4 ${isSelected ? "text-white" : "text-muted-foreground"}`} />
+                                <AnimatePresence>
+                                  {isSelected && (
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      exit={{ scale: 0 }}
+                                      className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center"
+                                    >
+                                      <Check className="h-2.5 w-2.5 text-white" />
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </motion.div>
+                              <p className={`text-xs lg:text-[11px] font-semibold text-center ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                                {mode.label}
+                              </p>
+                              <p className="text-[9px] text-muted-foreground text-center mt-0.5 leading-tight hidden sm:block">
+                                {mode.description}
+                              </p>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                          <Globe className="h-3 w-3 text-emerald-500" />
+                          <span className="text-[10px] font-medium text-emerald-500">Giriş Zorunlu Değil</span>
+                        </div>
+                        <span className="text-xs font-semibold text-foreground">Karşılaştırma Modları</span>
+                      </div>
+                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+                        {COMPARISON_MODE_OPTIONS.map((mode, i) => {
+                          const Icon = mode.icon;
+                          const isSelected = gameModes.includes(mode.id);
+                          return (
+                            <motion.button
+                              key={mode.id}
+                              type="button"
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: 0.25 + i * 0.05 }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleGameMode(mode.id);
+                              }}
+                              className={`group relative flex flex-col items-center p-3 lg:p-2.5 rounded-xl cursor-pointer transition-all duration-300 ${
+                                isSelected
+                                  ? `bg-gradient-to-b from-muted to-muted/50 border-2 border-primary/40 shadow-md ${mode.glow}`
+                                  : "bg-muted/20 border-2 border-transparent hover:border-border/50 hover:bg-muted/40"
+                              }`}
+                              data-testid={`checkbox-mode-${mode.id}`}
+                            >
+                              <motion.div 
+                                className={`relative h-10 w-10 lg:h-9 lg:w-9 rounded-lg flex items-center justify-center mb-2 transition-all ${
+                                  isSelected ? mode.color : "bg-muted"
+                                }`}
+                                animate={{ 
+                                  rotate: isSelected ? [0, -5, 5, 0] : 0,
+                                  scale: isSelected ? 1.05 : 1
+                                }}
+                                transition={{ duration: 0.3 }}
+                              >
+                                <Icon className={`h-5 w-5 lg:h-4 lg:w-4 ${isSelected ? "text-white" : "text-muted-foreground"}`} />
+                                <AnimatePresence>
+                                  {isSelected && (
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      exit={{ scale: 0 }}
+                                      className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center"
+                                    >
+                                      <Check className="h-2.5 w-2.5 text-white" />
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </motion.div>
+                              <p className={`text-xs lg:text-[11px] font-semibold text-center ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                                {mode.label}
+                              </p>
+                              <p className="text-[9px] text-muted-foreground text-center mt-0.5 leading-tight hidden sm:block">
+                                {mode.description}
+                              </p>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -646,7 +729,8 @@ export default function CreateRoom() {
                       <p className="text-[10px] text-muted-foreground mb-2">Seçili Modlar</p>
                       <div className="flex flex-wrap gap-1.5">
                         {gameModes.map((modeId) => {
-                          const mode = GAME_MODE_OPTIONS.find((m) => m.id === modeId);
+                          const allModes = [...GUESS_MODE_OPTIONS, ...COMPARISON_MODE_OPTIONS];
+                          const mode = allModes.find((m) => m.id === modeId);
                           if (!mode) return null;
                           const Icon = mode.icon;
                           return (
