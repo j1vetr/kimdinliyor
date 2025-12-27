@@ -1,11 +1,11 @@
 import { Link } from "wouter";
-import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, Play, ChevronRight } from "lucide-react";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, Play, ChevronRight, HelpCircle } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
 const TAHMIN_MODLARI = [
@@ -70,15 +70,44 @@ const KARSILASTIRMA_MODLARI = [
   },
 ];
 
+const ROTATING_QUESTIONS = [
+  { text: "Kim Beğenmiş?", color: "#ef4444" },
+  { text: "Kim Abone?", color: "#f97316" },
+  { text: "Hangisi Eski?", color: "#3b82f6" },
+  { text: "Hangisi Popüler?", color: "#06b6d4" },
+];
+
+const SAMPLE_PLAYERS = [
+  { name: "Ahmet", initial: "A", color: "#ef4444" },
+  { name: "Zeynep", initial: "Z", color: "#3b82f6" },
+  { name: "Mert", initial: "M", color: "#10b981" },
+  { name: "Elif", initial: "E", color: "#f59e0b" },
+];
+
 export default function Home() {
   const [roomCode, setRoomCode] = useState("");
   const [, setLocation] = useLocation();
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setQuestionIndex((prev) => (prev + 1) % ROTATING_QUESTIONS.length);
+        setIsAnimating(false);
+      }, 300);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
       setLocation(`/oyun/${roomCode.trim().toUpperCase()}`);
     }
   };
+
+  const currentQuestion = ROTATING_QUESTIONS[questionIndex];
 
   return (
     <div className="home-page">
@@ -90,6 +119,50 @@ export default function Home() {
 
       <main className="home-main">
         <section className="hero-section">
+          <div className="hero-game-visual">
+            <div className="hero-video-frame">
+              <div className="hero-video-screen">
+                <SiYoutube className="hero-video-icon" />
+                <div className="hero-video-bars">
+                  <div className="hero-bar" style={{ animationDelay: "0s" }} />
+                  <div className="hero-bar" style={{ animationDelay: "0.1s" }} />
+                  <div className="hero-bar" style={{ animationDelay: "0.2s" }} />
+                  <div className="hero-bar" style={{ animationDelay: "0.3s" }} />
+                  <div className="hero-bar" style={{ animationDelay: "0.4s" }} />
+                </div>
+              </div>
+              <div className="hero-video-label">Video</div>
+            </div>
+
+            <div className="hero-question-bubble">
+              <HelpCircle className="hero-question-icon" />
+              <span 
+                className={`hero-question-text ${isAnimating ? 'animating' : ''}`}
+                style={{ color: currentQuestion.color }}
+              >
+                {currentQuestion.text}
+              </span>
+            </div>
+
+            <div className="hero-players-row">
+              {SAMPLE_PLAYERS.map((player, i) => (
+                <div 
+                  key={player.name}
+                  className="hero-player-card"
+                  style={{ 
+                    animationDelay: `${i * 0.15}s`,
+                    borderColor: player.color 
+                  }}
+                >
+                  <div className="hero-player-avatar" style={{ background: player.color }}>
+                    {player.initial}
+                  </div>
+                  <span className="hero-player-name">{player.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="hero-content">
             <div className="hero-badge">
               <SiYoutube className="hero-badge-icon" />
@@ -97,26 +170,30 @@ export default function Home() {
             </div>
             
             <h1 className="hero-title">
-              Kim Dinliyor?
+              <span className="hero-title-kim">Kim</span>
+              <span className="hero-title-dinliyor">Dinliyor?</span>
             </h1>
             
             <p className="hero-desc">
-              Arkadaşlarınla veya herkese açık odalarda yarış! YouTube hesabını bağla, 
-              videoları ve kanalları tahmin et, en yüksek puanı topla.
+              Arkadaşlarınla YouTube'dan sorular çöz, 
+              beğenileri ve abonelikleri tahmin et, 
+              <strong> en yüksek puanı topla!</strong>
             </p>
 
-            <div className="hero-features">
-              <div className="hero-feature">
-                <Users className="hero-feature-icon" />
-                <span>2-12 Oyuncu</span>
+            <div className="hero-stats">
+              <div className="hero-stat">
+                <span className="hero-stat-value">8</span>
+                <span className="hero-stat-label">Oyun Modu</span>
               </div>
-              <div className="hero-feature">
-                <Play className="hero-feature-icon" />
-                <span>8 Farklı Mod</span>
+              <div className="hero-stat-divider" />
+              <div className="hero-stat">
+                <span className="hero-stat-value">2-12</span>
+                <span className="hero-stat-label">Oyuncu</span>
               </div>
-              <div className="hero-feature">
-                <SiYoutube className="hero-feature-icon" />
-                <span>Gerçek Veriler</span>
+              <div className="hero-stat-divider" />
+              <div className="hero-stat">
+                <span className="hero-stat-value hero-stat-live">Canlı</span>
+                <span className="hero-stat-label">Veriler</span>
               </div>
             </div>
           </div>
