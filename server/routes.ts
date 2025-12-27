@@ -1301,7 +1301,60 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(404).json({ error: "Oda bulunamadı" });
       }
 
-      const gameState = gameStates.get(code.toUpperCase());
+      let gameState = gameStates.get(code.toUpperCase());
+      
+      // RECOVERY: If room is playing but no gameState (server restart), recreate it
+      if (!gameState && room.status === "playing") {
+        console.log(`[RECOVERY] Recreating game state for room ${code.toUpperCase()}`);
+        const currentRoundData = await storage.getCurrentRound(room.id);
+        const allContents = await storage.getContentByRoom(room.id);
+        
+        // Mark current round's content as used
+        const usedContentIds = new Set<string>();
+        if (currentRoundData?.contentId) usedContentIds.add(currentRoundData.contentId);
+        if (currentRoundData?.contentId2) usedContentIds.add(currentRoundData.contentId2);
+        
+        // Build content by owner map
+        const contentsByOwner = new Map<string, string[]>();
+        allContents.forEach(c => {
+          if (c.sourceUserIds) {
+            c.sourceUserIds.forEach((uid: string) => {
+              const existing = contentsByOwner.get(uid) || [];
+              existing.push(c.id);
+              contentsByOwner.set(uid, existing);
+            });
+          }
+        });
+        
+        const roomModes = room.gameModes || ["who_liked", "who_subscribed"];
+        const currentRoundNum = currentRoundData?.roundNumber || room.currentRound || 1;
+        const isLightning = currentRoundNum === 5 || currentRoundNum === 10;
+        const currentMode = currentRoundData?.gameMode || roomModes[0];
+        
+        const recoveredState: GameState = {
+          status: currentRoundData?.endedAt ? "results" : "question",
+          currentRound: currentRoundNum,
+          timeLeft: room.roundDuration || 20,
+          isLightningRound: isLightning,
+          usedContentIds,
+          answeredUsers: new Set<string>(),
+          currentGameMode: currentMode,
+          contentsByOwner,
+          lastOwnerIndex: 0,
+          contentId: currentRoundData?.contentId || null,
+          roundStartTime: currentRoundData?.startedAt ? new Date(currentRoundData.startedAt).getTime() : null,
+          playerStreaks: new Map<string, number>(),
+          gameModes: roomModes,
+          lastRoundCorrectUserIds: currentRoundData?.correctUserIds || [],
+          lastRoundCorrectContentId: currentRoundData?.correctAnswer ?? null,
+          lastRoundResults: [],
+          resultsStartTime: currentRoundData?.endedAt ? Date.now() : null,
+        };
+        
+        gameStates.set(code.toUpperCase(), recoveredState);
+        gameState = recoveredState;
+        console.log(`[RECOVERY] Game state recreated: round ${currentRoundNum}, status ${gameState.status}`);
+      }
       const currentRound = await storage.getCurrentRound(room.id);
       
       let content = null;
