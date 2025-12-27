@@ -198,8 +198,23 @@ export default function Game() {
         const response = await fetch(`/api/rooms/${roomCode}/game`);
         if (response.ok) {
           const data = await response.json();
-          console.log("Post-countdown poll:", data.gameState?.status, "content:", !!data.content);
-          hydrateFromServer(data);
+          console.log("Poll result - gameState:", JSON.stringify(data.gameState), "hasContent:", !!data.content, "content:", data.content);
+          
+          // Directly set state if conditions are met
+          if (data.gameState?.status === "question" && data.content) {
+            console.log("HYDRATING - setting gameStatus to question");
+            setGameStatus("question");
+            setCurrentRound(data.gameState.currentRound || 1);
+            setIsLightningRound(data.gameState.isLightningRound || false);
+            setTimeLeft(data.gameState.timeLeft || 20);
+            setTotalTime(data.gameState.timeLeft || 20);
+            setContent(data.content);
+            if (data.gameState.gameMode) {
+              setGameMode(data.gameState.gameMode);
+            }
+          } else {
+            console.log("Not hydrating - status:", data.gameState?.status, "content exists:", !!data.content);
+          }
         }
       } catch (err) {
         console.error("Poll error:", err);
@@ -211,7 +226,7 @@ export default function Game() {
     const interval = setInterval(fetchGame, 500);
     
     return () => clearInterval(interval);
-  }, [countdownPhase, gameStatus, roomCode, hydrateFromServer]);
+  }, [countdownPhase, gameStatus, roomCode]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
