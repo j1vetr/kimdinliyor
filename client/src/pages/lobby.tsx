@@ -298,7 +298,16 @@ export default function Lobby() {
   const isHost = room.hostUserId === userId;
   const playerCount = players.length;
   const maxPlayers = room.maxPlayers || 8;
-  const allGoogleConnected = players.every(p => p.user.googleConnected);
+  
+  // Check if any guess mode is selected (requires YouTube login)
+  const guessModes = ["who_liked", "who_subscribed", "oldest_like"];
+  const roomGameModes = room.gameModes || ["who_liked", "who_subscribed"];
+  const hasGuessModes = roomGameModes.some(mode => guessModes.includes(mode));
+  
+  // Google connection only required if guess modes are selected
+  const allGoogleConnected = hasGuessModes 
+    ? players.every(p => p.user.googleConnected)
+    : true; // No guess modes = no login required
   const connectedCount = players.filter(p => p.user.googleConnected).length;
   const canStart = isHost && playerCount >= 2 && allGoogleConnected;
   
@@ -503,37 +512,49 @@ export default function Lobby() {
                 <div className="flex-1 h-px bg-border/50" />
               </div>
 
-              {/* Connection Status Section */}
-              {!googleStatusQuery.data?.connected ? (
-                <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-md bg-amber-500/20 flex items-center justify-center">
-                      <SiYoutube className="h-4 w-4 text-amber-400" />
+              {/* Connection Status Section - Only show if guess modes selected */}
+              {hasGuessModes ? (
+                !googleStatusQuery.data?.connected ? (
+                  <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-md bg-amber-500/20 flex items-center justify-center">
+                        <SiYoutube className="h-4 w-4 text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-amber-400">YouTube Bağla</p>
+                        <p className="text-[10px] text-muted-foreground">Tahmin modları için gerekli</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-amber-400">YouTube Bağla</p>
-                      <p className="text-[10px] text-muted-foreground">Oyun için gerekli</p>
-                    </div>
+                    <Button
+                      size="sm"
+                      onClick={connectGoogle}
+                      className="h-7 text-xs gap-1.5 bg-white hover:bg-gray-100 text-gray-900 border border-gray-300"
+                      data-testid="button-connect-google"
+                    >
+                      <SiGoogle className="h-3 w-3" />
+                      Bağlan
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={connectGoogle}
-                    className="h-7 text-xs gap-1.5 bg-white hover:bg-gray-100 text-gray-900 border border-gray-300"
-                    data-testid="button-connect-google"
-                  >
-                    <SiGoogle className="h-3 w-3" />
-                    Bağlan
-                  </Button>
-                </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                    <div className="h-7 w-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-emerald-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-emerald-400">YouTube Bağlı</p>
+                    </div>
+                    <EqualizerBars active count={4} />
+                  </div>
+                )
               ) : (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                  <div className="h-7 w-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
-                    <Check className="h-4 w-4 text-emerald-400" />
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                  <div className="h-7 w-7 rounded-md bg-blue-500/20 flex items-center justify-center">
+                    <Tv className="h-4 w-4 text-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-medium text-emerald-400">YouTube Bağlı</p>
+                    <p className="text-xs font-medium text-blue-400">Karşılaştırma Modu</p>
+                    <p className="text-[10px] text-muted-foreground">YouTube girişi gerekmiyor</p>
                   </div>
-                  <EqualizerBars active count={4} />
                 </div>
               )}
             </div>
@@ -551,7 +572,7 @@ export default function Lobby() {
               </span>
               <div className="flex items-center gap-1">
                 <span className={`text-[10px] font-medium ${allGoogleConnected ? "text-emerald-400" : "text-muted-foreground"}`}>
-                  {connectedCount}/{playerCount} hazır
+                  {hasGuessModes ? `${connectedCount}/${playerCount} hazır` : `${playerCount} oyuncu`}
                 </span>
               </div>
             </div>
@@ -560,7 +581,8 @@ export default function Lobby() {
               {players.map((player, index) => {
                 const isPlayerHost = player.userId === room.hostUserId;
                 const canKick = isHost && !isPlayerHost && room.status !== "playing";
-                const isConnected = player.user.googleConnected;
+                // If no guess modes, all players are considered "connected/ready"
+                const isConnected = hasGuessModes ? player.user.googleConnected : true;
                 const isMe = player.userId === userId;
                 
                 return (
