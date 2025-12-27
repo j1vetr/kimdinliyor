@@ -103,20 +103,23 @@ export default function Game() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
   const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
-  const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | null>(null);
+  const [countdownPhase, setCountdownPhase] = useState<"preparing" | "counting" | "go" | "done">("preparing");
+  const [countdownComplete, setCountdownComplete] = useState(false);
+  const countdownCompleteRef = useRef(false);
+  const [pendingRoundData, setPendingRoundData] = useState<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
+  // Start countdown immediately on mount
   useEffect(() => {
-    if (gameStatus === "waiting" && currentRound === 0) {
-      setCountdownPhase("preparing");
-      const timer1 = setTimeout(() => {
-        setCountdownPhase("counting");
-        setCountdownNumber(5);
-      }, 1500);
-      return () => clearTimeout(timer1);
-    }
-  }, [gameStatus, currentRound]);
+    setCountdownPhase("preparing");
+    const timer1 = setTimeout(() => {
+      setCountdownPhase("counting");
+      setCountdownNumber(5);
+    }, 1000);
+    return () => clearTimeout(timer1);
+  }, []);
 
+  // Countdown timer logic
   useEffect(() => {
     if (countdownPhase === "counting" && countdownNumber !== null && countdownNumber > 0) {
       const timer = setTimeout(() => {
@@ -125,8 +128,34 @@ export default function Game() {
       return () => clearTimeout(timer);
     } else if (countdownPhase === "counting" && countdownNumber === 0) {
       setCountdownPhase("go");
+      const goTimer = setTimeout(() => {
+        setCountdownPhase("done");
+        setCountdownComplete(true);
+        countdownCompleteRef.current = true;
+      }, 800);
+      return () => clearTimeout(goTimer);
     }
   }, [countdownPhase, countdownNumber]);
+
+  // Apply pending round data after countdown completes
+  useEffect(() => {
+    if (countdownComplete && pendingRoundData) {
+      setGameStatus("question");
+      setCurrentRound(pendingRoundData.round || 1);
+      setIsLightningRound(pendingRoundData.isLightningRound || false);
+      setContent(pendingRoundData.content || null);
+      setTimeLeft(pendingRoundData.timeLimit || 20);
+      setTotalTime(pendingRoundData.timeLimit || 20);
+      setHasAnswered(false);
+      setSelectedPlayers([]);
+      setCorrectPlayerIds([]);
+      setRoundResults([]);
+      setGameMode(pendingRoundData.gameMode || "who_liked");
+      setNumericAnswer("");
+      setCorrectAnswer(null);
+      setPendingRoundData(null);
+    }
+  }, [countdownComplete, pendingRoundData]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
@@ -173,19 +202,31 @@ export default function Game() {
         
         switch (message.type) {
           case "round_started":
-            setGameStatus("question");
-            setCurrentRound(message.round || 0);
-            setIsLightningRound(message.isLightningRound || false);
-            setContent(message.content || null);
-            setTimeLeft(message.timeLimit || 20);
-            setTotalTime(message.timeLimit || 20);
-            setHasAnswered(false);
-            setSelectedPlayers([]);
-            setCorrectPlayerIds([]);
-            setRoundResults([]);
-            setGameMode(message.gameMode || "who_liked");
-            setNumericAnswer("");
-            setCorrectAnswer(null);
+            // For first round, queue data until countdown completes
+            if (!countdownCompleteRef.current && (message.round === 1 || currentRound === 0)) {
+              setPendingRoundData({
+                round: message.round,
+                isLightningRound: message.isLightningRound,
+                content: message.content,
+                timeLimit: message.timeLimit,
+                gameMode: message.gameMode,
+              });
+            } else {
+              // For subsequent rounds, apply immediately
+              setGameStatus("question");
+              setCurrentRound(message.round || 0);
+              setIsLightningRound(message.isLightningRound || false);
+              setContent(message.content || null);
+              setTimeLeft(message.timeLimit || 20);
+              setTotalTime(message.timeLimit || 20);
+              setHasAnswered(false);
+              setSelectedPlayers([]);
+              setCorrectPlayerIds([]);
+              setRoundResults([]);
+              setGameMode(message.gameMode || "who_liked");
+              setNumericAnswer("");
+              setCorrectAnswer(null);
+            }
             break;
             
           case "round_ended":
@@ -250,7 +291,8 @@ export default function Game() {
   useEffect(() => {
     if (gameQuery.data) {
       const data = gameQuery.data;
-      if (data.gameState) {
+      // Only sync game state after countdown is complete
+      if (data.gameState && countdownComplete) {
         if (gameStatus === "waiting" && data.gameState.status !== "waiting") {
           setGameStatus(data.gameState.status);
           setCurrentRound(data.gameState.currentRound || 0);
@@ -258,11 +300,11 @@ export default function Game() {
           setTimeLeft(data.gameState.timeLeft || 20);
         }
       }
-      if (data.content && !content) {
+      if (data.content && !content && countdownComplete) {
         setContent(data.content);
       }
     }
-  }, [gameQuery.data, gameStatus, content]);
+  }, [gameQuery.data, gameStatus, content, countdownComplete]);
 
   useEffect(() => {
     const roomStatus = gameQuery.data?.room?.status;
@@ -1144,7 +1186,7 @@ export default function Game() {
                 </motion.div>
               )}
 
-              {!countdownPhase && (
+              {countdownPhase === "done" && !pendingRoundData && gameStatus === "waiting" && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
