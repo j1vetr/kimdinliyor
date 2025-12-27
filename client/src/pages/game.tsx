@@ -659,28 +659,53 @@ export default function Game() {
                 </div>
               </div>
             ) : (
-              /* Player Selection Mode UI - Original Layout */
-              <>
-                {/* Left: Media Section */}
-                <div className="flex-1 flex flex-col min-h-0 p-3 lg:p-4">
-                  {/* Content Title - Compact */}
-                  <div className="flex items-center gap-2 mb-2 shrink-0">
-                    <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shrink-0">
-                      {content.contentType === "video" ? <Play className="h-3.5 w-3.5 text-white" /> : <SiYoutube className="h-3.5 w-3.5 text-white" />}
+              /* Player Selection Mode UI - Mixing Console Aesthetic */
+              <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+                {/* Left: Media Section - Now Playing Slab */}
+                <div className="flex-1 flex flex-col min-h-0 p-4 lg:p-6">
+                  {/* Now Playing Header with Equalizer */}
+                  <div className="flex items-center gap-3 mb-3 shrink-0">
+                    <div className="relative h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-primary via-red-500 to-red-600 flex items-center justify-center shadow-lg shadow-primary/30">
+                      {content.contentType === "video" ? <Play className="h-5 w-5 lg:h-6 lg:w-6 text-white" /> : <SiYoutube className="h-5 w-5 lg:h-6 lg:w-6 text-white" />}
+                      <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-sm font-bold leading-tight line-clamp-1" data-testid="text-content-title">{content.title}</h2>
-                      {content.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1">{content.subtitle}</p>}
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[10px] lg:text-xs font-bold uppercase tracking-wider text-primary">
+                          {content.contentType === "video" ? "Şimdi Çalıyor" : "Kanal"}
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          {[...Array(4)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              animate={{ height: [4, 12 + Math.random() * 8, 4] }}
+                              transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, delay: i * 0.1 }}
+                              className="w-1 rounded-full bg-gradient-to-t from-emerald-500 to-emerald-400"
+                              style={{ height: 4 }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <h2 className="text-base lg:text-xl xl:text-2xl font-black leading-tight line-clamp-2" data-testid="text-content-title">
+                        {content.title}
+                      </h2>
+                      {content.subtitle && (
+                        <p className="text-xs lg:text-sm text-muted-foreground line-clamp-1 mt-0.5">{content.subtitle}</p>
+                      )}
                     </div>
-                    <button onClick={openYouTubeLink} className="shrink-0 p-1.5 rounded-md hover:bg-muted/50 transition-colors" data-testid="button-open-youtube-header">
-                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                    <button 
+                      onClick={openYouTubeLink} 
+                      className="shrink-0 h-9 w-9 lg:h-10 lg:w-10 rounded-lg bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors" 
+                      data-testid="button-open-youtube-header"
+                    >
+                      <ExternalLink className="h-4 w-4 lg:h-5 lg:w-5 text-muted-foreground" />
                     </button>
                   </div>
 
                   {/* Media Display - Flexible Height */}
                   <div className="flex-1 flex items-center justify-center min-h-0">
                     {content.contentType === "video" ? (
-                      <div className="relative w-full h-full max-h-[200px] lg:max-h-none lg:aspect-video rounded-xl overflow-hidden ring-1 ring-primary/30 shadow-lg" data-testid="video-player-container">
+                      <div className="relative w-full h-full max-h-[180px] lg:max-h-none lg:aspect-video rounded-2xl overflow-hidden ring-2 ring-primary/40 shadow-2xl shadow-primary/20" data-testid="video-player-container">
                         <iframe
                           src={`https://www.youtube.com/embed/${content.contentId}?autoplay=1&mute=0&controls=1&modestbranding=1&rel=0`}
                           title={content.title}
@@ -691,18 +716,18 @@ export default function Game() {
                       </div>
                     ) : (
                       <button onClick={openYouTubeLink} className="relative group" data-testid="button-open-youtube">
-                        <div className="w-24 h-24 lg:w-36 lg:h-36 rounded-2xl overflow-hidden ring-2 ring-primary/30 shadow-xl transition-transform group-hover:scale-105">
+                        <div className="w-28 h-28 lg:w-40 lg:h-40 xl:w-48 xl:h-48 rounded-2xl overflow-hidden ring-2 ring-primary/40 shadow-2xl shadow-primary/20 transition-transform group-hover:scale-105">
                           {content.thumbnailUrl ? (
                             <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" data-testid="img-content-thumbnail" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                              <SiYoutube className="w-10 h-10 text-red-500" />
+                              <SiYoutube className="w-12 h-12 lg:w-16 lg:h-16 text-red-500" />
                             </div>
                           )}
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
-                            <Play className="h-5 w-5 text-white fill-white" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
+                          <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm">
+                            <Play className="h-6 w-6 lg:h-7 lg:w-7 text-white fill-white" />
                           </div>
                         </div>
                       </button>
@@ -711,22 +736,31 @@ export default function Game() {
                 </div>
 
                 {/* Vertical Divider - Desktop */}
-                <div className="hidden lg:block w-px bg-gradient-to-b from-transparent via-border/50 to-transparent" />
+                <div className="hidden lg:flex flex-col items-center py-6">
+                  <div className="flex-1 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
+                  <div className="my-3 w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+                    <Mic2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 w-px bg-gradient-to-b from-border via-border to-transparent" />
+                </div>
 
-                {/* Right: Selection Panel */}
-                <div className="shrink-0 lg:w-72 xl:w-80 flex flex-col p-3 lg:p-4 bg-gradient-to-t from-muted/10 to-transparent border-t lg:border-t-0 lg:border-l border-border/30">
-                  {/* Question Prompt - Compact */}
-                  <div className="flex items-center gap-2 mb-2 shrink-0">
-                    <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                      <ModeIcon className="h-3 w-3 text-white" />
+                {/* Right: Selection Panel - Mixer Pad Style */}
+                <div className="shrink-0 lg:w-80 xl:w-96 flex flex-col p-4 lg:p-6 bg-gradient-to-t lg:bg-gradient-to-l from-muted/20 to-transparent border-t lg:border-t-0">
+                  {/* Question Prompt - Larger */}
+                  <div className="flex items-center gap-3 mb-4 shrink-0">
+                    <div className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <ModeIcon className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
                     </div>
-                    <p className="text-xs font-bold flex-1">{modeInfo?.question}</p>
+                    <div className="flex-1">
+                      <span className="text-[10px] lg:text-xs font-bold uppercase tracking-wider text-purple-500">Soru</span>
+                      <p className="text-sm lg:text-base xl:text-lg font-bold">{modeInfo?.question}</p>
+                    </div>
                   </div>
 
-                  {/* Player Selection - for player guess modes */}
+                  {/* Player Selection Grid - Mixer Pad Style */}
                   <div className="flex-1 min-h-0 overflow-y-auto">
-                    <div className="flex flex-wrap gap-1.5 content-start">
-                      {allPlayers.map((player: any) => {
+                    <div className="grid grid-cols-2 lg:grid-cols-2 gap-2 lg:gap-3">
+                      {allPlayers.map((player: any, index: number) => {
                         const playerId = player.userId || player.user?.id;
                         const displayName = player.user?.displayName || player.displayName;
                         const avatarUrl = player.user?.avatarUrl;
@@ -739,59 +773,85 @@ export default function Game() {
                             whileTap={{ scale: 0.95 }}
                             onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
                             disabled={hasAnswered}
-                            className={`flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full transition-all ${
+                            className={`relative flex flex-col items-center justify-center p-3 lg:p-4 rounded-xl transition-all ${
                               hasAnswered ? "opacity-50" : ""
                             } ${
                               isSelected 
-                                ? "bg-primary text-primary-foreground shadow-md shadow-primary/25" 
-                                : "bg-muted/50 hover:bg-muted/80"
+                                ? "bg-gradient-to-br from-primary/90 to-red-600/90 text-white shadow-lg shadow-primary/40 ring-2 ring-primary/50" 
+                                : "bg-card/80 hover:bg-card border border-border/50 hover:border-primary/50"
                             }`}
                             data-testid={`button-player-${playerId}`}
                           >
-                            {avatarUrl ? (
-                              <img src={avatarUrl} alt={displayName} className="w-5 h-5 rounded-full object-cover" />
-                            ) : (
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
-                                {displayName?.charAt(0).toUpperCase()}
+                            {/* Selection indicator */}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                                <Check className="h-3 w-3 text-white" />
                               </div>
+                            )}
+                            
+                            {/* Avatar */}
+                            <div className={`relative mb-2 ${isSelected ? "ring-2 ring-white/30" : "ring-2 ring-border/30"} rounded-full`}>
+                              {avatarUrl ? (
+                                <img src={avatarUrl} alt={displayName} className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover" />
+                              ) : (
+                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center text-base lg:text-lg font-bold ${
+                                  isSelected ? "bg-white/20 text-white" : "bg-muted text-foreground"
+                                }`}>
+                                  {displayName?.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              {/* Online indicator */}
+                              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${
+                                isSelected ? "border-primary bg-emerald-400" : "border-card bg-emerald-500"
+                              }`} />
+                            </div>
+                            
+                            {/* Name */}
+                            <span className={`text-xs lg:text-sm font-semibold text-center line-clamp-1 ${
+                              isSelected ? "text-white" : "text-foreground"
+                            }`}>
+                              {displayName}
+                            </span>
+                            {isSelf && (
+                              <span className={`text-[10px] lg:text-xs ${isSelected ? "text-white/70" : "text-muted-foreground"}`}>
+                                (Sen)
+                              </span>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Submit Button - Fixed at Bottom */}
+                  <div className="shrink-0 mt-4 pt-3 border-t border-border/30">
+                    {hasAnswered ? (
+                      <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                          <Check className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-sm lg:text-base font-bold text-emerald-500">Kilitlendi</span>
+                      </div>
+                    ) : (
+                      <Button
+                        className="w-full h-11 lg:h-12 text-sm lg:text-base font-bold gap-2 bg-gradient-to-r from-primary to-red-600 shadow-lg shadow-primary/30"
+                        onClick={handleSubmitAnswer}
+                        disabled={selectedPlayers.length === 0 || answerMutation.isPending}
+                        data-testid="button-submit-answer"
+                      >
+                        {answerMutation.isPending ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="h-5 w-5" />
+                            {selectedPlayers.length === 0 ? "Oyuncu Seç" : `Kilitle (${selectedPlayers.length})`}
+                          </>
                         )}
-                        <span className="text-xs font-medium whitespace-nowrap">
-                          {displayName}{isSelf ? " (Sen)" : ""}
-                        </span>
-                        {isSelected && <Check className="h-3 w-3 shrink-0" />}
-                      </motion.button>
-                    );
-                  })}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Submit Button - Fixed at Bottom */}
-              <div className="shrink-0 mt-2 pt-2 border-t border-border/20">
-                {hasAnswered ? (
-                  <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                    <Check className="h-4 w-4 text-emerald-500" />
-                    <span className="text-sm font-bold text-emerald-500">Gönderildi</span>
-                  </div>
-                ) : (
-                  <Button
-                    className="w-full h-10 text-sm font-bold gap-2 bg-gradient-to-r from-primary to-red-600"
-                    onClick={handleSubmitAnswer}
-                    disabled={selectedPlayers.length === 0 || answerMutation.isPending}
-                    data-testid="button-submit-answer"
-                  >
-                    {answerMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        {selectedPlayers.length === 0 ? "Seç" : `Kilitle (${selectedPlayers.length})`}
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-              </>
             )}
           </main>
 
