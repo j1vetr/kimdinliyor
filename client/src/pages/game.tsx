@@ -126,9 +126,12 @@ export default function Game() {
   // CRITICAL: Immutable snapshot of results - prevents data leakage during transitions
   const [resultsSnapshot, setResultsSnapshot] = useState<ResultsSnapshot | null>(null);
   
-  // Transition guard: briefly show loading when switching from results to question
-  const [isTransitioningToQuestion, setIsTransitioningToQuestion] = useState(false);
-  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Two-phase results: 3 seconds "reveal" + 2 seconds "countdown"
+  const [resultsPhase, setResultsPhase] = useState<"reveal" | "countdown">("reveal");
+  const [countdownValue, setCountdownValue] = useState(2);
+  const [pendingRoundData, setPendingRoundData] = useState<any>(null);
+  const resultsPhaseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Refs to track current values for WebSocket callbacks (avoids stale closure)
   const contentRef = useRef<Content | null>(null);
@@ -236,44 +239,20 @@ export default function Game() {
         
         switch (message.type) {
           case "round_started":
-            // CRITICAL: Show transition loading to mask any flash
-            setIsTransitioningToQuestion(true);
-            
-            // Clear any previous timeout
-            if (transitionTimeoutRef.current) {
-              clearTimeout(transitionTimeoutRef.current);
-            }
-            
-            // First reset all answer-related state BEFORE updating content
-            setCorrectPlayerIds([]);
-            setCorrectContentId(null);
-            setRoundResults([]);
-            setHasAnswered(false);
-            setSelectedPlayers([]);
-            setSelectedContentId(null);
-            
-            // Then update content and round info
-            setContent(message.content || null);
-            setContent2(message.content2 || null);
-            setCurrentRound(message.round || 1);
-            setIsLightningRound(message.isLightningRound || false);
-            setTimeLeft(message.timeLimit || 20);
-            setTotalTime(message.timeLimit || 20);
-            setGameMode(message.gameMode || "who_liked");
-            
-            // Clear snapshot to prevent stale data
-            setResultsSnapshot(null);
-            
-            // Transition to question after a brief delay
-            transitionTimeoutRef.current = setTimeout(() => {
-              setGameStatus("question");
-              setIsTransitioningToQuestion(false);
-            }, 100);
+            // If we're in countdown phase, cache the data for later
+            // The countdown effect will apply it when done
+            setPendingRoundData({
+              content: message.content || null,
+              content2: message.content2 || null,
+              round: message.round || 1,
+              isLightningRound: message.isLightningRound || false,
+              timeLimit: message.timeLimit || 20,
+              gameMode: message.gameMode || "who_liked",
+            });
             break;
             
           case "round_ended":
             // CRITICAL: Create immutable snapshot using REFS (not stale state)
-            // This prevents any race condition with content updates
             if (contentRef.current) {
               setResultsSnapshot({
                 round: currentRoundRef.current,
@@ -286,10 +265,16 @@ export default function Game() {
                 isLightningRound: isLightningRoundRef.current,
               });
             }
+            
+            // Start two-phase results: reveal for 3s, then countdown for 2s
+            setResultsPhase("reveal");
+            setCountdownValue(2);
+            setPendingRoundData(null);
             setGameStatus("results");
             setCorrectPlayerIds(message.correctUserIds || []);
             setCorrectContentId(message.correctContentId || null);
             setRoundResults(message.results || []);
+            
             if (message.results) {
               const newScores = new Map<string, number>();
               message.results.forEach((r: RoundResult) => {
@@ -297,6 +282,33 @@ export default function Game() {
               });
               setPlayerScores(newScores);
             }
+            
+            // Clear any existing timers
+            if (resultsPhaseTimerRef.current) {
+              clearTimeout(resultsPhaseTimerRef.current);
+            }
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+            }
+            
+            // After 3 seconds, switch to countdown phase
+            resultsPhaseTimerRef.current = setTimeout(() => {
+              setResultsPhase("countdown");
+              setCountdownValue(2);
+              
+              // Start 2-1 countdown
+              countdownIntervalRef.current = setInterval(() => {
+                setCountdownValue(prev => {
+                  if (prev <= 1) {
+                    if (countdownIntervalRef.current) {
+                      clearInterval(countdownIntervalRef.current);
+                    }
+                    return 0;
+                  }
+                  return prev - 1;
+                });
+              }, 1000);
+            }, 3000);
             break;
             
           case "game_finished":
@@ -356,6 +368,53 @@ export default function Game() {
     return () => clearInterval(timer);
   }, [gameStatus, nextRoundAt]);
 
+  // Handle countdown completion - apply pending round data and transition to question
+  useEffect(() => {
+    if (resultsPhase !== "countdown" || countdownValue > 0) return;
+    
+    // Countdown finished - transition to question
+    console.log("[Countdown] Finished, transitioning to question");
+    
+    // First reset all answer-related state
+    setCorrectPlayerIds([]);
+    setCorrectContentId(null);
+    setRoundResults([]);
+    setHasAnswered(false);
+    setSelectedPlayers([]);
+    setSelectedContentId(null);
+    setResultsSnapshot(null);
+    
+    // Apply pending round data if available
+    if (pendingRoundData) {
+      console.log("[Countdown] Applying pending round data:", pendingRoundData.round);
+      setContent(pendingRoundData.content);
+      setContent2(pendingRoundData.content2);
+      setCurrentRound(pendingRoundData.round);
+      setIsLightningRound(pendingRoundData.isLightningRound);
+      setTimeLeft(pendingRoundData.timeLimit);
+      setTotalTime(pendingRoundData.totalTime || pendingRoundData.timeLimit);
+      setGameMode(pendingRoundData.gameMode);
+      setPendingRoundData(null);
+    }
+    
+    // Reset phase for next results
+    setResultsPhase("reveal");
+    setCountdownValue(2);
+    setGameStatus("question");
+  }, [resultsPhase, countdownValue, pendingRoundData]);
+  
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (resultsPhaseTimerRef.current) {
+        clearTimeout(resultsPhaseTimerRef.current);
+      }
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, []);
+
   // gameQuery effect: Sync state for round transitions and results
   useEffect(() => {
     if (!gameQuery.data) return;
@@ -368,41 +427,18 @@ export default function Game() {
     if (serverStatus === "question" && data.content) {
       // Check if this is a new round or we're in wrong state
       if (gameStatus === "results" || gameStatus === "waiting" || (gameStatus === "question" && serverRound > currentRound)) {
-        console.log(`[Polling] Transitioning to question - Round ${serverRound}`);
+        console.log(`[Polling] Caching round data - Round ${serverRound}`);
         
-        // Show transition loading to mask any flash
-        setIsTransitioningToQuestion(true);
-        
-        // First reset all answer-related state BEFORE updating content
-        setCorrectPlayerIds([]);
-        setCorrectContentId(null);
-        setRoundResults([]);
-        setHasAnswered(false);
-        setSelectedPlayers([]);
-        setSelectedContentId(null);
-        
-        // Clear snapshot to prevent stale data
-        setResultsSnapshot(null);
-        
-        // Then update content and round info
-        setContent(data.content);
-        setContent2(data.content2 || null);
-        setCurrentRound(serverRound);
-        setIsLightningRound(data.gameState.isLightningRound || false);
-        setTimeLeft(data.gameState.timeLeft || 20);
-        setTotalTime(data.room?.roundDuration || 20);
-        if (data.gameState.gameMode) {
-          setGameMode(data.gameState.gameMode);
-        }
-        
-        // Transition to question after a brief delay
-        if (transitionTimeoutRef.current) {
-          clearTimeout(transitionTimeoutRef.current);
-        }
-        transitionTimeoutRef.current = setTimeout(() => {
-          setGameStatus("question");
-          setIsTransitioningToQuestion(false);
-        }, 100);
+        // Cache the round data - countdown effect will apply it
+        setPendingRoundData({
+          content: data.content,
+          content2: data.content2 || null,
+          round: serverRound,
+          isLightningRound: data.gameState.isLightningRound || false,
+          timeLimit: data.gameState.timeLeft || 20,
+          totalTime: data.room?.roundDuration || 20,
+          gameMode: data.gameState.gameMode || "who_liked",
+        });
       }
       // Also sync timeLeft during question phase
       else if (gameStatus === "question" && serverRound === currentRound && data.gameState.timeLeft !== undefined) {
@@ -635,19 +671,28 @@ export default function Game() {
         </div>
       )}
 
-      {/* Transition loading - prevents any flash during round changes */}
-      {isTransitioningToQuestion && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+      {/* Countdown screen - shows 2...1 before next question */}
+      {gameStatus === "results" && resultsPhase === "countdown" && (
+        <div className="flex-1 flex flex-col items-center justify-center">
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-            className="h-10 w-10 border-3 border-primary/30 border-t-primary rounded-full"
-          />
-          <p className="text-sm text-muted-foreground">Sonraki Tur...</p>
+            key={countdownValue}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex flex-col items-center gap-4"
+          >
+            <span className="text-8xl md:text-9xl font-bold text-primary">
+              {countdownValue > 0 ? countdownValue : ""}
+            </span>
+            <p className="text-sm md:text-base text-muted-foreground font-medium">
+              Sonraki Soru Geliyor...
+            </p>
+          </motion.div>
         </div>
       )}
 
-      {gameStatus === "question" && content && !isTransitioningToQuestion && (
+      {gameStatus === "question" && content && (
         <div className="flex flex-col h-full bg-gradient-to-b from-background to-background/95">
           {/* Premium Header Strip */}
           <header className="shrink-0 px-4 py-3">
@@ -882,7 +927,7 @@ export default function Game() {
         </div>
       )}
 
-      {gameStatus === "results" && resultsSnapshot && (
+      {gameStatus === "results" && resultsSnapshot && resultsPhase === "reveal" && (
         <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
           {/* Header Strip */}
           <header className="shrink-0 px-4 py-3 md:py-4">
