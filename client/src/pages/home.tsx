@@ -70,56 +70,53 @@ const KARSILASTIRMA_MODLARI = [
   },
 ];
 
+// Soft dark colors for lobby animation
 const LIVE_LOBBIES = [
   {
     name: "Efsane Oda",
     players: [
-      { name: "Beren", initial: "B", status: "Hazır", color: "#ef4444" },
-      { name: "Selin", initial: "S", status: "Bekliyor", color: "#3b82f6" },
-      { name: "Duru", initial: "D", status: "Hazır", color: "#10b981" },
-      { name: "Mert", initial: "M", status: "Bekliyor", color: "#f59e0b" },
+      { name: "Beren", initial: "B", status: "Hazır" },
+      { name: "Selin", initial: "S", status: "Bekliyor" },
+      { name: "Duru", initial: "D", status: "Hazır" },
+      { name: "Mert", initial: "M", status: "Bekliyor" },
     ],
     count: "4/6",
   },
   {
     name: "Gece Yarisi",
     players: [
-      { name: "Ali", initial: "A", status: "Hazır", color: "#8b5cf6" },
-      { name: "Zeynep", initial: "Z", status: "Hazır", color: "#ec4899" },
-      { name: "Can", initial: "C", status: "Hazır", color: "#06b6d4" },
+      { name: "Ali", initial: "A", status: "Hazır" },
+      { name: "Zeynep", initial: "Z", status: "Hazır" },
+      { name: "Can", initial: "C", status: "Hazır" },
     ],
     count: "3/4",
   },
   {
     name: "YouTube Masters",
     players: [
-      { name: "Ece", initial: "E", status: "Hazır", color: "#f97316" },
-      { name: "Burak", initial: "B", status: "Bekliyor", color: "#3b82f6" },
-      { name: "Deniz", initial: "D", status: "Hazır", color: "#10b981" },
-      { name: "Aylin", initial: "A", status: "Hazır", color: "#ef4444" },
-      { name: "Kaan", initial: "K", status: "Bekliyor", color: "#8b5cf6" },
+      { name: "Ece", initial: "E", status: "Hazır" },
+      { name: "Burak", initial: "B", status: "Bekliyor" },
+      { name: "Deniz", initial: "D", status: "Hazır" },
+      { name: "Aylin", initial: "A", status: "Hazır" },
     ],
-    count: "5/8",
+    count: "4/8",
   },
   {
     name: "Tahmin Ustaları",
     players: [
-      { name: "Melis", initial: "M", status: "Hazır", color: "#ec4899" },
-      { name: "Ozan", initial: "O", status: "Hazır", color: "#f59e0b" },
+      { name: "Melis", initial: "M", status: "Hazır" },
+      { name: "Ozan", initial: "O", status: "Hazır" },
     ],
     count: "2/4",
   },
   {
     name: "Video Avcilari",
     players: [
-      { name: "Yigit", initial: "Y", status: "Hazır", color: "#06b6d4" },
-      { name: "Sude", initial: "S", status: "Bekliyor", color: "#f97316" },
-      { name: "Emre", initial: "E", status: "Hazır", color: "#3b82f6" },
-      { name: "Irem", initial: "I", status: "Hazır", color: "#10b981" },
-      { name: "Arda", initial: "A", status: "Hazır", color: "#ef4444" },
-      { name: "Nil", initial: "N", status: "Bekliyor", color: "#8b5cf6" },
+      { name: "Yigit", initial: "Y", status: "Hazır" },
+      { name: "Sude", initial: "S", status: "Bekliyor" },
+      { name: "Emre", initial: "E", status: "Hazır" },
     ],
-    count: "6/8",
+    count: "3/6",
   },
 ];
 
@@ -213,7 +210,7 @@ export default function Home() {
               <div className={`hero-lobby-players ${isTransitioning ? 'transitioning' : ''}`}>
                 {currentLobby.players.map((player, idx) => (
                   <div key={`${currentLobbyIndex}-${idx}`} className="hero-lobby-player" style={{ animationDelay: `${idx * 0.08}s` }}>
-                    <div className="hero-lobby-avatar" style={{ background: player.color }}>
+                    <div className="hero-lobby-avatar">
                       {player.initial}
                     </div>
                     <div className="hero-lobby-info">
@@ -297,64 +294,70 @@ export default function Home() {
           <div className="modes-container">
             <div className="section-header">
               <div className="section-line" />
-              <h2 className="section-title">Oyun Modları</h2>
+              <h2 className="section-title">8 Farklı Mod</h2>
               <div className="section-line" />
             </div>
 
-            <div className="modes-category">
-              <div className="modes-category-header">
-                <h3 className="modes-category-title">Tahmin Modları</h3>
-                <Badge variant="outline" className="modes-category-badge">
-                  <SiGoogle className="modes-badge-icon" />
-                  YouTube Girişi Gerekli
-                </Badge>
-              </div>
-              <p className="modes-category-desc">
-                Oyuncuların YouTube hesaplarından alınan verilerle oynanan modlar. 
-                Herkesin YouTube hesabını bağlaması gerekir.
-              </p>
-              <div className="modes-grid modes-grid-3">
-                {TAHMIN_MODLARI.map((mode) => {
-                  const Icon = mode.icon;
-                  return (
-                    <div key={mode.id} className="mode-card" data-testid={`card-mode-${mode.id}`}>
-                      <div className="mode-card-accent" style={{ background: mode.color }} />
-                      <div className="mode-card-icon" style={{ background: `${mode.color}20`, color: mode.color }}>
-                        <Icon />
+            <div className="modes-showcase">
+              <div className="modes-category-panel">
+                <div className="modes-panel-header">
+                  <Badge variant="outline" className="modes-panel-badge">
+                    <SiGoogle className="modes-badge-icon" />
+                    YouTube Hesabı Gerekli
+                  </Badge>
+                </div>
+                <h3 className="modes-panel-title">Tahmin Modları</h3>
+                <p className="modes-panel-desc">Arkadaşlarının YouTube aktivitelerini tahmin et</p>
+                <div className="modes-panel-list">
+                  {TAHMIN_MODLARI.map((mode, idx) => {
+                    const Icon = mode.icon;
+                    return (
+                      <div key={mode.id} className="modes-panel-item" data-testid={`card-mode-${mode.id}`}>
+                        <div className="modes-panel-num">{idx + 1}</div>
+                        <div className="modes-panel-icon">
+                          <Icon />
+                        </div>
+                        <div className="modes-panel-content">
+                          <span className="modes-panel-name">{mode.title}</span>
+                          <span className="modes-panel-hint">{mode.desc}</span>
+                        </div>
                       </div>
-                      <h4 className="mode-card-title">{mode.title}</h4>
-                      <p className="mode-card-desc">{mode.desc}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            <div className="modes-category">
-              <div className="modes-category-header">
-                <h3 className="modes-category-title">Karşılaştırma Modları</h3>
-                <Badge variant="secondary" className="modes-category-badge-free">
-                  Giriş Gerekmez
-                </Badge>
+              <div className="modes-divider">
+                <span className="modes-divider-line" />
+                <span className="modes-divider-text">VS</span>
+                <span className="modes-divider-line" />
               </div>
-              <p className="modes-category-desc">
-                Trend videolar ve popüler kanallarla oynanan modlar. 
-                YouTube hesabı bağlamadan herkes oynayabilir.
-              </p>
-              <div className="modes-grid modes-grid-5">
-                {KARSILASTIRMA_MODLARI.map((mode) => {
-                  const Icon = mode.icon;
-                  return (
-                    <div key={mode.id} className="mode-card" data-testid={`card-mode-${mode.id}`}>
-                      <div className="mode-card-accent" style={{ background: mode.color }} />
-                      <div className="mode-card-icon" style={{ background: `${mode.color}20`, color: mode.color }}>
-                        <Icon />
+
+              <div className="modes-category-panel modes-category-panel-alt">
+                <div className="modes-panel-header">
+                  <Badge variant="secondary" className="modes-panel-badge-free">
+                    Herkes Oynayabilir
+                  </Badge>
+                </div>
+                <h3 className="modes-panel-title">Karşılaştırma Modları</h3>
+                <p className="modes-panel-desc">Trend videolar ve popüler kanallarla yarış</p>
+                <div className="modes-panel-list">
+                  {KARSILASTIRMA_MODLARI.map((mode, idx) => {
+                    const Icon = mode.icon;
+                    return (
+                      <div key={mode.id} className="modes-panel-item" data-testid={`card-mode-${mode.id}`}>
+                        <div className="modes-panel-num">{idx + 1}</div>
+                        <div className="modes-panel-icon">
+                          <Icon />
+                        </div>
+                        <div className="modes-panel-content">
+                          <span className="modes-panel-name">{mode.title}</span>
+                          <span className="modes-panel-hint">{mode.desc}</span>
+                        </div>
                       </div>
-                      <h4 className="mode-card-title">{mode.title}</h4>
-                      <p className="mode-card-desc">{mode.desc}</p>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
