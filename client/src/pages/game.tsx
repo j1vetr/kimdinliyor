@@ -544,56 +544,55 @@ export default function Game() {
           {/* Main Content Area - Flexible */}
           <main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
             {isComparisonMode && content2 ? (
-              /* Comparison Mode UI - Two Videos Side by Side */
-              <div className="flex-1 flex flex-col p-3 lg:p-4 min-h-0">
-                {/* Question Prompt */}
-                <div className="flex items-center gap-2 mb-3 shrink-0">
-                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
-                    <ModeIcon className="h-3.5 w-3.5 text-white" />
+              /* Comparison Mode UI - Compact Side by Side */
+              <div className="flex-1 flex flex-col p-2 lg:p-3 min-h-0">
+                {/* Question Prompt - Compact */}
+                <div className="flex items-center gap-2 mb-2 shrink-0">
+                  <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center">
+                    <ModeIcon className="h-3 w-3 text-white" />
                   </div>
-                  <p className="text-sm font-bold flex-1">{modeInfo?.question}</p>
+                  <p className="text-xs lg:text-sm font-bold flex-1">{modeInfo?.question}</p>
                 </div>
 
-                {/* Two Videos Side by Side */}
-                <div className="flex-1 flex flex-col sm:flex-row gap-3 min-h-0">
+                {/* Two Videos Side by Side - Compact */}
+                <div className="flex-1 flex flex-row gap-2 min-h-0 items-stretch">
                   {/* Video 1 */}
                   <motion.button
                     whileTap={{ scale: 0.98 }}
                     onClick={() => !hasAnswered && setSelectedContentId(content.id)}
                     disabled={hasAnswered}
-                    className={`flex-1 flex flex-col rounded-xl p-3 border-2 transition-all ${
+                    className={`flex-1 flex flex-col rounded-lg p-2 border-2 transition-all max-w-[50%] ${
                       hasAnswered ? "opacity-60" : ""
                     } ${
                       selectedContentId === content.id
-                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                        : "border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card/80"
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                        : "border-border/50 bg-card/50 hover:border-primary/50"
                     }`}
                     data-testid="button-select-video-1"
                   >
-                    <div className="relative aspect-video w-full rounded-lg overflow-hidden mb-2 shrink-0">
+                    <div className="relative w-full rounded-md overflow-hidden mb-1.5 shrink-0" style={{ aspectRatio: '16/9', maxHeight: '120px' }}>
                       {content.thumbnailUrl ? (
                         <img src={content.thumbnailUrl} alt={content.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                          <SiYoutube className="w-10 h-10 text-red-500" />
+                          <SiYoutube className="w-6 h-6 text-red-500" />
                         </div>
                       )}
                       {selectedContentId === content.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
-                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-5 w-5 text-white" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-4 w-4 text-white" />
                           </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs font-bold line-clamp-2 text-left">{content.title}</p>
-                    {content.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1 text-left mt-0.5">{content.subtitle}</p>}
+                    <p className="text-[10px] lg:text-xs font-semibold line-clamp-2 text-left leading-tight">{content.title}</p>
                   </motion.button>
 
-                  {/* VS Divider */}
-                  <div className="flex items-center justify-center shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-                      <span className="text-xs font-black text-white">VS</span>
+                  {/* VS Divider - Compact */}
+                  <div className="flex items-center justify-center shrink-0 px-1">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
+                      <span className="text-[9px] font-black text-white">VS</span>
                     </div>
                   </div>
 
@@ -602,33 +601,32 @@ export default function Game() {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
                     disabled={hasAnswered}
-                    className={`flex-1 flex flex-col rounded-xl p-3 border-2 transition-all ${
+                    className={`flex-1 flex flex-col rounded-lg p-2 border-2 transition-all max-w-[50%] ${
                       hasAnswered ? "opacity-60" : ""
                     } ${
                       selectedContentId === content2.id
-                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
-                        : "border-border/50 bg-card/50 hover:border-primary/50 hover:bg-card/80"
+                        ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                        : "border-border/50 bg-card/50 hover:border-primary/50"
                     }`}
                     data-testid="button-select-video-2"
                   >
-                    <div className="relative aspect-video w-full rounded-lg overflow-hidden mb-2 shrink-0">
+                    <div className="relative w-full rounded-md overflow-hidden mb-1.5 shrink-0" style={{ aspectRatio: '16/9', maxHeight: '120px' }}>
                       {content2.thumbnailUrl ? (
                         <img src={content2.thumbnailUrl} alt={content2.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500/20 to-red-500/5">
-                          <SiYoutube className="w-10 h-10 text-red-500" />
+                          <SiYoutube className="w-6 h-6 text-red-500" />
                         </div>
                       )}
                       {selectedContentId === content2.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-primary/20">
-                          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-5 w-5 text-white" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
+                          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-4 w-4 text-white" />
                           </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs font-bold line-clamp-2 text-left">{content2.title}</p>
-                    {content2.subtitle && <p className="text-[10px] text-muted-foreground line-clamp-1 text-left mt-0.5">{content2.subtitle}</p>}
+                    <p className="text-[10px] lg:text-xs font-semibold line-clamp-2 text-left leading-tight">{content2.title}</p>
                   </motion.button>
                 </div>
 
@@ -915,43 +913,80 @@ export default function Game() {
                 </div>
               </button>
 
-              <div className="relative p-5 rounded-2xl bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/40 shadow-lg overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                <div className="relative">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <Check className="h-4 w-4 text-green-500" />
+              {/* Doğru Cevap Section - Conditionally renders based on mode */}
+              {isComparisonMode ? (
+                /* Comparison Mode: Show correct content */
+                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/40 shadow-lg overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5 text-green-500" />
+                      </div>
+                      <h3 className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Doğru Cevap</h3>
                     </div>
-                    <h3 className="text-sm font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Doğru Cevap</h3>
+                    <div className="flex items-center gap-3 p-2 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <div className="relative w-16 h-10 rounded-lg overflow-hidden shrink-0 ring-1 ring-green-500/30">
+                        {(correctContentId === content.id ? content : content2)?.thumbnailUrl ? (
+                          <img 
+                            src={(correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
+                            alt="Doğru cevap" 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-green-500/20">
+                            <SiYoutube className="w-4 h-4 text-green-500" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-green-700 dark:text-green-300 line-clamp-2 flex-1">
+                        {(correctContentId === content.id ? content : content2)?.title || "Doğru içerik"}
+                      </p>
+                    </div>
                   </div>
-                  {correctPlayerIds.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {allPlayers
-                        .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
-                        .map((player: any) => {
-                          const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
-                          const displayName = player.user?.displayName || player.displayName;
-                          return (
-                            <div key={player.userId || player.user?.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/20 backdrop-blur-sm border border-green-500/30">
-                              {avatarUrl ? (
-                                <img src={avatarUrl} alt={displayName} className="w-7 h-7 rounded-lg object-cover ring-1 ring-green-500/30" />
-                              ) : (
-                                <div className="w-7 h-7 rounded-lg bg-green-500/30 flex items-center justify-center text-xs font-bold text-green-700 dark:text-green-300">
-                                  {displayName?.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              <span className="text-sm font-semibold text-green-700 dark:text-green-300">{displayName}</span>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">
-                      {content.contentType === "video" ? "Bu videoyu kimse beğenmemiş." : "Bu kanala kimse abone değil."}
-                    </p>
-                  )}
                 </div>
-              </div>
+              ) : (
+                /* Tahmin Mode: Show correct players */
+                <div className="relative p-4 rounded-2xl bg-gradient-to-br from-green-500/15 to-green-600/5 border border-green-500/40 shadow-lg overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                  <div className="relative">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <Check className="h-3.5 w-3.5 text-green-500" />
+                      </div>
+                      <h3 className="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">
+                        {gameMode === "who_liked" ? "Kim Beğenmiş?" : gameMode === "who_subscribed" ? "Kim Abone?" : "Doğru Cevap"}
+                      </h3>
+                    </div>
+                    {correctPlayerIds.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {allPlayers
+                          .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
+                          .map((player: any) => {
+                            const avatarUrl = player.user?.avatarUrl || player.avatarUrl;
+                            const displayName = player.user?.displayName || player.displayName;
+                            return (
+                              <div key={player.userId || player.user?.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-green-500/20 backdrop-blur-sm border border-green-500/30">
+                                {avatarUrl ? (
+                                  <img src={avatarUrl} alt={displayName} className="w-6 h-6 rounded-md object-cover ring-1 ring-green-500/30" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-md bg-green-500/30 flex items-center justify-center text-[10px] font-bold text-green-700 dark:text-green-300">
+                                    {displayName?.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="text-xs font-semibold text-green-700 dark:text-green-300">{displayName}</span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        {content.contentType === "video" ? "Bu videoyu kimse beğenmemiş." : "Bu kanala kimse abone değil."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-1">
@@ -1012,26 +1047,43 @@ export default function Game() {
                             )}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-                            {result.selectedUserIds.length > 0 ? (
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                {result.selectedUserIds.map((selectedId) => {
-                                  const isCorrectSelection = correctPlayerIds.includes(selectedId);
-                                  const selectedName = getPlayerName(selectedId);
-                                  
-                                  return (
-                                    <span key={selectedId} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${
-                                      isCorrectSelection 
-                                        ? "bg-green-500/20 text-green-600 dark:text-green-400" 
-                                        : "bg-red-500/20 text-red-600 dark:text-red-400"
-                                    }`}>
-                                      {selectedName}
-                                      {isCorrectSelection ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                                    </span>
-                                  );
-                                })}
-                              </div>
+                            {isComparisonMode ? (
+                              /* Comparison Mode: Show selected content */
+                              result.selectedContentId ? (
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                                  result.isCorrect 
+                                    ? "bg-green-500/20 text-green-600 dark:text-green-400" 
+                                    : "bg-red-500/20 text-red-600 dark:text-red-400"
+                                }`}>
+                                  {result.selectedContentId === content.id ? content.title?.slice(0, 30) : content2?.title?.slice(0, 30)}...
+                                  {result.isCorrect ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                                </span>
+                              ) : (
+                                <span className="italic text-muted-foreground/60">Cevap vermedi</span>
+                              )
                             ) : (
-                              <span className="italic text-muted-foreground/60">Cevap vermedi</span>
+                              /* Tahmin Mode: Show selected players */
+                              result.selectedUserIds.length > 0 ? (
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {result.selectedUserIds.map((selectedId) => {
+                                    const isCorrectSelection = correctPlayerIds.includes(selectedId);
+                                    const selectedName = getPlayerName(selectedId);
+                                    
+                                    return (
+                                      <span key={selectedId} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold ${
+                                        isCorrectSelection 
+                                          ? "bg-green-500/20 text-green-600 dark:text-green-400" 
+                                          : "bg-red-500/20 text-red-600 dark:text-red-400"
+                                      }`}>
+                                        {selectedName}
+                                        {isCorrectSelection ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <span className="italic text-muted-foreground/60">Cevap vermedi</span>
+                              )
                             )}
                           </div>
                         </div>

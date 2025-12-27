@@ -740,14 +740,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Helper function to start the next round
   async function startNextRound(roomCode: string, room: Room) {
+    console.log(`[startNextRound] Called for room ${roomCode}`);
     const gameState = gameStates.get(roomCode);
-    if (!gameState) return;
+    if (!gameState) {
+      console.log(`[startNextRound] No game state found for ${roomCode}`);
+      return;
+    }
 
     const nextRound = gameState.currentRound + 1;
     const totalRounds = room.totalRounds || 10;
+    console.log(`[startNextRound] Next round: ${nextRound}/${totalRounds}`);
 
     if (nextRound > totalRounds) {
       // Game finished
+      console.log(`[startNextRound] Game finished for ${roomCode}`);
       gameState.status = "finished";
       await storage.updateRoom(room.id, { status: "finished" });
       broadcastToRoom(roomCode, { type: "game_finished" });
@@ -1183,7 +1189,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
 
     // Start next round after delay
-    setTimeout(() => startNextRound(roomCode, room), 5000);
+    console.log(`[ROUND END] Scheduling next round in 5 seconds for room ${roomCode}`);
+    setTimeout(async () => {
+      try {
+        console.log(`[ROUND TIMER] Starting next round for room ${roomCode}`);
+        await startNextRound(roomCode, room);
+        console.log(`[ROUND TIMER] Next round started successfully for room ${roomCode}`);
+      } catch (error) {
+        console.error(`[ROUND TIMER] Error starting next round:`, error);
+      }
+    }, 5000);
   }
 
   // Submit answer

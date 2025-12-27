@@ -1,0 +1,18 @@
+Hello Google Developer.
+Thank you for reaching out.
+If your users are seeing an unverified app screen or Google sign-in is blocked, this is because your application is making calls to the following unverified sensitive scope(s):
+•	https://www.googleapis.com/auth/youtube.force-ssl 
+You should remove requests for unapproved scopes from your production app codebase. If your app uses sensitive and/or restricted scopes that aren't approved, and if your app has set include_granted_scopes = true, then you should change your codebase to include_granted_scopes = false. For more information about include_granted_scopes, check the documentation. Note that if you need to test new scopes, you should create a test project.
+If you need the scope(s): add any additional scopes your application requires to OAuth Consent Screen configuration in the Cloud Console, click “Save” and “Submit for verification.”
+Note: If you’ve deleted a previously approved sensitive or restricted scope from your Cloud Console consent screen configuration, that scope became unverified when it was deleted:
+•	Any user with an active token that still has access to the scope being phased out will receive a Security Center warning to remove risky access to your data. This occurs because the user has an active token where the API scope has not been verified any longer. If your app does not revoke the token as described in the preceding list, the user will continue to receive this warning message.
+•	Since you’ve already removed the previously approved scopes from your project, we recommend you follow steps 1 and 2 in this article to resolve the issue and help avoid your users from needing to re-authenticate multiple times.
+Need to make changes to your verification request?
+Please make direct changes on the Cloud Console. Save and submit the changes when finished.
+No longer need access to these scopes?
+Please reply to this email to cancel the verification request.
+Need other help?
+For more information on OAuth Verification, you can read the terms or policies for the APIs or products your app uses, as well as the following resource:
+OAuth App Verification Help Center
+Thank you,
+The Third Party Data Safety Team
