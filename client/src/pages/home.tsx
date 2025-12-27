@@ -1,260 +1,74 @@
 import { Link } from "wouter";
-import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube, Play, Clock, Heart, Timer, Disc3 } from "lucide-react";
-import { SiYoutube } from "react-icons/si";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, Play, ChevronRight } from "lucide-react";
+import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
-import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 import { useLocation } from "wouter";
 
-const ROTATING_WORDS = ["İzliyor", "Dinliyor", "Beğeniyor", "Takip Ediyor"];
-
-const GAME_MODES = [
+const TAHMIN_MODLARI = [
   {
     id: "who_liked",
     title: "Kim Beğenmiş?",
-    tagline: "Videoyu hangi oyuncu beğenmiş?",
+    desc: "Ekrandaki videoyu hangi oyuncu beğenmiş? Tahmin et!",
     icon: ThumbsUp,
-    accent: "bg-red-500",
-    glow: "shadow-red-500/30",
+    color: "#ef4444",
   },
   {
     id: "who_subscribed",
     title: "Kim Abone?",
-    tagline: "Kanala hangi oyuncu abone?",
+    desc: "Bu kanala hangi oyuncu abone? Doğru tahmini yap!",
     icon: UserPlus,
-    accent: "bg-orange-500",
-    glow: "shadow-orange-500/30",
-  },
-  {
-    id: "which_older",
-    title: "Hangisi Daha Eski?",
-    tagline: "İki videodan hangisi daha önce yüklendi?",
-    icon: Clock,
-    accent: "bg-blue-500",
-    glow: "shadow-blue-500/30",
-  },
-  {
-    id: "most_viewed",
-    title: "En Çok İzlenen",
-    tagline: "Hangi video daha fazla izlenmiş?",
-    icon: Eye,
-    accent: "bg-emerald-500",
-    glow: "shadow-emerald-500/30",
+    color: "#f97316",
   },
   {
     id: "oldest_like",
     title: "İlk Aşkım",
-    tagline: "En eski beğenilen video kime ait?",
+    desc: "En eski beğenilen video kimin? Nostaljik yarış!",
     icon: Heart,
-    accent: "bg-pink-500",
-    glow: "shadow-pink-500/30",
+    color: "#ec4899",
+  },
+];
+
+const KARSILASTIRMA_MODLARI = [
+  {
+    id: "which_older",
+    title: "Hangisi Daha Eski?",
+    desc: "İki videodan hangisi daha önce yüklendi?",
+    icon: Clock,
+    color: "#3b82f6",
+  },
+  {
+    id: "most_viewed",
+    title: "En Çok İzlenen",
+    desc: "Hangi video daha fazla izlenmiş?",
+    icon: Eye,
+    color: "#10b981",
   },
   {
     id: "which_longer",
     title: "Hangisi Daha Uzun?",
-    tagline: "İki videodan hangisi daha uzun süreli?",
+    desc: "İki videodan hangisi daha uzun süreli?",
     icon: Timer,
-    accent: "bg-purple-500",
-    glow: "shadow-purple-500/30",
+    color: "#8b5cf6",
   },
   {
     id: "which_more_subs",
     title: "Hangisi Daha Popüler?",
-    tagline: "Hangi kanal daha fazla aboneye sahip?",
+    desc: "Hangi kanalın daha fazla abonesi var?",
     icon: Users,
-    accent: "bg-cyan-500",
-    glow: "shadow-cyan-500/30",
+    color: "#06b6d4",
   },
   {
     id: "which_more_videos",
     title: "Hangisi Daha Emektar?",
-    tagline: "Hangi kanal daha fazla video yüklemiş?",
+    desc: "Hangi kanal daha fazla video yüklemiş?",
     icon: Disc3,
-    accent: "bg-amber-500",
-    glow: "shadow-amber-500/30",
+    color: "#f59e0b",
   },
 ];
-
-const PLAYER_NAMES = [
-  "Ahmet", "Zeynep", "Can", "Elif", "Mert", "Selin", "Emre", "Ayşe", 
-  "Burak", "Deniz", "Kaan", "Melis", "Arda", "Ceren", "Onur", "Beren",
-  "Ege", "Su", "Yiğit", "Duru", "Kerem", "Ece", "Alp", "Naz"
-];
-
-const ROOM_NAMES = [
-  "Efsane Oda", "Çılgın Parti", "YouTube Master", "Lobi 42", 
-  "Pro Oyuncular", "Gece Kuşları", "Kahkaha Garantili", "Acemiler",
-  "Şampiyonlar", "Müzik Odası", "Komedi Kulübü", "Nostaljik"
-];
-
-function getRandomPlayers() {
-  const shuffled = [...PLAYER_NAMES].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 4).map(name => ({
-    name,
-    avatar: name.charAt(0),
-    status: Math.random() > 0.3 ? "online" : "playing"
-  }));
-}
-
-function WaveformBar({ delay = 0 }: { delay?: number }) {
-  return (
-    <div 
-      className="w-1 bg-primary rounded-full animate-waveform"
-      style={{ 
-        animationDelay: `${delay}ms`,
-        height: '100%',
-      }}
-    />
-  );
-}
-
-function RotatingWord() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsAnimating(true);
-      setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % ROTATING_WORDS.length);
-        setIsAnimating(false);
-      }, 400);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <span className="relative inline-block">
-      <span 
-        className={`relative z-10 text-primary transition-all duration-400 ${
-          isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
-        }`}
-      >
-        {ROTATING_WORDS[currentIndex]}?
-      </span>
-      <span className="absolute -inset-1 bg-primary/20 blur-lg rounded-lg" />
-    </span>
-  );
-}
-
-function LiveLobbyPreview() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [players, setPlayers] = useState(getRandomPlayers);
-  const [roomCount, setRoomCount] = useState(12);
-  const [currentRoom, setCurrentRoom] = useState(0);
-  const [isChanging, setIsChanging] = useState(false);
-  
-  // Rotate active player highlight
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % 4);
-    }, 1500);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Change players periodically with animation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsChanging(true);
-      setTimeout(() => {
-        setPlayers(getRandomPlayers());
-        setRoomCount(Math.floor(Math.random() * 15) + 8); // 8-22 rooms
-        setCurrentRoom(prev => (prev + 1) % ROOM_NAMES.length);
-        setIsChanging(false);
-      }, 300);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div className="relative">
-      <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 rounded-2xl blur-xl opacity-60" />
-      <div className="relative bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-medium text-green-500">Canlı Lobiler</span>
-          </div>
-          <span className={`text-xs text-muted-foreground transition-all duration-300 ${isChanging ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-            {roomCount} Aktif Oda
-          </span>
-        </div>
-
-        {/* Current room name */}
-        <div className={`text-center py-1.5 px-3 rounded-lg bg-primary/5 border border-primary/10 transition-all duration-300 ${isChanging ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-          <span className="text-xs font-medium text-primary">{ROOM_NAMES[currentRoom]}</span>
-        </div>
-        
-        <div className="space-y-2">
-          {players.map((player, i) => (
-            <div 
-              key={`${player.name}-${i}`}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-300 ${
-                i === activeIndex ? 'bg-primary/10 scale-[1.02]' : 'bg-muted/30'
-              } ${isChanging ? 'opacity-0 translate-x-2' : 'opacity-100 translate-x-0'}`}
-              style={{ transitionDelay: `${i * 50}ms` }}
-            >
-              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                player.status === 'playing' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-muted text-muted-foreground'
-              }`}>
-                {player.avatar}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{player.name}</p>
-                <p className={`text-[10px] ${player.status === 'playing' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
-                  {player.status === 'playing' ? 'Oyunda' : 'Bekliyor'}
-                </p>
-              </div>
-              {i === activeIndex && (
-                <div className="flex items-center gap-0.5 h-4">
-                  <WaveformBar delay={0} />
-                  <WaveformBar delay={150} />
-                  <WaveformBar delay={300} />
-                  <WaveformBar delay={150} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        
-      </div>
-    </div>
-  );
-}
-
-function FloatingThumbnails() {
-  const thumbnails = [
-    { id: 1, x: 10, y: 20, delay: 0, size: 60 },
-    { id: 2, x: 80, y: 15, delay: 2, size: 50 },
-    { id: 3, x: 25, y: 70, delay: 4, size: 45 },
-    { id: 4, x: 70, y: 65, delay: 1, size: 55 },
-    { id: 5, x: 50, y: 40, delay: 3, size: 40 },
-  ];
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {thumbnails.map((thumb) => (
-        <div
-          key={thumb.id}
-          className="absolute animate-float-slow opacity-[0.07]"
-          style={{
-            left: `${thumb.x}%`,
-            top: `${thumb.y}%`,
-            animationDelay: `${thumb.delay}s`,
-          }}
-        >
-          <div 
-            className="rounded-lg bg-primary/50 flex items-center justify-center"
-            style={{ width: thumb.size, height: thumb.size * 0.6 }}
-          >
-            <Play className="w-4 h-4 text-white/50" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState("");
@@ -262,303 +76,266 @@ export default function Home() {
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
-      const code = roomCode.trim();
-      setLocation(`/oyun/${code}`);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && roomCode.trim()) {
-      handleJoinRoom();
+      setLocation(`/oyun/${roomCode.trim().toUpperCase()}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-background to-background pointer-events-none" />
-      <div className="fixed inset-0 opacity-[0.015] pointer-events-none" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-      }} />
+    <div className="home-page">
+      <div className="home-bg-pattern" />
       
-      <header className="flex items-center justify-center p-6 relative z-10">
-        <Logo height={72} />
+      <header className="home-header">
+        <Logo height={56} />
       </header>
 
-      <main className="flex-1 relative z-10 flex flex-col">
-        <section className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 px-4 lg:px-16 py-12 lg:py-0 relative">
-          <FloatingThumbnails />
-          
-          <div className="flex-1 max-w-xl lg:max-w-lg space-y-6 text-center lg:text-left">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
-              <span className="block">Arkadaşların</span>
-              <span className="block">
-                Ne <RotatingWord />
-              </span>
+      <main className="home-main">
+        <section className="hero-section">
+          <div className="hero-content">
+            <div className="hero-badge">
+              <SiYoutube className="hero-badge-icon" />
+              <span>YouTube Tahmin Yarışması</span>
+            </div>
+            
+            <h1 className="hero-title">
+              Kim Dinliyor?
             </h1>
             
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-md mx-auto lg:mx-0">
-              YouTube hesabını bağla, arkadaşlarını davet et. Kim hangi videoyu beğenmiş, kime abone? Tahmin et, puan topla, eğlen!
+            <p className="hero-desc">
+              Arkadaşlarınla veya herkese açık odalarda yarış! YouTube hesabını bağla, 
+              videoları ve kanalları tahmin et, en yüksek puanı topla.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-center lg:justify-start">
-              <Link href="/oda-olustur" className="group">
-                <Button 
-                  size="lg" 
-                  className="w-full sm:w-auto gap-2 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
-                  data-testid="button-create-room"
-                >
-                  <Plus className="h-5 w-5" />
+            <div className="hero-features">
+              <div className="hero-feature">
+                <Users className="hero-feature-icon" />
+                <span>2-12 Oyuncu</span>
+              </div>
+              <div className="hero-feature">
+                <Play className="hero-feature-icon" />
+                <span>8 Farklı Mod</span>
+              </div>
+              <div className="hero-feature">
+                <SiYoutube className="hero-feature-icon" />
+                <span>Gerçek Veriler</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="play-options-section">
+          <div className="play-options-grid">
+            <div className="play-option-card">
+              <div className="play-option-header">
+                <div className="play-option-icon-wrap" style={{ background: 'rgba(239, 68, 68, 0.15)' }}>
+                  <Users style={{ color: '#ef4444' }} />
+                </div>
+                <h2 className="play-option-title">Arkadaşlarınla Oyna</h2>
+              </div>
+              <p className="play-option-desc">
+                Özel bir oda oluştur, arkadaşlarını davet et. Kendi aranızda eğlenceli bir yarışma başlat!
+              </p>
+              <Link href="/oda-olustur">
+                <Button className="play-option-btn" data-testid="button-create-room">
+                  <Plus />
                   Oda Oluştur
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                  <ChevronRight />
                 </Button>
               </Link>
-              
-              <div className="flex items-center gap-2">
+            </div>
+
+            <div className="play-option-card">
+              <div className="play-option-header">
+                <div className="play-option-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.15)' }}>
+                  <ArrowRight style={{ color: '#3b82f6' }} />
+                </div>
+                <h2 className="play-option-title">Odaya Katıl</h2>
+              </div>
+              <p className="play-option-desc">
+                Arkadaşından aldığın 6 haneli oda kodunu gir ve hemen oyuna dahil ol!
+              </p>
+              <div className="join-form">
                 <Input
-                  placeholder="Oda kodu"
+                  placeholder="Oda Kodu"
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
                   maxLength={7}
-                  className="flex-1 sm:w-28 uppercase text-center font-mono tracking-widest h-10"
+                  className="join-input"
                   data-testid="input-room-code"
                 />
                 <Button
                   onClick={handleJoinRoom}
                   disabled={!roomCode.trim()}
                   variant="outline"
-                  className="h-10"
+                  className="join-btn"
                   data-testid="button-join-room"
                 >
                   Katıl
                 </Button>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 justify-center lg:justify-start pt-4 flex-wrap">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
-                <Users className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-medium">2-12 Kişi</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
-                <Zap className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-xs font-medium">4 Mod</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
-                <Trophy className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-xs font-medium">Seri Bonus</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full max-w-xs lg:max-w-sm hidden lg:block">
-            <LiveLobbyPreview />
           </div>
         </section>
 
-        <div className="relative h-24 -mt-12">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <polygon fill="hsl(var(--muted) / 0.3)" points="0,100 100,0 100,100" />
-          </svg>
-        </div>
-
-        <section className="py-16 px-4 bg-muted/30 relative">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-8 w-1 rounded-full bg-primary" />
-              <h2 className="text-2xl font-bold">Oyun Modları</h2>
+        <section className="modes-section">
+          <div className="modes-container">
+            <div className="section-header">
+              <div className="section-line" />
+              <h2 className="section-title">Oyun Modları</h2>
+              <div className="section-line" />
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-              {GAME_MODES.map((mode, index) => {
-                const Icon = mode.icon;
-                return (
-                  <div 
-                    key={mode.id}
-                    className={`group relative rounded-xl bg-card border border-border/50 p-4 lg:p-5 hover:border-border transition-all duration-300 hover:-translate-y-1 ${
-                      index % 2 === 0 ? '' : 'lg:translate-y-4'
-                    }`}
-                  >
-                    <div className={`absolute inset-0 rounded-xl ${mode.glow} shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                    <div className="relative">
-                      <div className={`inline-flex items-center justify-center h-10 w-10 rounded-lg ${mode.accent} mb-3`}>
-                        <Icon className="h-5 w-5 text-white" />
+            <div className="modes-category">
+              <div className="modes-category-header">
+                <h3 className="modes-category-title">Tahmin Modları</h3>
+                <Badge variant="outline" className="modes-category-badge">
+                  <SiGoogle className="modes-badge-icon" />
+                  YouTube Girişi Gerekli
+                </Badge>
+              </div>
+              <p className="modes-category-desc">
+                Oyuncuların YouTube hesaplarından alınan verilerle oynanan modlar. 
+                Herkesin YouTube hesabını bağlaması gerekir.
+              </p>
+              <div className="modes-grid modes-grid-3">
+                {TAHMIN_MODLARI.map((mode) => {
+                  const Icon = mode.icon;
+                  return (
+                    <div key={mode.id} className="mode-card" data-testid={`card-mode-${mode.id}`}>
+                      <div className="mode-card-accent" style={{ background: mode.color }} />
+                      <div className="mode-card-icon" style={{ background: `${mode.color}20`, color: mode.color }}>
+                        <Icon />
                       </div>
-                      <h3 className="font-bold text-sm lg:text-base mb-1">{mode.title}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {mode.tagline}
-                      </p>
+                      <h4 className="mode-card-title">{mode.title}</h4>
+                      <p className="mode-card-desc">{mode.desc}</p>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16 px-4 relative">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-10 justify-center">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border max-w-24" />
-              <h2 className="text-2xl font-bold">Nasıl Oynanır?</h2>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border max-w-24" />
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-primary via-primary/50 to-transparent hidden md:block" />
-              
-              <div className="space-y-8 md:space-y-0">
-                {[
-                  {
-                    step: 1,
-                    title: "Oda Oluştur",
-                    desc: "Altı haneli kod ile yeni bir oyun odası aç veya arkadaşının kodunu gir.",
-                    icon: Users,
-                  },
-                  {
-                    step: 2,
-                    title: "YouTube Hesabını Bağla",
-                    desc: "Google ile giriş yap. Beğendiğin videolar ve aboneliklerin oyuna eklenir.",
-                    icon: Youtube,
-                  },
-                  {
-                    step: 3,
-                    title: "Tahmin Et ve Kazan!",
-                    desc: "Her turda soruları cevapla, seri bonusu yakala ve liderliği al!",
-                    icon: Trophy,
-                  },
-                ].map((item, i) => (
-                  <div 
-                    key={item.step}
-                    className={`relative flex items-center gap-4 md:gap-8 ${
-                      i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
-                    }`}
-                  >
-                    <div className={`flex-1 ${i % 2 === 0 ? 'md:text-right' : 'md:text-left'}`}>
-                      <div className={`inline-block bg-card border border-border/50 rounded-xl p-4 lg:p-5 max-w-sm ${
-                        i % 2 === 0 ? 'md:ml-auto' : 'md:mr-auto'
-                      }`}>
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <item.icon className="h-4 w-4 text-primary" />
-                          </div>
-                          <h3 className="font-bold">{item.title}</h3>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {item.desc}
-                        </p>
+            <div className="modes-category">
+              <div className="modes-category-header">
+                <h3 className="modes-category-title">Karşılaştırma Modları</h3>
+                <Badge variant="secondary" className="modes-category-badge-free">
+                  Giriş Gerekmez
+                </Badge>
+              </div>
+              <p className="modes-category-desc">
+                Trend videolar ve popüler kanallarla oynanan modlar. 
+                YouTube hesabı bağlamadan herkes oynayabilir.
+              </p>
+              <div className="modes-grid modes-grid-5">
+                {KARSILASTIRMA_MODLARI.map((mode) => {
+                  const Icon = mode.icon;
+                  return (
+                    <div key={mode.id} className="mode-card" data-testid={`card-mode-${mode.id}`}>
+                      <div className="mode-card-accent" style={{ background: mode.color }} />
+                      <div className="mode-card-icon" style={{ background: `${mode.color}20`, color: mode.color }}>
+                        <Icon />
                       </div>
+                      <h4 className="mode-card-title">{mode.title}</h4>
+                      <p className="mode-card-desc">{mode.desc}</p>
                     </div>
-                    
-                    <div className="hidden md:flex items-center justify-center">
-                      <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg z-10">
-                        {item.step}
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 hidden md:block" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         </section>
 
-        <section className="py-12 px-4">
-          <div className="max-w-xl mx-auto">
-            <div className="relative rounded-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary to-red-600" />
-              <div className="absolute inset-0 opacity-10" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-              }} />
-              <div className="relative p-6 lg:p-8 text-center">
-                <h3 className="text-xl lg:text-2xl font-bold text-white mb-2">
-                  Hemen Oynamaya Başla!
-                </h3>
-                <p className="text-white/80 text-sm mb-5">
-                  Arkadaşlarını topla ve YouTube yarışmasına katıl.
-                </p>
-                <Link href="/oda-olustur">
-                  <Button 
-                    size="lg" 
-                    variant="secondary"
-                    className="font-semibold gap-2"
-                    data-testid="button-cta-create"
-                  >
-                    <SiYoutube className="h-5 w-5" />
-                    Oda Oluştur
-                  </Button>
-                </Link>
+        <section className="howto-section">
+          <div className="howto-container">
+            <div className="section-header">
+              <div className="section-line" />
+              <h2 className="section-title">Nasıl Oynanır?</h2>
+              <div className="section-line" />
+            </div>
+
+            <div className="howto-steps">
+              <div className="howto-step">
+                <div className="howto-step-num">1</div>
+                <div className="howto-step-content">
+                  <h3 className="howto-step-title">Oda Oluştur veya Katıl</h3>
+                  <p className="howto-step-desc">
+                    6 haneli kod ile yeni bir oda aç veya arkadaşının paylaştığı kodu girerek katıl.
+                  </p>
+                </div>
               </div>
+
+              <div className="howto-connector" />
+
+              <div className="howto-step">
+                <div className="howto-step-num">2</div>
+                <div className="howto-step-content">
+                  <h3 className="howto-step-title">YouTube Hesabını Bağla</h3>
+                  <p className="howto-step-desc">
+                    Tahmin modları için Google ile giriş yap. Beğendiğin videolar ve aboneliklerin oyuna eklenir.
+                  </p>
+                </div>
+              </div>
+
+              <div className="howto-connector" />
+
+              <div className="howto-step">
+                <div className="howto-step-num">3</div>
+                <div className="howto-step-content">
+                  <h3 className="howto-step-title">Tahmin Et ve Kazan!</h3>
+                  <p className="howto-step-desc">
+                    Her turda soruları cevapla, seri bonusu yakala ve liderlik tablosunda zirveye çık!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="cta-section">
+          <div className="cta-card">
+            <div className="cta-content">
+              <SiYoutube className="cta-icon" />
+              <h3 className="cta-title">Hemen Başla!</h3>
+              <p className="cta-desc">
+                Arkadaşlarını topla, YouTube hesabını bağla ve yarışmaya katıl.
+              </p>
+              <Link href="/oda-olustur">
+                <Button size="lg" variant="secondary" className="cta-btn" data-testid="button-cta-create">
+                  <Plus />
+                  Oda Oluştur
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="py-6 px-4 border-t border-border relative z-10">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-4 flex-wrap justify-center">
-              <Link href="/gizlilik-politikasi">
-                <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-privacy">
-                  Gizlilik Politikası
-                </span>
-              </Link>
-              <span className="text-border">|</span>
-              <Link href="/kullanim-kosullari">
-                <span className="hover:text-primary transition-colors cursor-pointer" data-testid="link-terms">
-                  Kullanım Koşulları
-                </span>
-              </Link>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6">
-              <div className="flex items-center gap-1">
-                <span>Geliştirici:</span>
-                <a
-                  href="https://toov.com.tr"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-foreground hover:text-primary transition-colors"
-                  data-testid="link-developer"
-                >
-                  TOOV
-                </a>
-                <span className="text-primary">&lt;3</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>Powered by</span>
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:opacity-80 transition-opacity"
-                  data-testid="link-youtube"
-                >
-                  <SiYoutube size={20} className="text-red-500" />
-                  <span className="font-semibold text-red-500">YouTube</span>
-                </a>
-              </div>
-            </div>
+      <footer className="home-footer">
+        <div className="footer-content">
+          <div className="footer-links">
+            <Link href="/gizlilik-politikasi">
+              <span className="footer-link" data-testid="link-privacy">Gizlilik Politikası</span>
+            </Link>
+            <span className="footer-divider">|</span>
+            <Link href="/kullanim-kosullari">
+              <span className="footer-link" data-testid="link-terms">Kullanım Koşulları</span>
+            </Link>
+          </div>
+          <div className="footer-credits">
+            <span>Geliştirici: </span>
+            <a href="https://toov.com.tr" target="_blank" rel="noopener noreferrer" className="footer-dev" data-testid="link-developer">
+              TOOV
+            </a>
+            <span className="footer-heart">&lt;3</span>
+          </div>
+          <div className="footer-powered">
+            <span>Powered by </span>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="footer-yt" data-testid="link-youtube">
+              <SiYoutube />
+              <span>YouTube</span>
+            </a>
           </div>
         </div>
       </footer>
-
-      <style>{`
-        @keyframes waveform {
-          0%, 100% { height: 4px; }
-          50% { height: 16px; }
-        }
-        .animate-waveform {
-          animation: waveform 0.6s ease-in-out infinite;
-        }
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(3deg); }
-        }
-        .animate-float-slow {
-          animation: float-slow 8s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
