@@ -1019,6 +1019,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           currentRound: gameState.currentRound,
           timeLeft: gameState.timeLeft,
           isLightningRound: gameState.isLightningRound,
+          gameMode: gameState.currentGameMode,
         } : null,
         currentRound,
         content: content ? {

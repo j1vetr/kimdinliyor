@@ -289,18 +289,23 @@ export default function Game() {
   }, [gameStatus]);
 
   useEffect(() => {
-    if (gameQuery.data) {
+    if (gameQuery.data && countdownComplete) {
       const data = gameQuery.data;
-      // Only sync game state after countdown is complete
-      if (data.gameState && countdownComplete) {
-        if (gameStatus === "waiting" && data.gameState.status !== "waiting") {
-          setGameStatus(data.gameState.status);
-          setCurrentRound(data.gameState.currentRound || 0);
+      // Sync game state after countdown is complete
+      if (data.gameState) {
+        if (gameStatus === "waiting" && data.gameState.status === "question") {
+          setGameStatus("question");
+          setCurrentRound(data.gameState.currentRound || 1);
           setIsLightningRound(data.gameState.isLightningRound || false);
           setTimeLeft(data.gameState.timeLeft || 20);
+          setTotalTime(data.gameState.timeLeft || 20);
+          if (data.gameState.gameMode) {
+            setGameMode(data.gameState.gameMode);
+          }
         }
       }
-      if (data.content && !content && countdownComplete) {
+      // Set content if available and not already set
+      if (data.content && !content) {
         setContent(data.content);
       }
     }
