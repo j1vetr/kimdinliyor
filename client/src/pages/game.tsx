@@ -107,6 +107,8 @@ export default function Game() {
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [playerScores, setPlayerScores] = useState<Map<string, number>>(new Map());
+  const [resultsCountdown, setResultsCountdown] = useState(5);
+  const [nextRoundAt, setNextRoundAt] = useState<number | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   
   // Determine if current mode is a comparison mode
@@ -164,7 +166,7 @@ export default function Game() {
       return response.json();
     },
     enabled: !!roomCode && !!userId,
-    refetchInterval: 1000,
+    refetchInterval: 500,
   });
 
   const answerMutation = useMutation({
@@ -277,6 +279,18 @@ export default function Game() {
     return () => clearInterval(timer);
   }, [gameStatus]);
 
+  // Results countdown timer - update every 100ms for accuracy
+  useEffect(() => {
+    if (gameStatus !== "results" || !nextRoundAt) return;
+    
+    const timer = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((nextRoundAt - Date.now()) / 1000));
+      setResultsCountdown(remaining);
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [gameStatus, nextRoundAt]);
+
   // gameQuery effect: Sync state for round transitions and results
   useEffect(() => {
     if (!gameQuery.data) return;
@@ -318,6 +332,14 @@ export default function Game() {
       console.log(`[Polling] Transitioning to results - Round ${serverRound}`);
       setGameStatus("results");
       setCurrentRound(serverRound);
+      // Set next round timing
+      if (data.gameState.nextRoundAt) {
+        setNextRoundAt(data.gameState.nextRoundAt);
+        const remaining = Math.max(0, Math.ceil((data.gameState.nextRoundAt - Date.now()) / 1000));
+        setResultsCountdown(remaining);
+      } else {
+        setResultsCountdown(5);
+      }
       // Sync results data from polling fallback
       if (data.gameState.correctUserIds) {
         setCorrectPlayerIds(data.gameState.correctUserIds);
@@ -764,7 +786,9 @@ export default function Game() {
                 )}
               </div>
               <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-muted/30 border border-border/20">
-                <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">Sonuçlar</span>
+                <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  {resultsCountdown > 0 ? `Sonraki ${resultsCountdown}s` : "Yükleniyor..."}
+                </span>
               </div>
             </div>
           </header>

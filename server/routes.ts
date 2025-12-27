@@ -15,6 +15,7 @@ interface GameState {
   timeLeft: number;
   contentId: string | null;
   roundStartTime: number | null;
+  resultsStartTime: number | null;
   answeredUsers: Set<string>;
   usedContentIds: Set<string>;
   contentsByOwner: Map<string, string[]>;
@@ -712,6 +713,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         timeLeft: room.roundDuration || 20,
         contentId: null,
         roundStartTime: null,
+        resultsStartTime: null,
         answeredUsers: new Set(),
         usedContentIds: new Set(),
         contentsByOwner,
@@ -1086,6 +1088,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!gameState) return;
 
     gameState.status = "results";
+    gameState.resultsStartTime = Date.now();
 
     // Get current round
     const currentRound = await storage.getCurrentRound(room.id);
@@ -1310,6 +1313,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         content2 = await storage.getContentById(currentRound.contentId2);
       }
 
+      // Calculate nextRoundAt for results phase (5 seconds after results started)
+      const RESULTS_DURATION_MS = 5000;
+      const nextRoundAt = gameState?.status === "results" && gameState.resultsStartTime 
+        ? gameState.resultsStartTime + RESULTS_DURATION_MS 
+        : undefined;
+
       res.json({
         room,
         gameState: gameState ? {
@@ -1322,6 +1331,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           correctUserIds: gameState.status === "results" ? gameState.lastRoundCorrectUserIds : undefined,
           correctContentId: gameState.status === "results" ? gameState.lastRoundCorrectContentId : undefined,
           results: gameState.status === "results" ? gameState.lastRoundResults : undefined,
+          nextRoundAt: nextRoundAt,
         } : null,
         currentRound,
         content: content ? {
