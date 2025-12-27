@@ -205,6 +205,7 @@ export default function Game() {
             break;
             
           case "round_ended":
+            console.log("Round ended - correctUserIds:", message.correctUserIds);
             setGameStatus("results");
             setCorrectPlayerIds(message.correctUserIds || []);
             setRoundResults(message.results || []);
@@ -1035,6 +1036,11 @@ export default function Game() {
                     </div>
                   ) : correctPlayerIds.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
+                      {(() => {
+                        console.log("Matching players - correctPlayerIds:", correctPlayerIds);
+                        console.log("allPlayers userIds:", allPlayers.map((p: any) => ({ userId: p.userId, "user.id": p.user?.id })));
+                        return null;
+                      })()}
                       {allPlayers
                         .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
                         .map((player: any) => {
