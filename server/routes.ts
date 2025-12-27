@@ -515,6 +515,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const type = entries[0].type;
           const users = entries.map(e => e.userId);
 
+          console.log(`[GAME START] Adding content: ${content.title} with sourceUserIds: ${JSON.stringify(users)}`);
+
           await storage.addContent({
             roomId: room.id,
             contentId: content.id,
@@ -782,6 +784,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Get content for this round
     const content = currentRound.contentId ? await storage.getContentById(currentRound.contentId) : null;
     const correctUserIds = content?.sourceUserIds || [];
+    console.log(`[ROUND END] Content: ${content?.title}, sourceUserIds: ${JSON.stringify(correctUserIds)}`);
 
     // Calculate scores for all answers
     const answers = await storage.getAnswersByRound(currentRound.id);
