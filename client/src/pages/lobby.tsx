@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Info, Zap, Timer, Check, ArrowRight, Radio, Tv, Mic2, Signal } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Zap, Timer, Check, ArrowRight, Radio, Tv } from "lucide-react";
 import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,6 +14,42 @@ import type { RoomWithPlayers } from "@shared/schema";
 
 interface GoogleStatus {
   connected: boolean;
+}
+
+function EqualizerBars({ active = false, count = 5 }: { active?: boolean; count?: number }) {
+  return (
+    <div className="flex items-end gap-[2px] h-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <motion.div
+          key={i}
+          animate={active ? { 
+            height: [4, 12 + Math.random() * 4, 6, 14, 4],
+          } : { height: 4 }}
+          transition={{ 
+            duration: 0.8 + Math.random() * 0.4, 
+            repeat: active ? Infinity : 0,
+            delay: i * 0.1 
+          }}
+          className={`w-[3px] rounded-sm ${active ? "bg-primary" : "bg-muted-foreground/30"}`}
+          style={{ height: 4 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SignalDot({ active = false, delay = 0 }: { active?: boolean; delay?: number }) {
+  return (
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0.5 }}
+      animate={active ? { 
+        scale: [0.8, 1, 0.8],
+        opacity: [0.5, 1, 0.5],
+      } : { scale: 0.8, opacity: 0.3 }}
+      transition={{ duration: 1.5, repeat: Infinity, delay }}
+      className={`h-2 w-2 rounded-full ${active ? "bg-emerald-400" : "bg-muted-foreground/40"}`}
+    />
+  );
 }
 
 export default function Lobby() {
@@ -217,13 +253,10 @@ export default function Lobby() {
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="h-16 w-16 rounded-full border-4 border-primary/20 border-t-primary mx-auto"
+              className="h-12 w-12 rounded-full border-2 border-primary/20 border-t-primary mx-auto"
             />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Radio className="h-6 w-6 text-primary" />
-            </div>
           </div>
-          <p className="text-muted-foreground mt-4">Lobi Yükleniyor...</p>
+          <p className="text-muted-foreground mt-3 text-sm">Yükleniyor...</p>
         </motion.div>
       </div>
     );
@@ -232,28 +265,26 @@ export default function Lobby() {
   if (roomQuery.isError || !roomQuery.data) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-center p-4 border-b border-border/50">
-          <Logo height={48} />
+        <header className="flex items-center justify-center p-3 border-b border-border/30">
+          <Logo height={36} />
         </header>
         <main className="flex-1 flex items-center justify-center p-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-md"
+            className="text-center max-w-sm"
           >
-            <div className="relative inline-block mb-6">
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-destructive/20 to-destructive/5 flex items-center justify-center">
-                <Tv className="h-10 w-10 text-destructive" />
-              </div>
+            <div className="h-14 w-14 rounded-xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <Tv className="h-7 w-7 text-destructive" />
             </div>
-            <h2 className="text-2xl font-bold mb-2">Oda Bulunamadı</h2>
-            <p className="text-muted-foreground mb-6">
-              Bu oda artık mevcut değil veya silinmiş olabilir.
+            <h2 className="text-lg font-bold mb-1">Oda Bulunamadı</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Bu oda artık mevcut değil.
             </p>
             <Link href="/">
-              <Button className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Ana Sayfaya Dön
+              <Button size="sm" className="gap-1.5">
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Ana Sayfa
               </Button>
             </Link>
           </motion.div>
@@ -277,175 +308,106 @@ export default function Lobby() {
   if (!isUserInRoom) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <header className="flex items-center justify-center p-4 border-b border-border/50 backdrop-blur-sm bg-background/80">
-          <Logo height={48} />
+        <header className="flex items-center justify-center p-3 border-b border-border/30 bg-background/90 backdrop-blur-sm">
+          <Logo height={32} />
         </header>
-        <main className="flex-1 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-primary blur-3xl" />
-            <div className="absolute bottom-20 left-10 w-48 h-48 rounded-full bg-amber-500 blur-3xl" />
-          </div>
-
-          <div className="relative max-w-xl mx-auto px-4 py-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-8"
-            >
-              <motion.div 
-                animate={{ 
-                  boxShadow: ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 12px rgba(255,0,0,0.1)", "0 0 0 0 rgba(255,0,0,0)"]
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-red-600 mb-4 shadow-lg shadow-primary/30"
-              >
-                <Tv className="h-8 w-8 text-white" />
-              </motion.div>
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">{room.name}</h1>
-              <p className="text-muted-foreground">
-                {isFull ? "Bu Lobi Şu Anda Dolu" : "Lobiye Katılmak İçin Bilgilerini Gir"}
+        <main className="flex-1 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-xs"
+          >
+            <div className="text-center mb-5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 mb-3">
+                <motion.div 
+                  animate={{ opacity: [1, 0.4, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="h-1.5 w-1.5 rounded-full bg-primary"
+                />
+                <span className="text-[10px] font-medium text-primary uppercase tracking-wide">Aktif Lobi</span>
+              </div>
+              <h1 className="text-lg font-bold mb-0.5">{room.name}</h1>
+              <p className="text-xs text-muted-foreground">
+                {isFull ? "Lobi dolu" : "Katılmak için adını gir"}
               </p>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 mb-6"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-primary font-medium mb-1">Katılım Kodu</p>
-                  <div className="flex gap-1">
-                    {roomCode?.split("").map((char, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="h-10 w-8 rounded-lg bg-muted flex items-center justify-center font-mono font-bold text-xl"
-                      >
-                        {char}
-                      </motion.div>
-                    ))}
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/40 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Oda Kodu</span>
+                <div className="flex items-center gap-1">
+                  <Users className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] text-muted-foreground">{playerCount}/{maxPlayers}</span>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {roomCode?.split("").map((char, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 h-8 rounded bg-background border border-border/50 flex items-center justify-center font-mono font-bold text-sm"
+                  >
+                    {char}
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground mb-1">Oyuncular</p>
-                  <p className="text-2xl font-bold">{playerCount}<span className="text-muted-foreground">/{maxPlayers}</span></p>
-                </div>
+                ))}
               </div>
+            </div>
 
-              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-primary/10">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                  <Zap className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-xs font-medium">{room.totalRounds} Tur</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-                  <Timer className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="text-xs font-medium">{room.roundDuration} Saniye</span>
-                </div>
-              </div>
-            </motion.div>
-              
             {!isFull && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="relative mb-6"
-              >
-                <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 via-emerald-500/50 to-transparent rounded-full" />
-                <div className="pl-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                      <Mic2 className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold">Oyuncu Adın</h2>
-                      <p className="text-xs text-muted-foreground">Diğer Oyunculara Görünecek İsim</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="Örnek: Ahmet"
-                      value={joinName}
-                      onChange={(e) => setJoinName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
-                      disabled={isJoining}
-                      className="h-14 text-lg pl-5 bg-muted/30 border-border/50 focus:border-emerald-500/50 transition-all"
-                      data-testid="input-join-name"
-                    />
-                    <Button
-                      className="w-full h-12 text-base font-semibold gap-2 bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25"
-                      onClick={handleQuickJoin}
-                      disabled={!joinName.trim() || isJoining}
-                      data-testid="button-quick-join"
-                    >
-                      {isJoining ? (
-                        <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
-                          Katılınıyor...
-                        </>
-                      ) : (
-                        <>
-                          Lobiye Katıl
-                          <ArrowRight className="h-5 w-5" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-              
-            {isFull && (
-              <div className="text-center">
-                <Link href="/">
-                  <Button variant="outline" className="gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    Ana Sayfaya Dön
-                  </Button>
-                </Link>
+              <div className="space-y-3">
+                <Input
+                  placeholder="Adın"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value)}
+                  maxLength={20}
+                  className="h-10 text-sm bg-background"
+                  data-testid="input-join-name"
+                  onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
+                />
+                <Button
+                  onClick={handleQuickJoin}
+                  disabled={!joinName.trim() || isJoining}
+                  className="w-full h-10 text-sm gap-1.5"
+                  data-testid="button-quick-join"
+                >
+                  {isJoining ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Katılınıyor
+                    </>
+                  ) : (
+                    <>
+                      Lobiye Katıl
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </Button>
               </div>
             )}
-              
+
             {players.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="p-5 rounded-2xl bg-muted/20 border border-border/30"
-              >
-                <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
+              <div className="mt-5 pt-4 border-t border-border/30">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">
                   Lobideki Oyuncular
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {players.map((p, i) => (
-                    <motion.div 
+                    <div 
                       key={p.id}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl ${
+                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${
                         p.user.googleConnected 
-                          ? "bg-emerald-500/10 border border-emerald-500/20" 
-                          : "bg-muted/50 border border-border/30"
+                          ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" 
+                          : "bg-muted/50 border border-border/30 text-muted-foreground"
                       }`}
                     >
-                      {p.userId === room.hostUserId && <Crown className="h-3.5 w-3.5 text-amber-500" />}
-                      <span className="text-sm font-medium">{p.user.displayName}</span>
-                      {p.user.googleConnected && (
-                        <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      )}
-                    </motion.div>
+                      {p.userId === room.hostUserId && <Crown className="h-2.5 w-2.5 text-amber-400" />}
+                      <span className="font-medium">{p.user.displayName}</span>
+                      {p.user.googleConnected && <Check className="h-2.5 w-2.5" />}
+                    </div>
                   ))}
                 </div>
-              </motion.div>
+              </div>
             )}
-          </div>
+          </motion.div>
         </main>
       </div>
     );
@@ -453,386 +415,319 @@ export default function Lobby() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="relative flex items-center justify-center p-4 border-b border-border/50 backdrop-blur-sm bg-background/80 sticky top-0 z-50">
-        <Link href="/" className="absolute left-4">
-          <Button variant="ghost" size="icon" data-testid="button-back">
-            <ArrowLeft className="h-5 w-5" />
+      {/* Minimal Header */}
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border/30 bg-background/95 backdrop-blur-sm sticky top-0 z-50">
+        <Link href="/">
+          <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-back">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <Logo height={40} />
-        {isHost && (
-          <div className="absolute right-4 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
-            <Crown className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-amber-500" />
-            <span className="text-[10px] sm:text-xs font-medium text-amber-500">Host</span>
-          </div>
-        )}
+        <Logo height={28} />
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={copyRoomCode} data-testid="button-copy-code">
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Kodu Kopyala</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={shareRoom} data-testid="button-share">
+                <Share2 className="h-3.5 w-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Paylaş</TooltipContent>
+          </Tooltip>
+        </div>
       </header>
 
-      <main className="flex-1 relative overflow-hidden flex items-start lg:items-center justify-center">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-20 w-72 h-72 rounded-full bg-primary blur-3xl" />
-          <div className="absolute bottom-20 right-10 w-56 h-56 rounded-full bg-emerald-500 blur-3xl" />
-        </div>
-
-        <div className="relative w-full max-w-4xl mx-auto px-4 py-5 lg:py-6">
-          <div className="flex flex-col lg:flex-row gap-5">
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-2xl mx-auto px-3 py-4 space-y-4">
+          
+          {/* Room Console Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative"
+          >
+            {/* Console Background */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-muted/60 to-muted/20 border border-border/40" />
             
-            <div className="flex-1 space-y-4">
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="relative"
-              >
-                <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
-                <div className="pl-3">
-                  <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-3">
-                        <motion.div 
-                          animate={{ 
-                            boxShadow: ["0 0 0 0 rgba(255,0,0,0)", "0 0 0 6px rgba(255,0,0,0.15)", "0 0 0 0 rgba(255,0,0,0)"]
-                          }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                          className="h-11 w-11 lg:h-10 lg:w-10 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-md shadow-primary/25"
-                        >
-                          <Tv className="h-5 w-5 lg:h-4 lg:w-4 text-white" />
-                        </motion.div>
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <motion.div 
-                              animate={{ opacity: [1, 0.5, 1] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                              className="h-1.5 w-1.5 rounded-full bg-red-500"
-                            />
-                            <span className="text-[10px] text-red-500 font-medium">Aktif Oda</span>
-                          </div>
-                          <h2 className="text-base lg:text-sm font-bold">{room.name}</h2>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={copyRoomCode} data-testid="button-copy-code">
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Kodu Kopyala</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={shareRoom} data-testid="button-share">
-                              <Share2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Paylaş</TooltipContent>
-                        </Tooltip>
-                      </div>
+            {/* Console Content */}
+            <div className="relative p-3">
+              {/* Top Bar - Room Info */}
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-primary/90 flex items-center justify-center">
+                      <SiYoutube className="h-5 w-5 text-white" />
                     </div>
-
-                    <div className="flex items-center gap-1.5 mb-3">
-                      <p className="text-[10px] text-muted-foreground">Katılım Kodu:</p>
-                      <div className="flex gap-0.5">
-                        {roomCode?.split("").map((char, i) => (
-                          <div
-                            key={i}
-                            className="h-6 w-5 lg:h-5 lg:w-4 rounded bg-muted flex items-center justify-center font-mono font-bold text-xs lg:text-[10px]"
-                          >
-                            {char}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50">
-                        <Users className="h-3 w-3 text-primary" />
-                        <span className="text-[10px] font-medium" data-testid="text-player-count">{playerCount}/{maxPlayers} <span className="hidden sm:inline">Oyuncu</span></span>
-                      </div>
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50">
-                        <Zap className="h-3 w-3 text-amber-500" />
-                        <span className="text-[10px] font-medium">{room.totalRounds} Tur</span>
-                      </div>
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted/50">
-                        <Timer className="h-3 w-3 text-blue-500" />
-                        <span className="text-[10px] font-medium">{room.roundDuration}sn</span>
-                      </div>
+                    <motion.div 
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 border border-background"
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <h1 className="font-bold text-sm truncate">{room.name}</h1>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      <span className="font-mono">{roomCode}</span>
+                      <span>|</span>
+                      <span>{room.totalRounds} tur</span>
+                      <span>|</span>
+                      <span>{room.roundDuration}sn</span>
                     </div>
                   </div>
                 </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="relative"
-              >
-                <div className={`absolute -left-3 top-0 bottom-0 w-0.5 rounded-full ${
-                  googleStatusQuery.data?.connected 
-                    ? "bg-gradient-to-b from-emerald-500 via-emerald-500/50 to-transparent"
-                    : "bg-gradient-to-b from-amber-500 via-amber-500/50 to-transparent"
-                }`} />
-                <div className="pl-3">
-                  {!googleStatusQuery.data?.connected ? (
-                    <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <div className="h-10 w-10 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md shadow-amber-500/20">
-                              <SiYoutube className="h-4 w-4 text-white" />
-                            </div>
-                            <motion.div
-                              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
-                              transition={{ duration: 2, repeat: Infinity }}
-                              className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-amber-500 flex items-center justify-center"
-                            >
-                              <span className="text-[8px] text-white font-bold">!</span>
-                            </motion.div>
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-bold">YouTube Bağlantısı Gerekli</h3>
-                            <p className="text-[10px] text-muted-foreground">Oyuna Katılmak İçin Hesabını Bağla</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <Button
-                            onClick={connectGoogle}
-                            size="sm"
-                            className="bg-white hover:bg-gray-100 text-gray-900 font-semibold gap-1.5 border border-gray-300 shadow-md h-8 text-xs"
-                            data-testid="button-connect-google"
-                          >
-                            <SiGoogle className="h-3.5 w-3.5" />
-                            Bağlan
-                          </Button>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" data-testid="button-google-info">
-                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-xs text-center">
-                              <p>Giriş işlemi Google üzerinden güvenli şekilde gerçekleşir.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-3.5 lg:p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/20">
-                      <div className="flex items-center gap-2.5">
-                        <div className="relative">
-                          <div className="h-9 w-9 lg:h-8 lg:w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
-                            <SiYoutube className="h-4 w-4 lg:h-3.5 lg:w-3.5 text-white" />
-                          </div>
-                          <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-background">
-                            <Check className="h-2.5 w-2.5 text-white" />
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-500">YouTube Bağlı</p>
-                          <p className="text-[10px] text-muted-foreground">Hesabın Başarıyla Bağlandı</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                
+                {/* Status Indicators */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="hidden sm:flex items-center gap-1">
+                    <SignalDot active={connectedCount >= 1} delay={0} />
+                    <SignalDot active={connectedCount >= 2} delay={0.1} />
+                    <SignalDot active={connectedCount >= 3} delay={0.2} />
+                  </div>
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-background/60 border border-border/40">
+                    <Users className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs font-mono font-medium">{playerCount}/{maxPlayers}</span>
+                  </div>
                 </div>
-              </motion.div>
+              </div>
 
-              {isHost && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="relative"
-                >
-                  <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-500 via-purple-500/50 to-transparent rounded-full" />
-                  <div className="pl-3">
-                    <div className="p-4 lg:p-3.5 rounded-xl bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent border border-purple-500/20">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 lg:h-9 lg:w-9 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-md shadow-purple-500/20">
-                            <Play className="h-4 w-4 text-white" />
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-bold">Oda Kontrolü</h3>
-                            <p className="text-[10px] text-muted-foreground">
-                              {!canStart && playerCount < 2 && "En Az 2 Oyuncu Gerekli"}
-                              {!canStart && playerCount >= 2 && !allGoogleConnected && `${connectedCount}/${playerCount} Oyuncu Bağlı`}
-                              {canStart && "Tüm Oyuncular Hazır!"}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => startGameMutation.mutate()}
-                          disabled={!canStart || startGameMutation.isPending}
-                          size="sm"
-                          className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-md shadow-purple-500/20 gap-1.5 h-8 text-xs"
-                          data-testid="button-start-game"
-                        >
-                          {startGameMutation.isPending ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Başlatılıyor...
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4" />
-                              Başlat
-                            </>
-                          )}
-                        </Button>
-                      </div>
+              {/* Divider with Equalizer */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex-1 h-px bg-border/50" />
+                <EqualizerBars active={allGoogleConnected} count={7} />
+                <div className="flex-1 h-px bg-border/50" />
+              </div>
+
+              {/* Connection Status Section */}
+              {!googleStatusQuery.data?.connected ? (
+                <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-md bg-amber-500/20 flex items-center justify-center">
+                      <SiYoutube className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-amber-400">YouTube Bağla</p>
+                      <p className="text-[10px] text-muted-foreground">Oyun için gerekli</p>
                     </div>
                   </div>
-                </motion.div>
+                  <Button
+                    size="sm"
+                    onClick={connectGoogle}
+                    className="h-7 text-xs gap-1.5 bg-white hover:bg-gray-100 text-gray-900 border border-gray-300"
+                    data-testid="button-connect-google"
+                  >
+                    <SiGoogle className="h-3 w-3" />
+                    Bağlan
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                  <div className="h-7 w-7 rounded-md bg-emerald-500/20 flex items-center justify-center">
+                    <Check className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-emerald-400">YouTube Bağlı</p>
+                  </div>
+                  <EqualizerBars active count={4} />
+                </div>
               )}
             </div>
+          </motion.div>
 
-            <div className="w-full lg:w-80">
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-                className="sticky top-20"
-              >
-                <div className="relative p-4 lg:p-3.5 rounded-xl bg-gradient-to-b from-muted/50 to-muted/20 border border-border/30">
-                  <div className="absolute -left-0.5 top-3 bottom-3 w-0.5 bg-gradient-to-b from-primary via-primary/50 to-transparent rounded-full" />
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-9 w-9 lg:h-8 lg:w-8 rounded-lg bg-gradient-to-br from-primary to-red-600 flex items-center justify-center shadow-md shadow-primary/20">
-                        <Users className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm">Oyuncular</h3>
-                        <p className="text-[10px] text-muted-foreground">{playerCount} Kişi Katıldı</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                      <motion.div 
-                        animate={{ opacity: [1, 0.3, 1] }}
-                        transition={{ duration: 1, repeat: Infinity }}
-                        className="h-1.5 w-1.5 rounded-full bg-emerald-500"
-                      />
-                      <span className="text-[10px] font-medium text-emerald-500">{connectedCount}/{playerCount} Hazır</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {players.length === 0 ? (
-                      <div className="p-6 text-center rounded-lg bg-muted/30 border border-dashed border-border/50">
-                        <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-xs font-medium text-muted-foreground">Oyuncu Bekleniyor...</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Kodu Paylaşarak Arkadaşlarını Davet Et</p>
-                      </div>
-                    ) : (
-                      players.map((player, index) => {
-                        const isPlayerHost = player.userId === room.hostUserId;
-                        const canKick = isHost && !isPlayerHost && room.status !== "playing";
-                        
-                        return (
-                          <motion.div
-                            key={player.id}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className={`relative flex items-center gap-3 p-3 lg:p-2.5 rounded-xl transition-all ${
-                              player.user.googleConnected
-                                ? "bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 border border-emerald-500/30"
-                                : "bg-muted/40 border border-border/40"
-                            }`}
-                          >
-                            {isPlayerHost && (
-                              <div className="absolute -top-1.5 -left-1.5">
-                                <div className="h-5 w-5 rounded-md bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center shadow-md shadow-amber-500/25">
-                                  <Crown className="h-3 w-3 text-white" />
-                                </div>
-                              </div>
-                            )}
-                            
-                            <div className="relative">
-                              {player.user.avatarUrl ? (
-                                <img 
-                                  src={player.user.avatarUrl} 
-                                  alt={player.user.displayName}
-                                  className={`h-10 w-10 lg:h-9 lg:w-9 rounded-lg object-cover ring-2 ${
-                                    player.user.googleConnected ? "ring-emerald-500/50" : "ring-border/50"
-                                  }`}
-                                />
-                              ) : (
-                                <div className={`h-10 w-10 lg:h-9 lg:w-9 rounded-lg flex items-center justify-center text-sm font-bold ${
-                                  player.user.googleConnected 
-                                    ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white" 
-                                    : "bg-muted text-muted-foreground"
-                                }`}>
-                                  {player.user.displayName.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              {player.user.googleConnected && (
-                                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-md flex items-center justify-center border-2 border-background">
-                                  <Check className="h-2.5 w-2.5 text-white" />
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-sm truncate">{player.user.displayName}</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                {player.user.googleConnected ? (
-                                  <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-1">
-                                    <SiYoutube className="h-2.5 w-2.5" />
-                                    YouTube Bağlı
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                    Bağlantı Bekleniyor
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            {canKick && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 text-destructive shrink-0"
-                                    onClick={() => kickPlayerMutation.mutate(player.userId)}
-                                    disabled={kickPlayerMutation.isPending}
-                                    data-testid={`button-kick-${player.userId}`}
-                                  >
-                                    <UserX className="h-5 w-5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Oyuncuyu At</TooltipContent>
-                              </Tooltip>
-                            )}
-                          </motion.div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {!isHost && (
-                    <div className="mt-5 pt-5 border-t border-border/30">
-                      <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">Oyun Başlayacak</p>
-                          <p className="text-xs text-muted-foreground">Yönetici Oyunu Başlatacak</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+          {/* Players Grid - Channel Faders Style */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                Oyuncular
+              </span>
+              <div className="flex items-center gap-1">
+                <span className={`text-[10px] font-medium ${allGoogleConnected ? "text-emerald-400" : "text-muted-foreground"}`}>
+                  {connectedCount}/{playerCount} hazır
+                </span>
+              </div>
             </div>
-          </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {players.map((player, index) => {
+                const isPlayerHost = player.userId === room.hostUserId;
+                const canKick = isHost && !isPlayerHost && room.status !== "playing";
+                const isConnected = player.user.googleConnected;
+                const isMe = player.userId === userId;
+                
+                return (
+                  <motion.div
+                    key={player.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={`relative group p-2.5 rounded-lg border transition-all ${
+                      isConnected
+                        ? "bg-emerald-500/5 border-emerald-500/30"
+                        : "bg-muted/30 border-border/40"
+                    } ${isMe ? "ring-1 ring-primary/30" : ""}`}
+                  >
+                    {/* Host Badge */}
+                    {isPlayerHost && (
+                      <div className="absolute -top-1 -left-1 h-4 w-4 rounded bg-amber-500 flex items-center justify-center">
+                        <Crown className="h-2.5 w-2.5 text-white" />
+                      </div>
+                    )}
+
+                    {/* Kick Button */}
+                    {canKick && (
+                      <button
+                        onClick={() => kickPlayerMutation.mutate(player.userId)}
+                        disabled={kickPlayerMutation.isPending}
+                        className="absolute -top-1 -right-1 h-4 w-4 rounded bg-destructive/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        data-testid={`button-kick-${player.userId}`}
+                      >
+                        <UserX className="h-2.5 w-2.5 text-white" />
+                      </button>
+                    )}
+
+                    {/* Player Content */}
+                    <div className="flex flex-col items-center text-center">
+                      {/* Avatar */}
+                      <div className="relative mb-1.5">
+                        {player.user.avatarUrl ? (
+                          <img 
+                            src={player.user.avatarUrl} 
+                            alt={player.user.displayName}
+                            className={`h-10 w-10 rounded-lg object-cover ${
+                              isConnected ? "ring-1 ring-emerald-500/50" : ""
+                            }`}
+                          />
+                        ) : (
+                          <div className={`h-10 w-10 rounded-lg flex items-center justify-center text-sm font-bold ${
+                            isConnected 
+                              ? "bg-emerald-500/20 text-emerald-400" 
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            {player.user.displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        {/* Status LED */}
+                        <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${
+                          isConnected ? "bg-emerald-400" : "bg-muted-foreground/40"
+                        }`} />
+                      </div>
+
+                      {/* Name */}
+                      <p className="text-[11px] font-medium truncate w-full max-w-[80px]">
+                        {player.user.displayName}
+                      </p>
+                      
+                      {/* Status Text */}
+                      <p className={`text-[9px] ${isConnected ? "text-emerald-400" : "text-muted-foreground"}`}>
+                        {isConnected ? "Hazır" : "Bekliyor"}
+                      </p>
+
+                      {/* Mini Fader Visual */}
+                      <div className="mt-1.5 w-8 h-1 rounded-full bg-muted overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: isConnected ? "100%" : "30%" }}
+                          transition={{ duration: 0.5, delay: index * 0.1 }}
+                          className={`h-full rounded-full ${isConnected ? "bg-emerald-400" : "bg-muted-foreground/40"}`}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {/* Empty Slots */}
+              {Array.from({ length: Math.min(maxPlayers - playerCount, 4) }).map((_, i) => (
+                <div
+                  key={`empty-${i}`}
+                  className="p-2.5 rounded-lg border border-dashed border-border/30 bg-muted/10 flex flex-col items-center justify-center min-h-[100px]"
+                >
+                  <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center mb-1.5">
+                    <Users className="h-4 w-4 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/50">Boş slot</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Host Controls */}
+          {isHost && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-9 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <Play className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold">Host Kontrolü</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {!canStart && playerCount < 2 && "En az 2 oyuncu gerekli"}
+                      {!canStart && playerCount >= 2 && !allGoogleConnected && `${connectedCount}/${playerCount} oyuncu bağlı`}
+                      {canStart && "Tüm oyuncular hazır!"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => startGameMutation.mutate()}
+                  disabled={!canStart || startGameMutation.isPending}
+                  size="sm"
+                  className="h-9 px-4 text-sm font-semibold gap-1.5 shadow-md"
+                  data-testid="button-start-game"
+                >
+                  {startGameMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Başlatılıyor
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3.5 w-3.5" />
+                      Başlat
+                    </>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Non-Host Waiting State */}
+          {!isHost && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="p-3 rounded-xl bg-muted/30 border border-border/40 text-center"
+            >
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                >
+                  <Radio className="h-4 w-4 text-muted-foreground" />
+                </motion.div>
+                <span className="text-xs font-medium">Host bekleniyor</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Host oyunu başlattığında otomatik olarak yönlendirileceksin
+              </p>
+            </motion.div>
+          )}
+
         </div>
       </main>
     </div>
