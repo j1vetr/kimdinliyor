@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Zap, Timer, Check, ArrowRight, Radio, Tv, RefreshCw, MessageCircle } from "lucide-react";
+import { ArrowLeft, Copy, Share2, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, Radio, Tv } from "lucide-react";
 import { SiYoutube, SiGoogle, SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import type { RoomWithPlayers } from "@shared/schema";
 
 interface GoogleStatus {
@@ -476,17 +475,17 @@ export default function Lobby() {
           <div className="relative p-3">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="min-w-0">
-                <h1 className="font-bold text-sm truncate">{room.name}</h1>
+                <h1 className="font-bold text-sm truncate" data-testid="text-room-name">{room.name}</h1>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                  <span>{room.totalRounds} tur</span>
+                  <span data-testid="text-total-rounds">{room.totalRounds} tur</span>
                   <span className="text-border">|</span>
-                  <span>{room.roundDuration}sn</span>
+                  <span data-testid="text-round-duration">{room.roundDuration}sn</span>
                 </div>
               </div>
               <VUMeter level={connectedCount / playerCount} active={allGoogleConnected} />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" data-testid="display-room-code">
               <div className="flex gap-1.5 flex-1 justify-center">
                 {roomCode?.split("").map((char, i) => (
                   <LEDDigit key={i} char={char} />
@@ -598,7 +597,7 @@ export default function Lobby() {
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
               Oyuncular
             </span>
-            <span className={`text-[10px] font-bold ${allGoogleConnected ? "text-emerald-400" : "text-muted-foreground"}`}>
+            <span className={`text-[10px] font-bold ${allGoogleConnected ? "text-emerald-400" : "text-muted-foreground"}`} data-testid="text-player-status">
               {hasGuessModes ? `${connectedCount}/${playerCount} hazır` : `${playerCount} oyuncu`}
             </span>
           </div>
@@ -617,6 +616,7 @@ export default function Lobby() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
+                    data-testid={`card-player-${player.userId}`}
                     className={`relative group p-2 rounded-lg border text-center ${
                       isConnected
                         ? "bg-gradient-to-b from-emerald-500/10 to-emerald-500/5 border-emerald-500/30"
