@@ -29,6 +29,12 @@ const STEPS = [
   { id: 4, label: "Gizlilik" },
 ];
 
+const GAME_PRESETS = [
+  { id: "quick", label: "Hızlı", icon: Zap, rounds: 5, duration: 15, description: "~2 dk", color: "from-yellow-500 to-orange-500" },
+  { id: "normal", label: "Normal", icon: Play, rounds: 10, duration: 20, description: "~4 dk", color: "from-blue-500 to-cyan-500" },
+  { id: "extended", label: "Uzun", icon: Timer, rounds: 20, duration: 30, description: "~12 dk", color: "from-purple-500 to-violet-500" },
+] as const;
+
 export default function CreateRoom() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -42,6 +48,7 @@ export default function CreateRoom() {
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState("");
   const [gameModes, setGameModes] = useState<string[]>(["who_liked", "who_subscribed"]);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>("normal");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -69,6 +76,19 @@ export default function CreateRoom() {
     } else {
       setGameModes([...gameModes, modeId]);
     }
+  };
+
+  const applyPreset = (presetId: string) => {
+    const preset = GAME_PRESETS.find(p => p.id === presetId);
+    if (preset) {
+      setTotalRounds(preset.rounds);
+      setRoundDuration(preset.duration);
+      setSelectedPreset(presetId);
+    }
+  };
+
+  const handleSliderChange = () => {
+    setSelectedPreset(null);
   };
 
   const createRoomMutation = useMutation({
@@ -318,6 +338,32 @@ export default function CreateRoom() {
                     </div>
                   </div>
 
+                  <div className="flex gap-2 mb-4">
+                    {GAME_PRESETS.map((preset) => {
+                      const Icon = preset.icon;
+                      const isSelected = selectedPreset === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => applyPreset(preset.id)}
+                          className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-xl transition-all ${
+                            isSelected
+                              ? `bg-gradient-to-br ${preset.color} text-white shadow-lg`
+                              : "bg-muted/30 hover:bg-muted/50 border border-border/30"
+                          }`}
+                          data-testid={`preset-${preset.id}`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span className="text-xs font-bold">{preset.label}</span>
+                          <span className={`text-[10px] ${isSelected ? "text-white/80" : "text-muted-foreground"}`}>
+                            {preset.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                     <div className="relative p-4 lg:p-3 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/30">
                       <div className="flex items-center justify-between mb-3">
@@ -332,7 +378,7 @@ export default function CreateRoom() {
                       </div>
                       <Slider
                         min={2}
-                        max={12}
+                        max={10}
                         step={1}
                         value={[maxPlayers]}
                         onValueChange={(value) => setMaxPlayers(value[0])}
@@ -341,7 +387,7 @@ export default function CreateRoom() {
                       />
                       <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground">
                         <span>2</span>
-                        <span>12</span>
+                        <span>10</span>
                       </div>
                     </div>
 
@@ -357,17 +403,17 @@ export default function CreateRoom() {
                         </div>
                       </div>
                       <Slider
-                        min={2}
-                        max={15}
+                        min={5}
+                        max={20}
                         step={1}
                         value={[totalRounds]}
-                        onValueChange={(value) => setTotalRounds(value[0])}
+                        onValueChange={(value) => { setTotalRounds(value[0]); handleSliderChange(); }}
                         className="w-full"
                         data-testid="slider-total-rounds"
                       />
                       <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground">
-                        <span>2</span>
-                        <span>15</span>
+                        <span>5</span>
+                        <span>20</span>
                       </div>
                     </div>
 
@@ -384,18 +430,23 @@ export default function CreateRoom() {
                       </div>
                       <Slider
                         min={10}
-                        max={30}
+                        max={45}
                         step={5}
                         value={[roundDuration]}
-                        onValueChange={(value) => setRoundDuration(value[0])}
+                        onValueChange={(value) => { setRoundDuration(value[0]); handleSliderChange(); }}
                         className="w-full"
                         data-testid="slider-round-duration"
                       />
                       <div className="flex justify-between mt-1.5 text-[9px] text-muted-foreground">
                         <span>10</span>
-                        <span>30</span>
+                        <span>45</span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>Tahmini oyun süresi: <span className="font-semibold text-foreground">~{estimatedDuration} dakika</span></span>
                   </div>
                 </div>
               </motion.div>
