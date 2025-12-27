@@ -489,142 +489,167 @@ export default function Game() {
       )}
 
       {gameStatus === "question" && content && (
-        <div className="flex flex-col h-full overflow-hidden">
-          {/* Ultra Compact Header */}
-          <header className="shrink-0 flex items-center justify-center gap-4 px-2 py-1.5 border-b border-border/30 bg-card/50">
-            <div className="flex items-center gap-2">
-              <div className={`flex items-center justify-center w-7 h-7 rounded-full ${isTimeLow ? "bg-red-500/20 text-red-500" : "bg-primary/10 text-primary"}`}>
-                <span className="text-[11px] font-bold">{timeLeft}</span>
+        <div className="flex flex-col h-full bg-gradient-to-b from-background to-background/95">
+          {/* Premium Header Strip */}
+          <header className="shrink-0 px-4 py-3">
+            <div className="max-w-[340px] mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`relative w-10 h-10 ${isTimeLow ? "animate-pulse" : ""}`}>
+                  <svg className="w-10 h-10 -rotate-90" viewBox="0 0 40 40">
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted/20" />
+                    <circle 
+                      cx="20" cy="20" r="16" fill="none" strokeWidth="2.5" strokeLinecap="round"
+                      className={isTimeLow ? "text-red-500" : "text-primary"}
+                      strokeDasharray={`${(timeLeft / (room?.roundDuration || 20)) * 100.5} 100.5`}
+                    />
+                  </svg>
+                  <span className={`absolute inset-0 flex items-center justify-center text-sm font-semibold ${isTimeLow ? "text-red-500" : ""}`}>
+                    {timeLeft}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
+                  {isLightningRound && (
+                    <span className="text-[10px] text-amber-500 font-medium flex items-center gap-0.5">
+                      <Zap className="h-2.5 w-2.5" /> 2x Puan
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-[11px] text-muted-foreground">{currentRound}/{totalRounds}</span>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/50">
-              <ModeIcon className="h-3 w-3 text-muted-foreground" />
-              <span className="text-[10px] font-medium text-muted-foreground">{modeInfo?.badge}</span>
-              {isLightningRound && <Zap className="h-3 w-3 text-amber-500" />}
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/30 border border-border/20">
+                <ModeIcon className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{modeInfo?.badge}</span>
+              </div>
             </div>
           </header>
 
-          {/* Main Content - Centered with max-width */}
-          <main className="flex-1 flex flex-col items-center min-h-0 overflow-hidden p-3">
-            <div className="w-full max-w-sm flex flex-col flex-1 min-h-0">
+          {/* Main Content */}
+          <main className="flex-1 flex flex-col items-center min-h-0 overflow-hidden px-4 pb-4">
+            <div className="w-full max-w-[340px] flex flex-col flex-1 min-h-0 gap-3">
+              
               {isComparisonMode && content2 ? (
-                /* Comparison Mode */
-                <div className="flex-1 flex flex-col gap-2">
-                  <p className="text-[11px] font-medium text-center text-muted-foreground">{modeInfo?.question}</p>
+                <>
+                  {/* Question Card */}
+                  <div className="shrink-0 px-3 py-2 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm">
+                    <p className="text-xs font-medium text-center text-foreground/90">{modeInfo?.question}</p>
+                  </div>
                   
-                  {/* VS Cards */}
-                  <div className="flex-1 flex items-center gap-2 min-h-0" style={{ maxHeight: '280px' }}>
-                    {/* Card 1 */}
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => !hasAnswered && setSelectedContentId(content.id)}
-                      disabled={hasAnswered}
-                      className={`flex-1 h-full flex flex-col rounded-md overflow-hidden transition-all ${
-                        selectedContentId === content.id ? "ring-2 ring-primary" : "ring-1 ring-border/40"
-                      } ${hasAnswered ? "opacity-60" : ""}`}
-                      data-testid="button-select-video-1"
-                    >
-                      <div className="relative flex-1 min-h-0">
-                        {content.thumbnailUrl ? (
-                          <img src={content.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                        ) : (
-                          <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                            <SiYoutube className="w-5 h-5 text-red-500/50" />
-                          </div>
-                        )}
-                        {selectedContentId === content.id && (
-                          <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
-                            <Check className="h-5 w-5 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-1.5 bg-card/90">
-                        <p className="text-[10px] font-medium line-clamp-2 leading-tight">{content.title}</p>
-                      </div>
-                    </motion.button>
+                  {/* VS Comparison */}
+                  <div className="flex-1 flex flex-col gap-2 min-h-0">
+                    <div className="flex-1 flex gap-3 min-h-0" style={{ maxHeight: '240px' }}>
+                      {/* Video 1 */}
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => !hasAnswered && setSelectedContentId(content.id)}
+                        disabled={hasAnswered}
+                        className={`flex-1 flex flex-col rounded-lg overflow-hidden transition-all duration-200 ${
+                          selectedContentId === content.id 
+                            ? "ring-2 ring-primary shadow-lg shadow-primary/20" 
+                            : "ring-1 ring-border/30 hover:ring-border/60"
+                        } ${hasAnswered ? "opacity-50" : ""}`}
+                        data-testid="button-select-video-1"
+                      >
+                        <div className="relative flex-1 min-h-0 bg-muted">
+                          {content.thumbnailUrl && (
+                            <img src={content.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          )}
+                          {selectedContentId === content.id && (
+                            <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                <Check className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-2 bg-card border-t border-border/20">
+                          <p className="text-[11px] font-medium line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
+                        </div>
+                      </motion.button>
 
-                    <div className="shrink-0 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                      <span className="text-[7px] font-black text-white">VS</span>
+                      {/* VS Badge */}
+                      <div className="shrink-0 self-center">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                          <span className="text-[9px] font-black text-white">VS</span>
+                        </div>
+                      </div>
+
+                      {/* Video 2 */}
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
+                        disabled={hasAnswered}
+                        className={`flex-1 flex flex-col rounded-lg overflow-hidden transition-all duration-200 ${
+                          selectedContentId === content2.id 
+                            ? "ring-2 ring-primary shadow-lg shadow-primary/20" 
+                            : "ring-1 ring-border/30 hover:ring-border/60"
+                        } ${hasAnswered ? "opacity-50" : ""}`}
+                        data-testid="button-select-video-2"
+                      >
+                        <div className="relative flex-1 min-h-0 bg-muted">
+                          {content2.thumbnailUrl && (
+                            <img src={content2.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          )}
+                          {selectedContentId === content2.id && (
+                            <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                <Check className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-2 bg-card border-t border-border/20">
+                          <p className="text-[11px] font-medium line-clamp-2 leading-snug text-foreground/90">{content2.title}</p>
+                        </div>
+                      </motion.button>
                     </div>
-
-                    {/* Card 2 */}
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
-                      disabled={hasAnswered}
-                      className={`flex-1 h-full flex flex-col rounded-md overflow-hidden transition-all ${
-                        selectedContentId === content2.id ? "ring-2 ring-primary" : "ring-1 ring-border/40"
-                      } ${hasAnswered ? "opacity-60" : ""}`}
-                      data-testid="button-select-video-2"
-                    >
-                      <div className="relative flex-1 min-h-0">
-                        {content2.thumbnailUrl ? (
-                          <img src={content2.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                        ) : (
-                          <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                            <SiYoutube className="w-5 h-5 text-red-500/50" />
-                          </div>
-                        )}
-                        {selectedContentId === content2.id && (
-                          <div className="absolute inset-0 bg-primary/40 flex items-center justify-center">
-                            <Check className="h-5 w-5 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-1.5 bg-card/90">
-                        <p className="text-[10px] font-medium line-clamp-2 leading-tight">{content2.title}</p>
-                      </div>
-                    </motion.button>
                   </div>
 
-                  {/* Submit */}
-                  <div className="shrink-0 pt-1">
+                  {/* CTA Footer */}
+                  <div className="shrink-0">
                     {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-1.5 py-1.5 rounded bg-emerald-500/10">
-                        <Check className="h-3 w-3 text-emerald-500" />
-                        <span className="text-[11px] font-medium text-emerald-500">Gönderildi</span>
+                      <div className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <Check className="h-4 w-4 text-emerald-500" />
+                        <span className="text-xs font-semibold text-emerald-500">Cevap Gönderildi</span>
                       </div>
                     ) : (
                       <Button
-                        size="sm"
-                        className="w-full h-8 gap-1 bg-primary text-xs"
+                        className="w-full h-11 gap-2 bg-primary hover:bg-primary/90 text-sm font-semibold"
                         onClick={handleSubmitAnswer}
                         disabled={!selectedContentId || answerMutation.isPending}
                         data-testid="button-submit-comparison"
                       >
-                        {answerMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                        {selectedContentId ? "Kilitle" : "Seç"}
+                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {selectedContentId ? "Cevabı Kilitle" : "Bir Video Seç"}
                       </Button>
                     )}
                   </div>
-                </div>
+                </>
               ) : (
-                /* Player Selection Mode */
-                <div className="flex-1 flex flex-col gap-2 min-h-0">
-                  {/* Content Preview */}
-                  <div className="shrink-0 flex items-center gap-2 p-1.5 rounded bg-card/50 border border-border/30">
-                    <div className="w-10 h-10 rounded overflow-hidden shrink-0">
-                      {content.thumbnailUrl ? (
-                        <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
-                          <SiYoutube className="w-3 h-3 text-red-500" />
-                        </div>
-                      )}
+                <>
+                  {/* Content Card */}
+                  <div className="shrink-0 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden">
+                    <div className="flex items-center gap-3 p-3">
+                      <div className="w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted">
+                        {content.thumbnailUrl && (
+                          <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{content.subtitle}</p>
+                      </div>
+                      <button onClick={openYouTubeLink} className="shrink-0 p-2 rounded-md hover:bg-muted/50 transition-colors" data-testid="button-open-youtube-header">
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-medium line-clamp-1">{content.title}</p>
-                      <p className="text-[10px] text-muted-foreground">{modeInfo?.question}</p>
+                    <div className="px-3 py-2 bg-muted/30 border-t border-border/20">
+                      <p className="text-xs font-medium text-center text-foreground/80">{modeInfo?.question}</p>
                     </div>
-                    <button onClick={openYouTubeLink} className="shrink-0 p-1 rounded hover:bg-muted" data-testid="button-open-youtube-header">
-                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                    </button>
                   </div>
 
-                  {/* Players Grid */}
+                  {/* Player Grid - 2 columns */}
                   <div className="flex-1 min-h-0 overflow-y-auto">
-                    <div className="grid grid-cols-3 gap-1">
+                    <div className="grid grid-cols-2 gap-2">
                       {allPlayers.map((player: any) => {
                         const playerId = player.userId || player.user?.id;
                         const displayName = player.user?.displayName || player.displayName;
@@ -635,33 +660,33 @@ export default function Game() {
                         return (
                           <motion.button
                             key={playerId}
-                            whileTap={{ scale: 0.95 }}
+                            whileTap={{ scale: 0.97 }}
                             onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
                             disabled={hasAnswered}
-                            className={`relative flex flex-col items-center py-2 px-1 rounded transition-all ${
+                            className={`flex items-center gap-2.5 p-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
                               hasAnswered ? "opacity-50" : ""
                             } ${
                               isSelected 
-                                ? "bg-primary text-white" 
-                                : "bg-card/80 hover:bg-muted border border-border/30"
+                                ? "bg-primary text-primary-foreground ring-1 ring-primary shadow-md shadow-primary/20" 
+                                : "bg-card/60 border border-border/20 hover:border-border/40"
                             }`}
                             data-testid={`button-player-${playerId}`}
                           >
-                            {isSelected && (
-                              <div className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-white/20 flex items-center justify-center">
-                                <Check className="h-2 w-2" />
-                              </div>
-                            )}
-                            <div className="mb-0.5">
+                            <div className="relative shrink-0">
                               {avatarUrl ? (
-                                <img src={avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
                               ) : (
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${isSelected ? "bg-white/20" : "bg-muted"}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isSelected ? "bg-white/20" : "bg-muted"}`}>
                                   {displayName?.charAt(0).toUpperCase()}
                                 </div>
                               )}
+                              {isSelected && (
+                                <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+                                  <Check className="h-2.5 w-2.5 text-primary" />
+                                </div>
+                              )}
                             </div>
-                            <span className="text-[9px] font-medium text-center line-clamp-1 w-full">
+                            <span className="text-xs font-medium truncate">
                               {isSelf ? "Ben" : displayName?.split(' ')[0]}
                             </span>
                           </motion.button>
@@ -670,169 +695,212 @@ export default function Game() {
                     </div>
                   </div>
 
-                  {/* Submit */}
-                  <div className="shrink-0 pt-1">
+                  {/* CTA Footer */}
+                  <div className="shrink-0">
                     {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-1.5 py-1.5 rounded bg-emerald-500/10">
-                        <Check className="h-3 w-3 text-emerald-500" />
-                        <span className="text-[11px] font-medium text-emerald-500">Kilitlendi</span>
+                      <div className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <Check className="h-4 w-4 text-emerald-500" />
+                        <span className="text-xs font-semibold text-emerald-500">Cevap Kilitlendi</span>
                       </div>
                     ) : (
                       <Button
-                        size="sm"
-                        className="w-full h-8 gap-1 bg-primary text-xs"
+                        className="w-full h-11 gap-2 bg-primary hover:bg-primary/90 text-sm font-semibold"
                         onClick={handleSubmitAnswer}
                         disabled={selectedPlayers.length === 0 || answerMutation.isPending}
                         data-testid="button-submit-answer"
                       >
-                        {answerMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                        {selectedPlayers.length === 0 ? "Seç" : `Kilitle (${selectedPlayers.length})`}
+                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {selectedPlayers.length === 0 ? "Oyuncu Seç" : `Kilitle (${selectedPlayers.length})`}
                       </Button>
                     )}
                   </div>
-                </div>
+                </>
               )}
             </div>
           </main>
 
-          {isTimeLow && <div className="h-0.5 bg-red-500 animate-pulse shrink-0" />}
+          {isTimeLow && <div className="h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent" />}
         </div>
       )}
 
       {gameStatus === "results" && content && (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Compact Header */}
-          <header className="shrink-0 flex items-center justify-center gap-4 px-2 py-1.5 border-b border-border/30 bg-card/50">
-            <span className="text-[11px] text-muted-foreground">{currentRound}/{totalRounds}</span>
-            <span className="text-[10px] font-medium text-muted-foreground">Sonuçlar</span>
-            {isLightningRound && <Zap className="h-3 w-3 text-amber-500" />}
+        <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
+          {/* Header Strip */}
+          <header className="shrink-0 px-4 py-3">
+            <div className="max-w-[340px] mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
+                {isLightningRound && (
+                  <span className="text-[10px] text-amber-500 font-medium flex items-center gap-0.5">
+                    <Zap className="h-2.5 w-2.5" /> 2x
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/30 border border-border/20">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Sonuçlar</span>
+              </div>
+            </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto p-3 flex flex-col items-center">
-            <div className="w-full max-w-sm space-y-2">
+          <main className="flex-1 overflow-y-auto px-4 pb-4">
+            <div className="max-w-[340px] mx-auto space-y-3">
+              
               {/* Content Card */}
               <button 
                 type="button"
-                className="w-full flex items-center gap-2 p-1.5 rounded bg-card/50 border border-border/30 text-left"
+                className="w-full rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden text-left"
                 onClick={openYouTubeLink}
               >
-                <div className="w-10 h-7 rounded overflow-hidden shrink-0">
-                  {content.thumbnailUrl ? (
-                    <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <SiYoutube className="w-3 h-3 text-red-500" />
-                    </div>
-                  )}
+                <div className="flex items-center gap-3 p-3">
+                  <div className="w-14 h-10 rounded-md overflow-hidden shrink-0 bg-muted">
+                    {content.thumbnailUrl && (
+                      <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold line-clamp-1 text-foreground/90">{content.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{content.subtitle}</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
                 </div>
-                <p className="text-[11px] font-medium line-clamp-1 flex-1">{content.title}</p>
-                <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
               </button>
 
-              {/* Correct Answer */}
-              {isComparisonMode ? (
-                <div className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                  <div className="flex items-center gap-2">
-                    <Check className="h-3 w-3 text-emerald-500 shrink-0" />
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <div className="w-8 h-5 rounded overflow-hidden shrink-0">
+              {/* Correct Answer Card */}
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 overflow-hidden">
+                <div className="px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-500/20">
+                  <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Doğru Cevap</span>
+                </div>
+                <div className="p-3">
+                  {isComparisonMode ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-9 rounded-md overflow-hidden shrink-0 bg-muted">
                         <img 
                           src={(correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
                           alt="" 
                           className="w-full h-full object-cover" 
                         />
                       </div>
-                      <p className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 line-clamp-1">
+                      <p className="text-xs font-medium text-foreground/90 line-clamp-2">
                         {(correctContentId === content.id ? content : content2)?.title}
                       </p>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {correctPlayerIds.length > 0 ? (
+                        allPlayers
+                          .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
+                          .map((player: any) => {
+                            const avatarUrl = player.user?.avatarUrl;
+                            const displayName = player.user?.displayName || player.displayName;
+                            return (
+                              <div key={player.userId || player.user?.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/20">
+                                {avatarUrl ? (
+                                  <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-emerald-500/30 flex items-center justify-center text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    {displayName?.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{displayName}</span>
+                              </div>
+                            );
+                          })
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Kimse beğenmemiş</span>
+                      )}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="p-1.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Check className="h-3 w-3 text-emerald-500 shrink-0" />
-                    {correctPlayerIds.length > 0 ? (
-                      allPlayers
-                        .filter((p: any) => correctPlayerIds.includes(p.userId || p.user?.id))
-                        .map((player: any) => (
-                          <span key={player.userId || player.user?.id} className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                            {player.user?.displayName || player.displayName}
-                          </span>
-                        ))
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground italic">Kimse</span>
-                    )}
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Player Results */}
-              <div className="space-y-1">
-                {[...roundResults].sort((a, b) => b.score - a.score).map((result, index) => {
-                  const isSelf = result.oderId === userId;
-                  const isTopScorer = index === 0 && result.score > 0;
-                  
-                  return (
-                    <div 
-                      key={result.oderId} 
-                      className={`flex items-center gap-1.5 p-1.5 rounded ${
-                        result.isCorrect 
-                          ? "bg-emerald-500/10 border border-emerald-500/30" 
-                          : result.isPartialCorrect 
-                            ? "bg-amber-500/10 border border-amber-500/30"
-                            : "bg-card/50 border border-border/30"
-                      } ${isSelf ? "ring-1 ring-primary" : ""}`}
-                    >
-                      <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center shrink-0">
-                        {isTopScorer ? (
-                          <Trophy className="h-2.5 w-2.5 text-amber-500" />
-                        ) : (
-                          <span className="text-[9px] font-bold text-muted-foreground">{index + 1}</span>
-                        )}
-                      </div>
-                      
-                      {result.avatarUrl ? (
-                        <img src={result.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold shrink-0">
-                          {result.displayName?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[11px] font-medium truncate">{result.displayName}</span>
-                          {isSelf && <span className="text-[8px] text-primary">(Sen)</span>}
-                          {result.streak >= 3 && <Flame className="h-2.5 w-2.5 text-orange-500" />}
-                        </div>
-                        <div className="text-[9px] text-muted-foreground truncate">
-                          {isComparisonMode ? (
-                            result.selectedContentId ? (
-                              <span className={result.isCorrect ? "text-emerald-500" : "text-red-400"}>
-                                {result.selectedContentId === content.id ? content.title?.slice(0, 18) : content2?.title?.slice(0, 18)}...
-                              </span>
-                            ) : "Cevapsız"
+              <div className="space-y-2">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">Oyuncu Skorları</span>
+                <div className="space-y-1.5">
+                  {[...roundResults].sort((a, b) => b.score - a.score).map((result, index) => {
+                    const isSelf = result.oderId === userId;
+                    const isTopScorer = index === 0 && result.score > 0;
+                    
+                    return (
+                      <motion.div 
+                        key={result.oderId}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${
+                          result.isCorrect 
+                            ? "bg-emerald-500/10 border border-emerald-500/20" 
+                            : result.isPartialCorrect 
+                              ? "bg-amber-500/10 border border-amber-500/20"
+                              : "bg-card/60 border border-border/20"
+                        } ${isSelf ? "ring-1 ring-primary/50" : ""}`}
+                      >
+                        {/* Rank */}
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                          isTopScorer ? "bg-amber-500/20" : "bg-muted/50"
+                        }`}>
+                          {isTopScorer ? (
+                            <Trophy className="h-3.5 w-3.5 text-amber-500" />
                           ) : (
-                            result.selectedUserIds.length > 0 ? (
-                              result.selectedUserIds.map((id) => getPlayerName(id)?.split(' ')[0]).join(', ')
-                            ) : "Cevapsız"
+                            <span className="text-[10px] font-bold text-muted-foreground">{index + 1}</span>
                           )}
                         </div>
-                      </div>
-                      
-                      <div className={`text-[11px] font-bold shrink-0 ${result.score > 0 ? "text-emerald-500" : result.score < 0 ? "text-red-400" : "text-muted-foreground"}`}>
-                        {result.score > 0 ? `+${result.score}` : result.score}
-                      </div>
-                    </div>
-                  );
-                })}
+                        
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                          {result.avatarUrl ? (
+                            <img src={result.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                              {result.displayName?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {result.streak >= 3 && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center">
+                              <Flame className="h-2.5 w-2.5 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Name & Answer */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-semibold truncate">{result.displayName}</span>
+                            {isSelf && <span className="text-[9px] text-primary font-medium">(Sen)</span>}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {isComparisonMode ? (
+                              result.selectedContentId ? (
+                                <span className={result.isCorrect ? "text-emerald-500" : "text-muted-foreground"}>
+                                  {result.selectedContentId === content.id ? content.title?.slice(0, 20) : content2?.title?.slice(0, 20)}...
+                                </span>
+                              ) : <span className="italic">Cevap vermedi</span>
+                            ) : (
+                              result.selectedUserIds.length > 0 ? (
+                                result.selectedUserIds.map((id) => getPlayerName(id)?.split(' ')[0]).join(', ')
+                              ) : <span className="italic">Cevap vermedi</span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Score */}
+                        <div className={`text-sm font-bold shrink-0 tabular-nums ${
+                          result.score > 0 ? "text-emerald-500" : result.score < 0 ? "text-red-400" : "text-muted-foreground"
+                        }`}>
+                          {result.score > 0 ? `+${result.score}` : result.score}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
               
-              {/* Next Round */}
-              <div className="flex items-center justify-center gap-1.5 py-2">
-                <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                <span className="text-[11px] text-muted-foreground">Sonraki tur...</span>
+              {/* Next Round Indicator */}
+              <div className="flex items-center justify-center gap-2 py-4">
+                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                </div>
+                <span className="text-xs text-muted-foreground">Sonraki tura geçiliyor...</span>
               </div>
             </div>
           </main>
