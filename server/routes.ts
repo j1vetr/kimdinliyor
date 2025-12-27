@@ -8,14 +8,15 @@ import type { Room, RoomPlayer, Content } from "@shared/schema";
 // WebSocket connections by room code
 const roomConnections = new Map<string, Set<WebSocket>>();
 
-// Game state management
+// Game state management with explicit phases
+// Phase flow: waiting -> question -> reveal -> intermission -> question -> ... -> finished
 interface GameState {
-  status: "waiting" | "question" | "results" | "finished";
+  phase: "waiting" | "question" | "reveal" | "intermission" | "finished";
   currentRound: number;
-  timeLeft: number;
+  phaseStartedAt: number;
+  phaseEndsAt: number;
   contentId: string | null;
-  roundStartTime: number | null;
-  resultsStartTime: number | null;
+  contentId2: string | null;
   answeredUsers: Set<string>;
   usedContentIds: Set<string>;
   contentsByOwner: Map<string, string[]>;
@@ -24,9 +25,12 @@ interface GameState {
   playerStreaks: Map<string, number>;
   gameModes: string[];
   currentGameMode: string | null;
-  lastRoundCorrectUserIds: string[];
-  lastRoundCorrectContentId: string | null;
-  lastRoundResults: any[];
+  // Reveal phase data (only populated during reveal/intermission)
+  revealData: {
+    correctUserIds: string[];
+    correctContentId: string | null;
+    results: any[];
+  } | null;
 }
 
 const gameStates = new Map<string, GameState>();
@@ -707,13 +711,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // Initialize game state with game modes from room
       const roomModes = room.gameModes || ["who_liked", "who_subscribed"];
+      const now = Date.now();
       gameStates.set(code.toUpperCase(), {
-        status: "waiting",
+        phase: "waiting",
         currentRound: 0,
-        timeLeft: room.roundDuration || 20,
+        phaseStartedAt: now,
+        phaseEndsAt: now,
         contentId: null,
-        roundStartTime: null,
-        resultsStartTime: null,
+        contentId2: null,
         answeredUsers: new Set(),
         usedContentIds: new Set(),
         contentsByOwner,
@@ -722,9 +727,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         playerStreaks: new Map(),
         gameModes: roomModes,
         currentGameMode: null,
-        lastRoundCorrectUserIds: [],
-        lastRoundCorrectContentId: null,
-        lastRoundResults: [],
+        revealData: null,
       });
 
       // Update room status
@@ -758,7 +761,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (nextRound > totalRounds) {
       // Game finished
       console.log(`[startNextRound] GAME FINISHED - reached total rounds for ${roomCode}`);
-      gameState.status = "finished";
+      gameState.phase = "finished";
+      gameState.phaseStartedAt = Date.now();
+      gameState.phaseEndsAt = Date.now();
       await storage.updateRoom(room.id, { status: "finished" });
       broadcastToRoom(roomCode, { type: "game_finished" });
       return;
@@ -774,7 +779,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (unusedContents.length === 0) {
       // No more content, end game
       console.log(`[startNextRound] GAME FINISHED - no more content for ${roomCode}`);
-      gameState.status = "finished";
+      gameState.phase = "finished";
+      gameState.phaseStartedAt = Date.now();
+      gameState.phaseEndsAt = Date.now();
       await storage.updateRoom(room.id, { status: "finished" });
       broadcastToRoom(roomCode, { type: "game_finished" });
       return;
@@ -969,15 +976,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
     }
 
-    // Update game state
+    // Update game state with new phase system
+    const now = Date.now();
     gameState.currentRound = nextRound;
-    gameState.status = "question";
+    gameState.phase = "question";
+    gameState.phaseStartedAt = now;
+    gameState.phaseEndsAt = now + (roundDuration * 1000);
     gameState.contentId = selectedContentId;
-    gameState.timeLeft = roundDuration;
-    gameState.roundStartTime = Date.now();
+    gameState.contentId2 = secondContentId || null;
     gameState.answeredUsers = new Set();
     gameState.isLightningRound = lightning;
     gameState.currentGameMode = selectedMode;
+    gameState.revealData = null; // Clear reveal data for new question
 
     // Determine correct answer based on game mode
     let correctAnswer: string | null = null;
@@ -1029,12 +1039,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Update room
     await storage.updateRoom(room.id, { currentRound: nextRound });
 
-    // Broadcast round start
+    // Broadcast phase_changed with full state snapshot
     broadcastToRoom(roomCode, {
-      type: "round_started",
+      type: "phase_changed",
+      phase: "question",
       round: nextRound,
       totalRounds,
       gameMode: selectedMode,
+      phaseStartedAt: gameState.phaseStartedAt,
+      phaseEndsAt: gameState.phaseEndsAt,
       content: {
         id: content.id,
         contentId: content.contentId,
@@ -1061,34 +1074,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         duration: secondContent.duration,
         videoCount: secondContent.videoCount,
       } : null,
-      timeLimit: roundDuration,
       isLightningRound: lightning,
+      revealData: null,
     });
 
-    // Start timer
-    const timerInterval = setInterval(async () => {
+    // Schedule automatic phase transition when time expires
+    const timeoutId = setTimeout(async () => {
       const currentState = gameStates.get(roomCode);
-      if (!currentState || currentState.status !== "question") {
-        clearInterval(timerInterval);
+      if (!currentState || currentState.phase !== "question") {
         return;
       }
-
-      currentState.timeLeft--;
-      
-      if (currentState.timeLeft <= 0) {
-        clearInterval(timerInterval);
-        await endRound(roomCode, room);
-      }
-    }, 1000);
+      await endRound(roomCode, room);
+    }, roundDuration * 1000);
+    
+    // Store timeout ID for cleanup
+    (gameState as any).phaseTimeoutId = timeoutId;
   }
+
+  // Constants for phase durations
+  const REVEAL_DURATION_MS = 3000;  // 3 seconds to show results
+  const INTERMISSION_DURATION_MS = 2000;  // 2 seconds countdown to next round
 
   // Helper function to end the current round
   async function endRound(roomCode: string, room: Room) {
     const gameState = gameStates.get(roomCode);
     if (!gameState) return;
 
-    gameState.status = "results";
-    gameState.resultsStartTime = Date.now();
+    // Clear any pending timeout
+    if ((gameState as any).phaseTimeoutId) {
+      clearTimeout((gameState as any).phaseTimeoutId);
+    }
+
+    const now = Date.now();
+    gameState.phase = "reveal";
+    gameState.phaseStartedAt = now;
+    gameState.phaseEndsAt = now + REVEAL_DURATION_MS;
 
     // Get current round
     const currentRound = await storage.getCurrentRound(room.id);
@@ -1203,32 +1223,71 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Update round end time
     await storage.updateRound(currentRound.id, { endedAt: new Date() });
 
-    // Store results in gameState for polling fallback
-    gameState.lastRoundCorrectUserIds = correctUserIds;
-    gameState.lastRoundCorrectContentId = isComparisonMode ? correctContentId : null;
-    gameState.lastRoundResults = roundResults;
-
-    // Broadcast round results
-    broadcastToRoom(roomCode, {
-      type: "round_ended",
+    // Store reveal data in gameState
+    gameState.revealData = {
       correctUserIds,
       correctContentId: isComparisonMode ? correctContentId : null,
-      gameMode: gameState.currentGameMode,
       results: roundResults,
+    };
+
+    // Broadcast reveal phase
+    console.log(`[PHASE] Transitioning to REVEAL for room ${roomCode}, round ${gameState.currentRound}`);
+    broadcastToRoom(roomCode, {
+      type: "phase_changed",
+      phase: "reveal",
+      round: gameState.currentRound,
+      totalRounds: room.totalRounds || 10,
+      gameMode: gameState.currentGameMode,
+      phaseStartedAt: gameState.phaseStartedAt,
+      phaseEndsAt: gameState.phaseEndsAt,
       isLightningRound: gameState.isLightningRound,
+      revealData: gameState.revealData,
     });
 
-    // Start next round after delay
-    console.log(`[ROUND END] Scheduling next round in 5 seconds for room ${roomCode}`);
-    setTimeout(async () => {
+    // Schedule transition to intermission phase
+    const revealTimeoutId = setTimeout(async () => {
+      await transitionToIntermission(roomCode, room);
+    }, REVEAL_DURATION_MS);
+    
+    (gameState as any).phaseTimeoutId = revealTimeoutId;
+  }
+
+  // Helper function for intermission phase
+  async function transitionToIntermission(roomCode: string, room: Room) {
+    const gameState = gameStates.get(roomCode);
+    if (!gameState || gameState.phase !== "reveal") return;
+
+    const now = Date.now();
+    gameState.phase = "intermission";
+    gameState.phaseStartedAt = now;
+    gameState.phaseEndsAt = now + INTERMISSION_DURATION_MS;
+
+    console.log(`[PHASE] Transitioning to INTERMISSION for room ${roomCode}`);
+    
+    // Broadcast intermission phase (keeps revealData visible)
+    broadcastToRoom(roomCode, {
+      type: "phase_changed",
+      phase: "intermission",
+      round: gameState.currentRound,
+      totalRounds: room.totalRounds || 10,
+      gameMode: gameState.currentGameMode,
+      phaseStartedAt: gameState.phaseStartedAt,
+      phaseEndsAt: gameState.phaseEndsAt,
+      isLightningRound: gameState.isLightningRound,
+      revealData: gameState.revealData,
+    });
+
+    // Schedule transition to next question
+    const intermissionTimeoutId = setTimeout(async () => {
       try {
-        console.log(`[ROUND TIMER] Starting next round for room ${roomCode}`);
+        console.log(`[PHASE] Intermission ended, starting next round for room ${roomCode}`);
         await startNextRound(roomCode, room);
-        console.log(`[ROUND TIMER] Next round started successfully for room ${roomCode}`);
       } catch (error) {
-        console.error(`[ROUND TIMER] Error starting next round:`, error);
+        console.error(`[PHASE] Error starting next round:`, error);
       }
-    }, 5000);
+    }, INTERMISSION_DURATION_MS);
+    
+    (gameState as any).phaseTimeoutId = intermissionTimeoutId;
   }
 
   // Submit answer
@@ -1247,7 +1306,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const gameState = gameStates.get(code.toUpperCase());
-      if (!gameState || gameState.status !== "question") {
+      if (!gameState || gameState.phase !== "question") {
         return res.status(400).json({ error: "Şu anda cevap verilemez" });
       }
 
@@ -1330,11 +1389,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const currentRoundNum = currentRoundData?.roundNumber || room.currentRound || 1;
         const isLightning = currentRoundNum === 5 || currentRoundNum === 10;
         const currentMode = currentRoundData?.gameMode || roomModes[0];
+        const now = Date.now();
+        
+        // Determine phase based on round data
+        let phase: "question" | "reveal" | "intermission" | "finished" = "question";
+        let phaseEndsAt = now + ((room.roundDuration || 20) * 1000);
+        
+        if (currentRoundData?.endedAt) {
+          // Round ended, go to reveal phase
+          phase = "reveal";
+          phaseEndsAt = now + REVEAL_DURATION_MS;
+        }
         
         const recoveredState: GameState = {
-          status: currentRoundData?.endedAt ? "results" : "question",
+          phase,
           currentRound: currentRoundNum,
-          timeLeft: room.roundDuration || 20,
+          phaseStartedAt: now,
+          phaseEndsAt,
           isLightningRound: isLightning,
           usedContentIds,
           answeredUsers: new Set<string>(),
@@ -1342,19 +1413,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           contentsByOwner,
           lastOwnerIndex: 0,
           contentId: currentRoundData?.contentId || null,
-          roundStartTime: currentRoundData?.startedAt ? new Date(currentRoundData.startedAt).getTime() : null,
+          contentId2: currentRoundData?.contentId2 || null,
           playerStreaks: new Map<string, number>(),
           gameModes: roomModes,
-          lastRoundCorrectUserIds: currentRoundData?.correctUserIds || [],
-          lastRoundCorrectContentId: currentRoundData?.correctAnswer ?? null,
-          lastRoundResults: [],
-          resultsStartTime: currentRoundData?.endedAt ? Date.now() : null,
+          revealData: phase === "reveal" ? {
+            correctUserIds: currentRoundData?.correctUserIds || [],
+            correctContentId: currentRoundData?.correctAnswer ?? null,
+            results: [],
+          } : null,
         };
         
         gameStates.set(code.toUpperCase(), recoveredState);
         gameState = recoveredState;
-        console.log(`[RECOVERY] Game state recreated: round ${currentRoundNum}, status ${gameState.status}`);
+        console.log(`[RECOVERY] Game state recreated: round ${currentRoundNum}, phase ${gameState.phase}`);
       }
+      
       const currentRound = await storage.getCurrentRound(room.id);
       
       let content = null;
@@ -1366,34 +1439,27 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         content2 = await storage.getContentById(currentRound.contentId2);
       }
 
-      // Calculate nextRoundAt for results phase (5 seconds after results started)
-      const RESULTS_DURATION_MS = 5000;
-      const nextRoundAt = gameState?.status === "results" && gameState.resultsStartTime 
-        ? gameState.resultsStartTime + RESULTS_DURATION_MS 
-        : undefined;
-
-      // SECURITY: Hide correct answer during question phase
-      const safeCurrentRound = currentRound ? {
-        ...currentRound,
-        correctAnswer: gameState?.status === "results" ? currentRound.correctAnswer : undefined,
-        correctUserIds: gameState?.status === "results" ? currentRound.correctUserIds : undefined,
-      } : null;
+      // SECURITY: Only reveal answers during reveal/intermission phases
+      const isRevealPhase = gameState?.phase === "reveal" || gameState?.phase === "intermission";
 
       res.json({
         room,
         gameState: gameState ? {
-          status: gameState.status,
+          phase: gameState.phase,
           currentRound: gameState.currentRound,
-          timeLeft: gameState.timeLeft,
+          phaseStartedAt: gameState.phaseStartedAt,
+          phaseEndsAt: gameState.phaseEndsAt,
           isLightningRound: gameState.isLightningRound,
           gameMode: gameState.currentGameMode,
-          // Include results data for polling fallback when in results state
-          correctUserIds: gameState.status === "results" ? gameState.lastRoundCorrectUserIds : undefined,
-          correctContentId: gameState.status === "results" ? gameState.lastRoundCorrectContentId : undefined,
-          results: gameState.status === "results" ? gameState.lastRoundResults : undefined,
-          nextRoundAt: nextRoundAt,
+          // Only include reveal data during reveal/intermission phases
+          revealData: isRevealPhase ? gameState.revealData : null,
         } : null,
-        currentRound: safeCurrentRound,
+        currentRound: currentRound ? {
+          ...currentRound,
+          // SECURITY: Hide answers during question phase
+          correctAnswer: isRevealPhase ? currentRound.correctAnswer : undefined,
+          correctUserIds: isRevealPhase ? currentRound.correctUserIds : undefined,
+        } : null,
         content: content ? {
           id: content.id,
           contentId: content.contentId,
@@ -1403,6 +1469,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           thumbnailUrl: content.thumbnailUrl,
           viewCount: content.viewCount,
           publishedAt: content.publishedAt,
+          duration: content.duration,
+          subscriberCount: content.subscriberCount,
+          videoCount: content.videoCount,
         } : null,
         content2: content2 ? {
           id: content2.id,
@@ -1413,6 +1482,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           thumbnailUrl: content2.thumbnailUrl,
           viewCount: content2.viewCount,
           publishedAt: content2.publishedAt,
+          duration: content2.duration,
+          subscriberCount: content2.subscriberCount,
+          videoCount: content2.videoCount,
         } : null,
       });
     } catch (error) {
