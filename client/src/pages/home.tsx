@@ -44,12 +44,26 @@ const GAME_MODES = [
   },
 ];
 
-const FAKE_PLAYERS = [
-  { name: "Ahmet", avatar: "A", status: "online" },
-  { name: "Zeynep", avatar: "Z", status: "online" },
-  { name: "Can", avatar: "C", status: "playing" },
-  { name: "Elif", avatar: "E", status: "online" },
+const PLAYER_NAMES = [
+  "Ahmet", "Zeynep", "Can", "Elif", "Mert", "Selin", "Emre", "Ayşe", 
+  "Burak", "Deniz", "Kaan", "Melis", "Arda", "Ceren", "Onur", "Beren",
+  "Ege", "Su", "Yiğit", "Duru", "Kerem", "Ece", "Alp", "Naz"
 ];
+
+const ROOM_NAMES = [
+  "Efsane Oda", "Çılgın Parti", "YouTube Master", "Lobi 42", 
+  "Pro Oyuncular", "Gece Kuşları", "Kahkaha Garantili", "Acemiler",
+  "Şampiyonlar", "Müzik Odası", "Komedi Kulübü", "Nostaljik"
+];
+
+function getRandomPlayers() {
+  const shuffled = [...PLAYER_NAMES].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 4).map(name => ({
+    name,
+    avatar: name.charAt(0),
+    status: Math.random() > 0.3 ? "online" : "playing"
+  }));
+}
 
 function WaveformBar({ delay = 0 }: { delay?: number }) {
   return (
@@ -94,11 +108,30 @@ function RotatingWord() {
 
 function LiveLobbyPreview() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [players, setPlayers] = useState(getRandomPlayers);
+  const [roomCount, setRoomCount] = useState(12);
+  const [currentRoom, setCurrentRoom] = useState(0);
+  const [isChanging, setIsChanging] = useState(false);
   
+  // Rotate active player highlight
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveIndex(prev => (prev + 1) % FAKE_PLAYERS.length);
-    }, 2000);
+      setActiveIndex(prev => (prev + 1) % 4);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Change players periodically with animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsChanging(true);
+      setTimeout(() => {
+        setPlayers(getRandomPlayers());
+        setRoomCount(Math.floor(Math.random() * 15) + 8); // 8-22 rooms
+        setCurrentRoom(prev => (prev + 1) % ROOM_NAMES.length);
+        setIsChanging(false);
+      }, 300);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -111,23 +144,33 @@ function LiveLobbyPreview() {
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             <span className="text-xs font-medium text-green-500">Canlı lobiler</span>
           </div>
-          <span className="text-xs text-muted-foreground">12 aktif oda</span>
+          <span className={`text-xs text-muted-foreground transition-all duration-300 ${isChanging ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+            {roomCount} aktif oda
+          </span>
+        </div>
+
+        {/* Current room name */}
+        <div className={`text-center py-1.5 px-3 rounded-lg bg-primary/5 border border-primary/10 transition-all duration-300 ${isChanging ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+          <span className="text-xs font-medium text-primary">{ROOM_NAMES[currentRoom]}</span>
         </div>
         
         <div className="space-y-2">
-          {FAKE_PLAYERS.map((player, i) => (
+          {players.map((player, i) => (
             <div 
-              key={player.name}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-500 ${
+              key={`${player.name}-${i}`}
+              className={`flex items-center gap-3 p-2 rounded-lg transition-all duration-300 ${
                 i === activeIndex ? 'bg-primary/10 scale-[1.02]' : 'bg-muted/30'
-              }`}
+              } ${isChanging ? 'opacity-0 translate-x-2' : 'opacity-100 translate-x-0'}`}
+              style={{ transitionDelay: `${i * 50}ms` }}
             >
-              <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
+              <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                player.status === 'playing' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-muted text-muted-foreground'
+              }`}>
                 {player.avatar}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{player.name}</p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className={`text-[10px] ${player.status === 'playing' ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                   {player.status === 'playing' ? 'Oyunda' : 'Bekliyor'}
                 </p>
               </div>
