@@ -158,38 +158,42 @@ export default function Game() {
     }
   }, [countdownComplete, pendingRoundData]);
 
-  // Fallback: Force fetch game state after countdown if still waiting
+  // Fallback: Keep polling for game state after countdown if still waiting
   useEffect(() => {
-    if (countdownComplete && gameStatus === "waiting" && !pendingRoundData) {
-      console.log("Countdown complete but no pending data, forcing refetch");
-      // Force immediate refetch
-      const fetchGame = async () => {
-        try {
-          const response = await fetch(`/api/rooms/${roomCode}/game`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Forced fetch result:", data);
-            if (data.gameState?.status === "question" && data.content) {
-              setGameStatus("question");
-              setCurrentRound(data.gameState.currentRound || 1);
-              setIsLightningRound(data.gameState.isLightningRound || false);
-              setTimeLeft(data.gameState.timeLeft || 20);
-              setTotalTime(data.gameState.timeLeft || 20);
-              setContent(data.content);
-              if (data.gameState.gameMode) {
-                setGameMode(data.gameState.gameMode);
-              }
+    if (!countdownComplete || gameStatus !== "waiting") return;
+    
+    console.log("Countdown complete, starting game state polling...");
+    
+    const fetchGame = async () => {
+      try {
+        const response = await fetch(`/api/rooms/${roomCode}/game`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Poll result:", data.gameState?.status, "content:", !!data.content);
+          if (data.gameState?.status === "question" && data.content) {
+            console.log("Got valid game state, transitioning to question");
+            setGameStatus("question");
+            setCurrentRound(data.gameState.currentRound || 1);
+            setIsLightningRound(data.gameState.isLightningRound || false);
+            setTimeLeft(data.gameState.timeLeft || 20);
+            setTotalTime(data.gameState.timeLeft || 20);
+            setContent(data.content);
+            if (data.gameState.gameMode) {
+              setGameMode(data.gameState.gameMode);
             }
           }
-        } catch (err) {
-          console.error("Force fetch error:", err);
         }
-      };
-      // Small delay to allow WebSocket to catch up
-      const timer = setTimeout(fetchGame, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [countdownComplete, gameStatus, pendingRoundData, roomCode]);
+      } catch (err) {
+        console.error("Poll error:", err);
+      }
+    };
+    
+    // Poll immediately and then every 500ms until we get game data
+    fetchGame();
+    const interval = setInterval(fetchGame, 500);
+    
+    return () => clearInterval(interval);
+  }, [countdownComplete, gameStatus, roomCode]);
 
   const gameQuery = useQuery<any>({
     queryKey: ["/api/rooms", roomCode, "game"],
