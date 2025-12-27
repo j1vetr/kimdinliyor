@@ -740,20 +740,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Helper function to start the next round
   async function startNextRound(roomCode: string, room: Room) {
+    console.log(`[startNextRound] ========================================`);
     console.log(`[startNextRound] Called for room ${roomCode}`);
     const gameState = gameStates.get(roomCode);
     if (!gameState) {
-      console.log(`[startNextRound] No game state found for ${roomCode}`);
+      console.log(`[startNextRound] ERROR: No game state found for ${roomCode}`);
       return;
     }
 
     const nextRound = gameState.currentRound + 1;
     const totalRounds = room.totalRounds || 10;
-    console.log(`[startNextRound] Next round: ${nextRound}/${totalRounds}`);
+    console.log(`[startNextRound] Current round in gameState: ${gameState.currentRound}`);
+    console.log(`[startNextRound] Next round will be: ${nextRound}/${totalRounds}`);
 
     if (nextRound > totalRounds) {
       // Game finished
-      console.log(`[startNextRound] Game finished for ${roomCode}`);
+      console.log(`[startNextRound] GAME FINISHED - reached total rounds for ${roomCode}`);
       gameState.status = "finished";
       await storage.updateRoom(room.id, { status: "finished" });
       broadcastToRoom(roomCode, { type: "game_finished" });
@@ -764,8 +766,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const allContents = await storage.getContentByRoom(room.id);
     const unusedContents = allContents.filter(c => !gameState.usedContentIds.has(c.id));
     
+    console.log(`[startNextRound] Total content: ${allContents.length}, Unused content: ${unusedContents.length}`);
+    console.log(`[startNextRound] Used content IDs: ${Array.from(gameState.usedContentIds).join(', ')}`);
+    
     if (unusedContents.length === 0) {
       // No more content, end game
+      console.log(`[startNextRound] GAME FINISHED - no more content for ${roomCode}`);
       gameState.status = "finished";
       await storage.updateRoom(room.id, { status: "finished" });
       broadcastToRoom(roomCode, { type: "game_finished" });
@@ -895,13 +901,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     
     // Select random mode
     const selectedMode = availableModes[Math.floor(Math.random() * availableModes.length)];
+    console.log(`[startNextRound] Selected mode: ${selectedMode}, Available modes: ${availableModes.join(', ')}`);
     
     // For comparison modes, we need a second content piece
     let secondContent: any = null;
     let secondContentId: string | null = null;
     
+    // Check if this is a comparison mode that requires 2 content pieces
+    const isVideoComparisonMode = selectedMode === "which_older" || selectedMode === "most_viewed" || selectedMode === "which_longer";
+    const isChannelComparisonMode = selectedMode === "which_more_subs" || selectedMode === "which_more_videos";
+    
     // Video comparison modes
-    if (selectedMode === "which_older" || selectedMode === "most_viewed" || selectedMode === "which_longer") {
+    if (isVideoComparisonMode) {
       // Find another unused video for comparison
       const otherVideos = unusedContents.filter(c => 
         c.id !== selectedContentId && 
@@ -910,6 +921,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         (selectedMode === "which_longer" ? c.duration : true)
       );
       
+      console.log(`[startNextRound] Video comparison mode, other videos available: ${otherVideos.length}`);
+      
       if (otherVideos.length > 0) {
         const randomIdx = Math.floor(Math.random() * otherVideos.length);
         secondContent = otherVideos[randomIdx];
@@ -917,11 +930,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         if (secondContentId) {
           gameState.usedContentIds.add(secondContentId);
         }
+        console.log(`[startNextRound] Selected second video: ${secondContent.title}`);
+      } else {
+        // Not enough videos for comparison, skip to next content
+        console.log(`[startNextRound] WARNING: Not enough videos for comparison mode, retrying...`);
+        setTimeout(() => startNextRound(roomCode, room), 100);
+        return;
       }
     }
     
     // Channel comparison modes
-    if (selectedMode === "which_more_subs" || selectedMode === "which_more_videos") {
+    if (isChannelComparisonMode) {
       // Find another unused channel for comparison
       const otherChannels = unusedContents.filter(c => 
         c.id !== selectedContentId && 
@@ -930,6 +949,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         (selectedMode === "which_more_videos" ? c.videoCount : true)
       );
       
+      console.log(`[startNextRound] Channel comparison mode, other channels available: ${otherChannels.length}`);
+      
       if (otherChannels.length > 0) {
         const randomIdx = Math.floor(Math.random() * otherChannels.length);
         secondContent = otherChannels[randomIdx];
@@ -937,6 +958,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         if (secondContentId) {
           gameState.usedContentIds.add(secondContentId);
         }
+        console.log(`[startNextRound] Selected second channel: ${secondContent.title}`);
+      } else {
+        // Not enough channels for comparison, skip to next content
+        console.log(`[startNextRound] WARNING: Not enough channels for comparison mode, retrying...`);
+        setTimeout(() => startNextRound(roomCode, room), 100);
+        return;
       }
     }
 
