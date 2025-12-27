@@ -12,23 +12,20 @@ const TAHMIN_MODLARI = [
   {
     id: "who_liked",
     title: "Kim Beğenmiş?",
-    desc: "Ekrandaki videoyu hangi oyuncu beğenmiş? Tahmin et!",
+    desc: "Bu videoyu kim beğenmiş?",
     icon: ThumbsUp,
-    color: "#ef4444",
   },
   {
     id: "who_subscribed",
     title: "Kim Abone?",
-    desc: "Bu kanala hangi oyuncu abone? Doğru tahmini yap!",
+    desc: "Bu kanala kim abone?",
     icon: UserPlus,
-    color: "#f97316",
   },
   {
     id: "oldest_like",
     title: "İlk Aşkım",
-    desc: "En eski beğenilen video kimin? Nostaljik yarış!",
+    desc: "En eski beğeni kimin?",
     icon: Heart,
-    color: "#ec4899",
   },
 ];
 
@@ -36,37 +33,32 @@ const KARSILASTIRMA_MODLARI = [
   {
     id: "which_older",
     title: "Hangisi Daha Eski?",
-    desc: "İki videodan hangisi daha önce yüklendi?",
+    desc: "Hangisi önce yüklendi?",
     icon: Clock,
-    color: "#3b82f6",
   },
   {
     id: "most_viewed",
     title: "En Çok İzlenen",
-    desc: "Hangi video daha fazla izlenmiş?",
+    desc: "Hangisi daha çok izlendi?",
     icon: Eye,
-    color: "#10b981",
   },
   {
     id: "which_longer",
     title: "Hangisi Daha Uzun?",
-    desc: "İki videodan hangisi daha uzun süreli?",
+    desc: "Hangi video daha uzun?",
     icon: Timer,
-    color: "#8b5cf6",
   },
   {
     id: "which_more_subs",
     title: "Hangisi Daha Popüler?",
-    desc: "Hangi kanalın daha fazla abonesi var?",
+    desc: "Hangi kanal daha popüler?",
     icon: Users,
-    color: "#06b6d4",
   },
   {
     id: "which_more_videos",
     title: "Hangisi Daha Emektar?",
-    desc: "Hangi kanal daha fazla video yüklemiş?",
+    desc: "Hangi kanal daha çok video yükledi?",
     icon: Disc3,
-    color: "#f59e0b",
   },
 ];
 
@@ -83,7 +75,7 @@ const LIVE_LOBBIES = [
     count: "4/6",
   },
   {
-    name: "Gece Yarisi",
+    name: "Gece Yarısı",
     players: [
       { name: "Ali", initial: "A", status: "Hazır" },
       { name: "Zeynep", initial: "Z", status: "Hazır" },
@@ -92,7 +84,7 @@ const LIVE_LOBBIES = [
     count: "3/4",
   },
   {
-    name: "YouTube Masters",
+    name: "YouTube Ustaları",
     players: [
       { name: "Ece", initial: "E", status: "Hazır" },
       { name: "Burak", initial: "B", status: "Bekliyor" },
@@ -110,9 +102,9 @@ const LIVE_LOBBIES = [
     count: "2/4",
   },
   {
-    name: "Video Avcilari",
+    name: "Video Avcıları",
     players: [
-      { name: "Yigit", initial: "Y", status: "Hazır" },
+      { name: "Yiğit", initial: "Y", status: "Hazır" },
       { name: "Sude", initial: "S", status: "Bekliyor" },
       { name: "Emre", initial: "E", status: "Hazır" },
     ],
@@ -298,62 +290,62 @@ export default function Home() {
               <div className="section-line" />
             </div>
 
-            <div className="modes-showcase">
-              <div className="modes-category-panel">
-                <div className="modes-panel-header">
-                  <Badge variant="outline" className="modes-panel-badge">
-                    <SiGoogle className="modes-badge-icon" />
-                    YouTube Hesabı Gerekli
-                  </Badge>
+            <div className="modes-arena">
+              <div className="modes-arena-left">
+                <div className="modes-arena-badge">
+                  <SiGoogle className="modes-arena-badge-icon" />
+                  <span>YouTube Hesabı Gerekli</span>
                 </div>
-                <h3 className="modes-panel-title">Tahmin Modları</h3>
-                <p className="modes-panel-desc">
-                  Tahmin modları için YouTube hesabını bağlaman gerekiyor.<br />
+                <h3 className="modes-arena-title">Tahmin Modları</h3>
+                <p className="modes-arena-desc">
                   Arkadaşlarının beğenilerini ve aboneliklerini tahmin et.
                 </p>
-                <div className="modes-panel-list">
-                  {TAHMIN_MODLARI.map((mode, idx) => {
+                <div className="modes-arena-grid modes-arena-grid-3">
+                  {TAHMIN_MODLARI.map((mode) => {
                     const Icon = mode.icon;
                     return (
-                      <div key={mode.id} className="modes-panel-item" data-testid={`card-mode-${mode.id}`}>
-                        <div className="modes-panel-num">{idx + 1}</div>
-                        <div className="modes-panel-icon">
+                      <div key={mode.id} className="modes-arena-card" data-testid={`card-mode-${mode.id}`}>
+                        <div className="modes-arena-card-icon">
                           <Icon />
                         </div>
-                        <span className="modes-panel-name">{mode.title}</span>
+                        <div className="modes-arena-card-content">
+                          <span className="modes-arena-card-title">{mode.title}</span>
+                          <span className="modes-arena-card-desc">{mode.desc}</span>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              <div className="modes-divider">
-                <span className="modes-divider-line" />
-                <span className="modes-divider-text">veya</span>
-                <span className="modes-divider-line" />
+              <div className="modes-arena-center">
+                <div className="modes-arena-vs">
+                  <span className="modes-arena-vs-line" />
+                  <span className="modes-arena-vs-text">veya</span>
+                  <span className="modes-arena-vs-line" />
+                </div>
               </div>
 
-              <div className="modes-category-panel modes-category-panel-alt">
-                <div className="modes-panel-header">
-                  <Badge variant="secondary" className="modes-panel-badge-free">
-                    Giriş Gerekmez
-                  </Badge>
+              <div className="modes-arena-right">
+                <div className="modes-arena-badge modes-arena-badge-alt">
+                  <span>Giriş Gerekmez</span>
                 </div>
-                <h3 className="modes-panel-title">Karşılaştırma Modları</h3>
-                <p className="modes-panel-desc">
-                  YouTube hesabı olmadan herkes oynayabilir.<br />
+                <h3 className="modes-arena-title">Karşılaştırma Modları</h3>
+                <p className="modes-arena-desc">
                   Trend videolar ve popüler kanallarla yarış.
                 </p>
-                <div className="modes-panel-list">
-                  {KARSILASTIRMA_MODLARI.map((mode, idx) => {
+                <div className="modes-arena-grid modes-arena-grid-5">
+                  {KARSILASTIRMA_MODLARI.map((mode) => {
                     const Icon = mode.icon;
                     return (
-                      <div key={mode.id} className="modes-panel-item" data-testid={`card-mode-${mode.id}`}>
-                        <div className="modes-panel-num">{idx + 1}</div>
-                        <div className="modes-panel-icon">
+                      <div key={mode.id} className="modes-arena-card" data-testid={`card-mode-${mode.id}`}>
+                        <div className="modes-arena-card-icon">
                           <Icon />
                         </div>
-                        <span className="modes-panel-name">{mode.title}</span>
+                        <div className="modes-arena-card-content">
+                          <span className="modes-arena-card-title">{mode.title}</span>
+                          <span className="modes-arena-card-desc">{mode.desc}</span>
+                        </div>
                       </div>
                     );
                   })}
