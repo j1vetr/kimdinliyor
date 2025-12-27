@@ -552,18 +552,18 @@ export default function Game() {
 
           {/* Main Content */}
           <main className="flex-1 flex flex-col items-center min-h-0 overflow-hidden px-4 pb-4">
-            <div className="w-full max-w-[340px] flex flex-col flex-1 min-h-0 gap-3">
+            <div className="w-full max-w-[340px] md:max-w-[440px] flex flex-col flex-1 min-h-0 gap-3 md:gap-4">
               
               {isComparisonMode && content2 ? (
                 <>
                   {/* Question Card */}
-                  <div className="shrink-0 px-3 py-2 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm">
-                    <p className="text-xs font-medium text-center text-foreground/90">{modeInfo?.question}</p>
+                  <div className="shrink-0 px-3 py-2 md:px-4 md:py-3 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm">
+                    <p className="text-xs md:text-sm font-medium text-center text-foreground/90">{modeInfo?.question}</p>
                   </div>
                   
                   {/* VS Comparison */}
                   <div className="flex-1 flex flex-col gap-2 min-h-0">
-                    <div className="flex-1 flex gap-3 min-h-0" style={{ maxHeight: '240px' }}>
+                    <div className="flex-1 flex gap-3 md:gap-4 min-h-0" style={{ maxHeight: '320px' }}>
                       {/* Video 1 */}
                       <motion.button
                         whileTap={{ scale: 0.98 }}
@@ -582,21 +582,21 @@ export default function Game() {
                           )}
                           {selectedContentId === content.id && (
                             <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
-                              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                                <Check className="h-4 w-4 text-white" />
+                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                <Check className="h-4 w-4 md:h-5 md:w-5 text-white" />
                               </div>
                             </div>
                           )}
                         </div>
-                        <div className="p-2 bg-card border-t border-border/20">
-                          <p className="text-[11px] font-medium line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
+                        <div className="p-2 md:p-3 bg-card border-t border-border/20">
+                          <p className="text-[11px] md:text-sm font-medium line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
                         </div>
                       </motion.button>
 
                       {/* VS Badge */}
                       <div className="shrink-0 self-center">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-                          <span className="text-[9px] font-black text-white">VS</span>
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                          <span className="text-[9px] md:text-xs font-black text-white">VS</span>
                         </div>
                       </div>
 
@@ -618,14 +618,14 @@ export default function Game() {
                           )}
                           {selectedContentId === content2.id && (
                             <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
-                              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                                <Check className="h-4 w-4 text-white" />
+                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                <Check className="h-4 w-4 md:h-5 md:w-5 text-white" />
                               </div>
                             </div>
                           )}
                         </div>
-                        <div className="p-2 bg-card border-t border-border/20">
-                          <p className="text-[11px] font-medium line-clamp-2 leading-snug text-foreground/90">{content2.title}</p>
+                        <div className="p-2 md:p-3 bg-card border-t border-border/20">
+                          <p className="text-[11px] md:text-sm font-medium line-clamp-2 leading-snug text-foreground/90">{content2.title}</p>
                         </div>
                       </motion.button>
                     </div>
@@ -634,18 +634,18 @@ export default function Game() {
                   {/* CTA Footer */}
                   <div className="shrink-0">
                     {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <Check className="h-4 w-4 text-emerald-500" />
-                        <span className="text-xs font-semibold text-emerald-500">Cevap Gönderildi</span>
+                      <div className="flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <Check className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
+                        <span className="text-xs md:text-sm font-semibold text-emerald-500">Cevap Gönderildi</span>
                       </div>
                     ) : (
                       <Button
-                        className="w-full h-11 gap-2 bg-primary hover:bg-primary/90 text-sm font-semibold"
+                        className="w-full h-11 md:h-12 gap-2 bg-primary hover:bg-primary/90 text-sm md:text-base font-semibold"
                         onClick={handleSubmitAnswer}
                         disabled={!selectedContentId || answerMutation.isPending}
                         data-testid="button-submit-comparison"
                       >
-                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : <Send className="h-4 w-4 md:h-5 md:w-5" />}
                         {selectedContentId ? "Cevabı Kilitle" : "Bir Video Seç"}
                       </Button>
                     )}
@@ -655,28 +655,28 @@ export default function Game() {
                 <>
                   {/* Content Card */}
                   <div className="shrink-0 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden">
-                    <div className="flex items-center gap-3 p-3">
-                      <div className="w-16 h-12 rounded-md overflow-hidden shrink-0 bg-muted">
+                    <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
+                      <div className="w-16 h-12 md:w-20 md:h-14 rounded-md overflow-hidden shrink-0 bg-muted">
                         {content.thumbnailUrl && (
                           <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{content.subtitle}</p>
+                        <p className="text-xs md:text-sm font-semibold line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
+                        <p className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{content.subtitle}</p>
                       </div>
                       <button onClick={openYouTubeLink} className="shrink-0 p-2 rounded-md hover:bg-muted/50 transition-colors" data-testid="button-open-youtube-header">
-                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                        <ExternalLink className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                       </button>
                     </div>
-                    <div className="px-3 py-2 bg-muted/30 border-t border-border/20">
-                      <p className="text-xs font-medium text-center text-foreground/80">{modeInfo?.question}</p>
+                    <div className="px-3 py-2 md:px-4 md:py-3 bg-muted/30 border-t border-border/20">
+                      <p className="text-xs md:text-sm font-medium text-center text-foreground/80">{modeInfo?.question}</p>
                     </div>
                   </div>
 
                   {/* Player Grid - 2 columns */}
                   <div className="flex-1 min-h-0 overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2 md:gap-3">
                       {allPlayers.map((player: any) => {
                         const playerId = player.userId || player.user?.id;
                         const displayName = player.user?.displayName || player.displayName;
@@ -690,7 +690,7 @@ export default function Game() {
                             whileTap={{ scale: 0.97 }}
                             onClick={() => !hasAnswered && handlePlayerToggle(playerId, !isSelected)}
                             disabled={hasAnswered}
-                            className={`flex items-center gap-2.5 p-2.5 rounded-lg transition-all duration-200 min-h-[44px] ${
+                            className={`flex items-center gap-2.5 md:gap-3 p-2.5 md:p-3 rounded-lg transition-all duration-200 min-h-[44px] md:min-h-[52px] ${
                               hasAnswered ? "opacity-50" : ""
                             } ${
                               isSelected 
@@ -701,19 +701,19 @@ export default function Game() {
                           >
                             <div className="relative shrink-0">
                               {avatarUrl ? (
-                                <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                <img src={avatarUrl} alt="" className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover" />
                               ) : (
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isSelected ? "bg-white/20" : "bg-muted"}`}>
+                                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-xs md:text-sm font-bold ${isSelected ? "bg-white/20" : "bg-muted"}`}>
                                   {displayName?.charAt(0).toUpperCase()}
                                 </div>
                               )}
                               {isSelected && (
-                                <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
-                                  <Check className="h-2.5 w-2.5 text-primary" />
+                                <div className="absolute -top-0.5 -right-0.5 w-4 h-4 md:w-5 md:h-5 rounded-full bg-white flex items-center justify-center">
+                                  <Check className="h-2.5 w-2.5 md:h-3 md:w-3 text-primary" />
                                 </div>
                               )}
                             </div>
-                            <span className="text-xs font-medium truncate">
+                            <span className="text-xs md:text-sm font-medium truncate">
                               {isSelf ? "Ben" : displayName?.split(' ')[0]}
                             </span>
                           </motion.button>
@@ -725,18 +725,18 @@ export default function Game() {
                   {/* CTA Footer */}
                   <div className="shrink-0">
                     {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-2 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <Check className="h-4 w-4 text-emerald-500" />
-                        <span className="text-xs font-semibold text-emerald-500">Cevap Kilitlendi</span>
+                      <div className="flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <Check className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
+                        <span className="text-xs md:text-sm font-semibold text-emerald-500">Cevap Kilitlendi</span>
                       </div>
                     ) : (
                       <Button
-                        className="w-full h-11 gap-2 bg-primary hover:bg-primary/90 text-sm font-semibold"
+                        className="w-full h-11 md:h-12 gap-2 bg-primary hover:bg-primary/90 text-sm md:text-base font-semibold"
                         onClick={handleSubmitAnswer}
                         disabled={selectedPlayers.length === 0 || answerMutation.isPending}
                         data-testid="button-submit-answer"
                       >
-                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : <Send className="h-4 w-4 md:h-5 md:w-5" />}
                         {selectedPlayers.length === 0 ? "Oyuncu Seç" : `Kilitle (${selectedPlayers.length})`}
                       </Button>
                     )}
@@ -753,24 +753,24 @@ export default function Game() {
       {gameStatus === "results" && content && (
         <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
           {/* Header Strip */}
-          <header className="shrink-0 px-4 py-3">
-            <div className="max-w-[340px] mx-auto flex items-center justify-between">
+          <header className="shrink-0 px-4 py-3 md:py-4">
+            <div className="max-w-[340px] md:max-w-[440px] mx-auto flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
+                <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
                 {isLightningRound && (
-                  <span className="text-[10px] text-amber-500 font-medium flex items-center gap-0.5">
-                    <Zap className="h-2.5 w-2.5" /> 2x
+                  <span className="text-[10px] md:text-xs text-amber-500 font-medium flex items-center gap-0.5">
+                    <Zap className="h-2.5 w-2.5 md:h-3 md:w-3" /> 2x
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/30 border border-border/20">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Sonuçlar</span>
+              <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-muted/30 border border-border/20">
+                <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wide">Sonuçlar</span>
               </div>
             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto px-4 pb-4">
-            <div className="max-w-[340px] mx-auto space-y-3">
+            <div className="max-w-[340px] md:max-w-[440px] mx-auto space-y-3 md:space-y-4">
               
               {/* Content Card */}
               <button 
