@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, Radio, LogOut } from "lucide-react";
+import { ArrowLeft, Copy, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, Share2, User } from "lucide-react";
 import { SiYoutube, SiGoogle, SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,9 +131,9 @@ export default function Lobby() {
   // Loading
   if (roomQuery.isLoading) {
     return (
-      <div className="deck-shell">
-        <div className="deck-loading">
-          <div className="deck-spinner" />
+      <div className="lobby-page">
+        <div className="lobby-loading">
+          <Loader2 className="lobby-loading-icon" />
           <span>Yükleniyor...</span>
         </div>
       </div>
@@ -143,10 +143,10 @@ export default function Lobby() {
   // Error
   if (roomQuery.isError || !roomQuery.data) {
     return (
-      <div className="deck-shell">
-        <div className="deck-error">
-          <Radio className="deck-error-icon" />
+      <div className="lobby-page">
+        <div className="lobby-error">
           <h2>Oda Bulunamadı</h2>
+          <p>Bu kod ile bir oda yok veya süre dolmuş olabilir.</p>
           <Link href="/"><Button size="sm"><ArrowLeft />Ana Sayfa</Button></Link>
         </div>
       </div>
@@ -168,65 +168,62 @@ export default function Lobby() {
   const isUserInRoom = userId && players.some(p => p.userId === userId);
   const isFull = playerCount >= maxPlayers;
 
+  // Empty slots calculation
+  const emptySlots = Math.max(0, 6 - playerCount);
+
   // Join Screen
   if (!isUserInRoom) {
     return (
-      <div className="deck-shell">
-        <header className="deck-top-bar">
-          <Logo height={24} />
+      <div className="lobby-page">
+        <header className="lobby-topbar">
+          <Link href="/"><button className="lobby-back" data-testid="button-back"><ArrowLeft /></button></Link>
+          <Logo height={28} />
+          <div style={{ width: 32 }} />
         </header>
         
-        <main className="deck-join-area">
-          <div className="deck-join-box">
-            <div className="deck-join-indicator">
-              <span className="deck-pulse" />
+        <main className="lobby-center">
+          <div className="lobby-join-card">
+            <div className="lobby-join-status">
+              <span className="lobby-pulse" />
               <span>Aktif Lobi</span>
             </div>
             
-            <h1 className="deck-join-title">{room.name}</h1>
+            <h1 className="lobby-join-title">{room.name}</h1>
             
-            <div className="deck-code-unit">
-              <label className="deck-code-label">Oda Kodu</label>
-              <div className="deck-code-leds">
-                {roomCode?.split("").map((c, i) => (
-                  <div key={i} className="deck-led">{c}</div>
-                ))}
-              </div>
-              <div className="deck-code-info">
-                <Users className="deck-info-icon" />
-                <span>{playerCount}/{maxPlayers}</span>
-              </div>
+            <div className="lobby-join-code">
+              <span className="lobby-join-code-label">Oda Kodu</span>
+              <span className="lobby-join-code-value">{roomCode}</span>
+              <span className="lobby-join-code-count"><Users className="icon-sm" />{playerCount}/{maxPlayers}</span>
             </div>
 
             {!isFull ? (
-              <div className="deck-join-form">
+              <div className="lobby-join-form">
                 <Input
                   placeholder="Adın"
                   value={joinName}
                   onChange={(e) => setJoinName(e.target.value)}
                   maxLength={20}
-                  className="deck-join-input"
+                  className="lobby-join-input"
                   data-testid="input-join-name"
                   onKeyDown={(e) => e.key === "Enter" && handleQuickJoin()}
                 />
-                <Button onClick={handleQuickJoin} disabled={!joinName.trim() || isJoining} className="deck-join-btn" data-testid="button-quick-join">
+                <Button onClick={handleQuickJoin} disabled={!joinName.trim() || isJoining} data-testid="button-quick-join">
                   {isJoining ? <Loader2 className="animate-spin" /> : <ArrowRight />}
                   Katıl
                 </Button>
               </div>
             ) : (
-              <div className="deck-full">Lobi dolu</div>
+              <div className="lobby-full-msg">Lobi dolu</div>
             )}
 
             {players.length > 0 && (
-              <div className="deck-join-roster">
-                <span className="deck-roster-label">Oyuncular</span>
-                <div className="deck-roster-chips">
+              <div className="lobby-join-players">
+                <span className="lobby-section-label">Oyuncular</span>
+                <div className="lobby-join-chips">
                   {players.map((p) => (
-                    <span key={p.id} className={`deck-chip ${p.user.googleConnected ? 'on' : ''}`}>
-                      {p.userId === room.hostUserId && <Crown className="deck-chip-icon" />}
+                    <span key={p.id} className={`lobby-chip ${p.user.googleConnected ? 'ready' : ''}`}>
+                      {p.userId === room.hostUserId && <Crown className="icon-xs" />}
                       {p.user.displayName}
-                      {p.user.googleConnected && <Check className="deck-chip-check" />}
                     </span>
                   ))}
                 </div>
@@ -238,127 +235,105 @@ export default function Lobby() {
     );
   }
 
-  // Main Lobby - DJ Deck Style
+  // Main Lobby
   return (
-    <div className="deck-shell">
+    <div className="lobby-page">
       {/* Top Bar */}
-      <header className="deck-top-bar">
-        <Link href="/">
-          <button className="deck-back" data-testid="button-back"><ArrowLeft /></button>
-        </Link>
-        <Logo height={20} />
-        <div className="deck-meter">
-          <Users className="deck-meter-icon" />
-          <span>{playerCount}/{maxPlayers}</span>
+      <header className="lobby-topbar">
+        <Link href="/"><button className="lobby-back" data-testid="button-back"><ArrowLeft /></button></Link>
+        <Logo height={28} />
+        <div className="lobby-topbar-actions">
+          <button onClick={copyCode} className="lobby-action-btn" data-testid="button-copy-code">
+            {copied ? <Check /> : <Copy />}
+          </button>
+          <button onClick={shareWhatsApp} className="lobby-action-btn whatsapp" data-testid="button-whatsapp">
+            <Share2 />
+          </button>
         </div>
       </header>
 
-      {/* Console Body */}
-      <main className="deck-console">
-        {/* Left Channel - Code + Share */}
-        <section className="deck-channel">
-          <div className="deck-channel-header">
-            <span className="deck-ch-label">Kanal A</span>
-            <span className="deck-ch-led on" />
-          </div>
-          
-          <div className="deck-code-block">
-            <label className="deck-block-label">Oda Kodu</label>
-            <div className="deck-code-display" data-testid="display-room-code">
-              {roomCode?.split("").map((c, i) => (
-                <div key={i} className="deck-digit">{c}</div>
-              ))}
+      {/* Main Card */}
+      <main className="lobby-center">
+        <div className="lobby-card">
+          {/* Room Info Bar */}
+          <div className="lobby-room-bar">
+            <div className="lobby-room-icon">
+              <SiYoutube />
+            </div>
+            <div className="lobby-room-info">
+              <span className="lobby-room-name" data-testid="text-room-name">{room.name}</span>
+              <span className="lobby-room-meta">{roomCode} | {room.totalRounds} tur | {room.roundDuration}sn</span>
+            </div>
+            <div className="lobby-room-count">
+              <Users className="icon-sm" />
+              <span>{playerCount}/{maxPlayers}</span>
             </div>
           </div>
 
-          <div className="deck-share-buttons">
-            <button onClick={copyCode} className="deck-share-btn" data-testid="button-copy-code">
-              {copied ? <Check /> : <Copy />}
-              <span>{copied ? "OK" : "Kopyala"}</span>
-            </button>
-            <button onClick={shareWhatsApp} className="deck-share-btn whatsapp" data-testid="button-whatsapp">
-              <SiWhatsapp />
-            </button>
-          </div>
-        </section>
-
-        {/* Center - Room Info + Players */}
-        <section className="deck-mixer">
-          <div className="deck-room-strip">
-            <h1 className="deck-room-name" data-testid="text-room-name">{room.name}</h1>
-            <div className="deck-room-knobs">
-              <div className="deck-knob">
-                <span className="deck-knob-value">{room.totalRounds}</span>
-                <span className="deck-knob-label">Tur</span>
-              </div>
-              <div className="deck-knob">
-                <span className="deck-knob-value">{room.roundDuration}</span>
-                <span className="deck-knob-label">Saniye</span>
-              </div>
-            </div>
+          {/* Progress Dots */}
+          <div className="lobby-progress">
+            {[...Array(room.totalRounds)].map((_, i) => (
+              <span key={i} className="lobby-dot" />
+            ))}
           </div>
 
-          {/* YouTube Connection */}
-          {hasGuessModes && (
-            <div className="deck-yt-strip">
-              {!googleStatusQuery.data?.connected ? (
-                <button onClick={connectGoogle} className="deck-yt-connect" data-testid="button-connect-google">
-                  <SiYoutube className="deck-yt-icon" />
-                  <span>YouTube Bağla</span>
-                  <SiGoogle className="deck-google-icon" />
-                </button>
-              ) : (
-                <div className="deck-yt-ok">
-                  <Check className="deck-yt-check" />
-                  <span>YouTube Bağlı</span>
-                  <div className="deck-signal">
-                    <span /><span /><span />
-                  </div>
-                </div>
-              )}
+          {/* YouTube Connection Alert */}
+          {hasGuessModes && !googleStatusQuery.data?.connected && (
+            <div className="lobby-alert">
+              <div className="lobby-alert-icon">
+                <SiYoutube />
+              </div>
+              <div className="lobby-alert-text">
+                <strong>YouTube Bağla</strong>
+                <span>Oyun için gerekli</span>
+              </div>
+              <Button onClick={connectGoogle} variant="outline" size="sm" className="lobby-connect-btn" data-testid="button-connect-google">
+                <SiGoogle />
+                Bağlan
+              </Button>
             </div>
           )}
 
-          {!hasGuessModes && (
-            <div className="deck-mode-strip">
-              <Radio className="deck-mode-icon" />
-              <span>Karşılaştırma Modu</span>
+          {/* Connected Status */}
+          {hasGuessModes && googleStatusQuery.data?.connected && (
+            <div className="lobby-connected">
+              <Check className="icon-sm" />
+              <span>YouTube Bağlı</span>
             </div>
           )}
 
-          {/* Players Faders */}
-          <div className="deck-faders">
-            <div className="deck-faders-header">
-              <span>Oyuncular</span>
-              {hasGuessModes && <span className="deck-faders-count">{connectedCount}/{playerCount}</span>}
+          {/* Players Section */}
+          <div className="lobby-players-section">
+            <div className="lobby-section-header">
+              <span className="lobby-section-label">OYUNCULAR</span>
+              {hasGuessModes && <span className="lobby-ready-count">{connectedCount}/{playerCount} hazır</span>}
             </div>
-            <div className="deck-fader-list">
+
+            <div className="lobby-players-grid">
               {players.map((player) => (
                 <div 
                   key={player.id} 
-                  className={`deck-fader ${player.user.googleConnected || !hasGuessModes ? 'ready' : ''}`}
+                  className={`lobby-player ${player.user.googleConnected || !hasGuessModes ? 'ready' : ''}`}
                   data-testid={`card-player-${player.userId}`}
                 >
-                  <div className="deck-fader-avatar">
+                  <div className="lobby-player-avatar">
                     {player.user.avatarUrl ? (
                       <img src={player.user.avatarUrl} alt="" />
                     ) : (
-                      player.user.displayName.charAt(0)
+                      <User className="lobby-player-icon" />
                     )}
                     {player.userId === room.hostUserId && (
-                      <Crown className="deck-fader-crown" />
+                      <div className="lobby-host-badge"><Crown /></div>
                     )}
                   </div>
-                  <span className="deck-fader-name">{player.user.displayName}</span>
-                  <div className="deck-fader-meter">
-                    <span className={player.user.googleConnected || !hasGuessModes ? 'on' : ''} />
-                    <span className={player.user.googleConnected || !hasGuessModes ? 'on' : ''} />
-                    <span className={player.user.googleConnected || !hasGuessModes ? 'on' : ''} />
-                  </div>
+                  <span className="lobby-player-name">{player.user.displayName}</span>
+                  <span className="lobby-player-status">
+                    {player.user.googleConnected || !hasGuessModes ? "Hazır" : "Bekliyor"}
+                  </span>
                   {isHost && player.userId !== userId && (
                     <button 
                       onClick={() => kickPlayerMutation.mutate(player.userId)}
-                      className="deck-fader-kick"
+                      className="lobby-kick"
                       data-testid={`button-kick-${player.userId}`}
                     >
                       <UserX />
@@ -366,37 +341,47 @@ export default function Lobby() {
                   )}
                 </div>
               ))}
+              
+              {/* Empty Slots */}
+              {[...Array(emptySlots)].map((_, i) => (
+                <div key={`empty-${i}`} className="lobby-player empty">
+                  <div className="lobby-player-avatar empty">
+                    <User className="lobby-player-icon" />
+                  </div>
+                  <span className="lobby-player-name">Boş slot</span>
+                </div>
+              ))}
             </div>
           </div>
-        </section>
-      </main>
 
-      {/* Transport Bar */}
-      <footer className="deck-transport">
-        {isHost ? (
-          <>
-            <span className="deck-transport-status">
-              {!canStart && playerCount < 2 && "2+ oyuncu gerekli"}
-              {!canStart && playerCount >= 2 && !allConnected && hasGuessModes && "Tüm oyuncular YouTube bağlamalı"}
-              {canStart && <span className="ready">Hazır!</span>}
-            </span>
-            <Button
-              onClick={() => startGameMutation.mutate()}
-              disabled={!canStart || startGameMutation.isPending}
-              className="deck-play-btn"
-              data-testid="button-start-game"
-            >
-              {startGameMutation.isPending ? <Loader2 className="animate-spin" /> : <Play />}
-              Başlat
-            </Button>
-          </>
-        ) : (
-          <div className="deck-transport-wait">
-            <Loader2 className="animate-spin" />
-            <span>Host bekleniyor...</span>
+          {/* Host Controls */}
+          <div className="lobby-controls">
+            <div className="lobby-controls-icon">
+              <Play />
+            </div>
+            <div className="lobby-controls-info">
+              <strong>Host Kontrolü</strong>
+              <span>
+                {!canStart && playerCount < 2 && "En az 2 oyuncu gerekli"}
+                {!canStart && playerCount >= 2 && !allConnected && hasGuessModes && "Tüm oyuncular YouTube bağlamalı"}
+                {canStart && "Oyunu başlatabilirsin!"}
+                {!isHost && "Host bekleniyor..."}
+              </span>
+            </div>
+            {isHost && (
+              <Button
+                onClick={() => startGameMutation.mutate()}
+                disabled={!canStart || startGameMutation.isPending}
+                className="lobby-start-btn"
+                data-testid="button-start-game"
+              >
+                {startGameMutation.isPending ? <Loader2 className="animate-spin" /> : <Play />}
+                Başlat
+              </Button>
+            )}
           </div>
-        )}
-      </footer>
+        </div>
+      </main>
     </div>
   );
 }
