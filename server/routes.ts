@@ -30,6 +30,17 @@ interface GameState {
 
 const gameStates = new Map<string, GameState>();
 
+// Tahmin modları - YouTube girişi gerekli
+const TAHMIN_MODES = ["who_liked", "who_subscribed", "oldest_like"];
+
+// Karşılaştırma modları - YouTube girişi gerekmez
+const KARSILASTIRMA_MODES = ["which_older", "most_viewed", "which_longer", "which_more_subs", "which_more_videos"];
+
+// Helper: Check if any of the selected modes require YouTube login
+function requiresYouTubeLogin(gameModes: string[]): boolean {
+  return gameModes.some(mode => TAHMIN_MODES.includes(mode));
+}
+
 // Helper: Check if round is lightning round (every 5th round: 5, 10)
 function isLightningRound(roundNumber: number): boolean {
   return roundNumber % 5 === 0 && roundNumber > 0;
@@ -436,14 +447,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "En az 2 oyuncu gerekli" });
       }
 
-      // Check if all players have Google connected
-      const playersWithUsers = await storage.getRoomWithPlayers(code.toUpperCase());
-      const disconnectedPlayers = playersWithUsers?.players.filter(p => !p.user.googleConnected) || [];
-      if (disconnectedPlayers.length > 0) {
-        const names = disconnectedPlayers.map(p => p.user.displayName).join(", ");
-        return res.status(400).json({ 
-          error: `Tüm oyuncuların YouTube bağlaması gerekli. Bağlanmayanlar: ${names}` 
-        });
+      // Check if any selected game mode requires YouTube login
+      const selectedModes = room.gameModes || ["who_liked", "who_subscribed"];
+      const needsYouTube = requiresYouTubeLogin(selectedModes);
+
+      // Only check for Google connection if tahmin modes are selected
+      if (needsYouTube) {
+        const playersWithUsers = await storage.getRoomWithPlayers(code.toUpperCase());
+        const disconnectedPlayers = playersWithUsers?.players.filter(p => !p.user.googleConnected) || [];
+        if (disconnectedPlayers.length > 0) {
+          const names = disconnectedPlayers.map(p => p.user.displayName).join(", ");
+          return res.status(400).json({ 
+            error: `Tahmin modları için YouTube bağlantısı gerekli. Bağlanmayanlar: ${names}` 
+          });
+        }
       }
 
       // Reset player scores for new game
@@ -454,119 +471,124 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       
       const contentByUser = new Map<string, { content: any; userId: string; type: string; isOldestLike?: boolean }[]>();
       
-      console.log(`[GAME START] Fetching content for ${players.length} players`);
-      
-      for (const player of players) {
-        try {
-          let token = await storage.getGoogleToken(player.userId);
-          if (!token) {
-            console.log(`[GAME START] No token found for player ${player.userId}`);
-            continue;
-          }
-
-          console.log(`[GAME START] Token found for player ${player.userId}, expires at: ${token.expiresAt}`);
-
-          // Refresh token if expired
-          if (token.expiresAt < new Date()) {
-            console.log(`[GAME START] Token expired for player ${player.userId}, refreshing...`);
-            const refreshed = await refreshAccessToken(token.refreshToken);
-            if (refreshed) {
-              const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
-              await storage.saveGoogleToken(player.userId, {
-                accessToken: refreshed.accessToken,
-                refreshToken: token.refreshToken,
-                expiresAt: newExpiresAt,
-              });
-              token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
-              console.log(`[GAME START] Token refreshed for player ${player.userId}`);
-            } else {
-              console.log(`[GAME START] Token refresh FAILED for player ${player.userId}`);
+      // Only fetch user content if tahmin modes are selected
+      if (needsYouTube) {
+        console.log(`[GAME START] Fetching user content for ${players.length} players (tahmin modes selected)`);
+        
+        for (const player of players) {
+          try {
+            let token = await storage.getGoogleToken(player.userId);
+            if (!token) {
+              console.log(`[GAME START] No token found for player ${player.userId}`);
               continue;
             }
-          }
 
-          // Fetch liked videos and subscriptions with stats (viewCount, subscriberCount)
-          const likedVideos = await getLikedVideosWithStats(token.accessToken, 50);
-          const subscriptions = await getSubscriptionsWithStats(token.accessToken, 50);
-          
-          // Fetch oldest liked videos for "Benim İlk Aşkım" mode
-          const oldestLikes = await getOldestLikedVideos(token.accessToken, 3);
-          const oldestLikeIds = new Set(oldestLikes.map(v => v.id));
-          
-          console.log(`[GAME START] Fetched ${likedVideos.length} liked videos, ${oldestLikes.length} oldest likes, and ${subscriptions.length} subscriptions for player ${player.userId}`);
-          
-          // Add videos to pool
-          for (const video of likedVideos) {
-            const key = `video:${video.id}`;
-            if (!contentByUser.has(key)) {
-              contentByUser.set(key, []);
+            console.log(`[GAME START] Token found for player ${player.userId}, expires at: ${token.expiresAt}`);
+
+            // Refresh token if expired
+            if (token.expiresAt < new Date()) {
+              console.log(`[GAME START] Token expired for player ${player.userId}, refreshing...`);
+              const refreshed = await refreshAccessToken(token.refreshToken);
+              if (refreshed) {
+                const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+                await storage.saveGoogleToken(player.userId, {
+                  accessToken: refreshed.accessToken,
+                  refreshToken: token.refreshToken,
+                  expiresAt: newExpiresAt,
+                });
+                token = { ...token, accessToken: refreshed.accessToken, expiresAt: newExpiresAt };
+                console.log(`[GAME START] Token refreshed for player ${player.userId}`);
+              } else {
+                console.log(`[GAME START] Token refresh FAILED for player ${player.userId}`);
+                continue;
+              }
             }
-            const existing = contentByUser.get(key)!;
-            const isOldest = oldestLikeIds.has(video.id);
-            if (!existing.some(e => e.userId === player.userId)) {
-              existing.push({ content: video, userId: player.userId, type: "video", isOldestLike: isOldest });
+
+            // Fetch liked videos and subscriptions with stats (viewCount, subscriberCount)
+            const likedVideos = await getLikedVideosWithStats(token.accessToken, 50);
+            const subscriptions = await getSubscriptionsWithStats(token.accessToken, 50);
+            
+            // Fetch oldest liked videos for "Benim İlk Aşkım" mode
+            const oldestLikes = await getOldestLikedVideos(token.accessToken, 3);
+            const oldestLikeIds = new Set(oldestLikes.map(v => v.id));
+            
+            console.log(`[GAME START] Fetched ${likedVideos.length} liked videos, ${oldestLikes.length} oldest likes, and ${subscriptions.length} subscriptions for player ${player.userId}`);
+            
+            // Add videos to pool
+            for (const video of likedVideos) {
+              const key = `video:${video.id}`;
+              if (!contentByUser.has(key)) {
+                contentByUser.set(key, []);
+              }
+              const existing = contentByUser.get(key)!;
+              const isOldest = oldestLikeIds.has(video.id);
+              if (!existing.some(e => e.userId === player.userId)) {
+                existing.push({ content: video, userId: player.userId, type: "video", isOldestLike: isOldest });
+              }
             }
+            
+            // Add oldest likes that might not be in the first 50 liked videos
+            for (const video of oldestLikes) {
+              const key = `video:${video.id}`;
+              if (!contentByUser.has(key)) {
+                contentByUser.set(key, []);
+              }
+              const existing = contentByUser.get(key)!;
+              if (!existing.some(e => e.userId === player.userId)) {
+                existing.push({ content: video, userId: player.userId, type: "video", isOldestLike: true });
+              }
+            }
+            
+            // Add channels to pool
+            for (const channel of subscriptions) {
+              const key = `channel:${channel.id}`;
+              if (!contentByUser.has(key)) {
+                contentByUser.set(key, []);
+              }
+              const existing = contentByUser.get(key)!;
+              if (!existing.some(e => e.userId === player.userId)) {
+                existing.push({ content: channel, userId: player.userId, type: "channel" });
+              }
+            }
+          } catch (error) {
+            console.error(`[GAME START] Failed to fetch content for user ${player.userId}:`, error);
           }
-          
-          // Add oldest likes that might not be in the first 50 liked videos
-          for (const video of oldestLikes) {
-            const key = `video:${video.id}`;
-            if (!contentByUser.has(key)) {
-              contentByUser.set(key, []);
-            }
-            const existing = contentByUser.get(key)!;
-            if (!existing.some(e => e.userId === player.userId)) {
-              existing.push({ content: video, userId: player.userId, type: "video", isOldestLike: true });
-            }
-          }
-          
-          // Add channels to pool
-          for (const channel of subscriptions) {
-            const key = `channel:${channel.id}`;
-            if (!contentByUser.has(key)) {
-              contentByUser.set(key, []);
-            }
-            const existing = contentByUser.get(key)!;
-            if (!existing.some(e => e.userId === player.userId)) {
-              existing.push({ content: channel, userId: player.userId, type: "channel" });
-            }
-          }
-        } catch (error) {
-          console.error(`[GAME START] Failed to fetch content for user ${player.userId}:`, error);
         }
-      }
-      
-      console.log(`[GAME START] Total unique content in pool: ${contentByUser.size}`);
+        
+        console.log(`[GAME START] Total unique user content in pool: ${contentByUser.size}`);
 
-      // Add content to cache with actual users
-      if (contentByUser.size > 0) {
-        for (const [key, entries] of Array.from(contentByUser.entries())) {
-          const content = entries[0].content;
-          const type = entries[0].type;
-          const users = entries.map(e => e.userId);
-          // Mark as oldest_like ONLY if EXACTLY ONE user has it as their oldest like
-          // This ensures no ties in "Benim İlk Aşkım" mode
-          const oldestLikeUsers = entries.filter((e: any) => e.isOldestLike);
-          const isOldestLike = oldestLikeUsers.length === 1;
+        // Add content to cache with actual users
+        if (contentByUser.size > 0) {
+          for (const [key, entries] of Array.from(contentByUser.entries())) {
+            const content = entries[0].content;
+            const type = entries[0].type;
+            const users = entries.map(e => e.userId);
+            // Mark as oldest_like ONLY if EXACTLY ONE user has it as their oldest like
+            // This ensures no ties in "Benim İlk Aşkım" mode
+            const oldestLikeUsers = entries.filter((e: any) => e.isOldestLike);
+            const isOldestLike = oldestLikeUsers.length === 1;
 
-          console.log(`[GAME START] Adding content: ${content.title} with sourceUserIds: ${JSON.stringify(users)}, isOldestLike: ${isOldestLike}`);
+            console.log(`[GAME START] Adding content: ${content.title} with sourceUserIds: ${JSON.stringify(users)}, isOldestLike: ${isOldestLike}`);
 
-          await storage.addContent({
-            roomId: room.id,
-            contentId: content.id,
-            contentType: type,
-            title: content.title,
-            subtitle: type === "video" ? content.channelTitle : content.subscriberCount,
-            thumbnailUrl: content.thumbnailUrl,
-            sourceUserIds: users,
-            viewCount: type === "video" ? content.viewCount : null,
-            subscriberCount: type === "channel" ? content.subscriberCount : null,
-            videoCount: type === "channel" ? content.videoCount : null,
-            duration: type === "video" ? content.duration : null,
-            publishedAt: type === "video" ? content.publishedAt : null,
-            isOldestLike: isOldestLike,
-          });
+            await storage.addContent({
+              roomId: room.id,
+              contentId: content.id,
+              contentType: type,
+              title: content.title,
+              subtitle: type === "video" ? content.channelTitle : content.subscriberCount,
+              thumbnailUrl: content.thumbnailUrl,
+              sourceUserIds: users,
+              viewCount: type === "video" ? content.viewCount : null,
+              subscriberCount: type === "channel" ? content.subscriberCount : null,
+              videoCount: type === "channel" ? content.videoCount : null,
+              duration: type === "video" ? content.duration : null,
+              publishedAt: type === "video" ? content.publishedAt : null,
+              isOldestLike: isOldestLike,
+            });
+          }
         }
+      } else {
+        console.log(`[GAME START] Skipping user content fetch (only karşılaştırma modes selected)`);
       }
       
       // Check if comparison modes are selected - fetch public content for them
