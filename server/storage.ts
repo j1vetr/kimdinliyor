@@ -337,6 +337,123 @@ export class DatabaseStorage implements IStorage {
     const shuffled = available.sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
   }
+
+  // ============= ADMIN METHODS =============
+  
+  async getAdminStats(): Promise<{
+    userCount: number;
+    roomCount: number;
+    activeRoomCount: number;
+    tokenCount: number;
+    contentCount: number;
+    roundCount: number;
+  }> {
+    const allUsers = await db.select().from(users);
+    const allRooms = await db.select().from(rooms);
+    const activeRooms = allRooms.filter(r => r.status === "playing" || r.status === "waiting");
+    const allTokens = await db.select().from(googleTokens);
+    const allContent = await db.select().from(contentCache);
+    const allRounds = await db.select().from(rounds);
+    
+    return {
+      userCount: allUsers.length,
+      roomCount: allRooms.length,
+      activeRoomCount: activeRooms.length,
+      tokenCount: allTokens.length,
+      contentCount: allContent.length,
+      roundCount: allRounds.length,
+    };
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async getAllRooms(): Promise<Room[]> {
+    return db.select().from(rooms).orderBy(desc(rooms.createdAt));
+  }
+
+  async getAllTokens(): Promise<{ userId: string; expiresAt: Date; createdAt: Date | null }[]> {
+    const tokens = await db.select({
+      userId: googleTokens.userId,
+      expiresAt: googleTokens.expiresAt,
+      createdAt: googleTokens.createdAt,
+    }).from(googleTokens);
+    return tokens;
+  }
+
+  async revokeUserToken(userId: string): Promise<void> {
+    await db.delete(googleTokens).where(eq(googleTokens.userId, userId));
+    await db.update(users).set({ googleConnected: false }).where(eq(users.id, userId));
+  }
+
+  async revokeAllTokens(): Promise<void> {
+    await db.delete(googleTokens);
+    await db.update(users).set({ googleConnected: false });
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    // Delete related data first
+    await db.delete(googleTokens).where(eq(googleTokens.userId, id));
+    await db.delete(roomPlayers).where(eq(roomPlayers.userId, id));
+    await db.delete(answers).where(eq(answers.oderId, id));
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async deleteRoom(id: string): Promise<void> {
+    // Get all rounds for this room
+    const roomRounds = await db.select().from(rounds).where(eq(rounds.roomId, id));
+    
+    // Delete answers for each round
+    for (const round of roomRounds) {
+      await db.delete(answers).where(eq(answers.roundId, round.id));
+    }
+    
+    // Delete rounds
+    await db.delete(rounds).where(eq(rounds.roomId, id));
+    
+    // Delete content cache
+    await db.delete(contentCache).where(eq(contentCache.roomId, id));
+    
+    // Delete room players
+    await db.delete(roomPlayers).where(eq(roomPlayers.roomId, id));
+    
+    // Delete room
+    await db.delete(rooms).where(eq(rooms.id, id));
+  }
+
+  async clearAllData(): Promise<void> {
+    await db.delete(answers);
+    await db.delete(rounds);
+    await db.delete(contentCache);
+    await db.delete(roomPlayers);
+    await db.delete(googleTokens);
+    await db.delete(globalTrendingCache);
+    await db.delete(rooms);
+    await db.delete(users);
+  }
+
+  async clearOldRooms(): Promise<number> {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const allRooms = await db.select().from(rooms);
+    
+    let deletedCount = 0;
+    for (const room of allRooms) {
+      const isOld = room.createdAt && room.createdAt < oneDayAgo;
+      const isFinished = room.status === "finished";
+      
+      if (isOld || isFinished) {
+        await this.deleteRoom(room.id);
+        deletedCount++;
+      }
+    }
+    
+    return deletedCount;
+  }
+
+  async clearTrendingCache(): Promise<void> {
+    await db.delete(globalTrendingCache);
+  }
 }
 
 // Helper functions

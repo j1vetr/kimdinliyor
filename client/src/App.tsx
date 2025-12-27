@@ -12,6 +12,8 @@ import Game from "@/pages/game";
 import Results from "@/pages/results";
 import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsOfService from "@/pages/terms-of-service";
+import AdminLogin from "@/pages/admin-login";
+import AdminPanel from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +27,8 @@ function Router() {
       <Route path="/oyun/:code/results" component={Results} />
       <Route path="/gizlilik-politikasi" component={PrivacyPolicy} />
       <Route path="/kullanim-kosullari" component={TermsOfService} />
+      <Route path="/yt-login" component={AdminLogin} />
+      <Route path="/admin" component={AdminPanel} />
       <Route component={NotFound} />
     </Switch>
   );

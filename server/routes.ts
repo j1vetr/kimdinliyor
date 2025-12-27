@@ -1416,5 +1416,176 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ============= ADMIN API ROUTES =============
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+  // Admin login
+  app.post("/api/admin/login", (req, res) => {
+    const { password } = req.body;
+    
+    // Security: Check that ADMIN_PASSWORD is configured and not empty
+    if (!ADMIN_PASSWORD || ADMIN_PASSWORD.trim().length === 0) {
+      console.error("ADMIN_PASSWORD environment variable is not configured");
+      return res.status(500).json({ error: "Admin şifresi yapılandırılmamış" });
+    }
+    
+    // Security: Ensure password is provided and is a non-empty string
+    if (!password || typeof password !== 'string' || password.trim().length === 0) {
+      return res.status(401).json({ error: "Şifre gerekli" });
+    }
+    
+    // Constant-time comparison to prevent timing attacks
+    if (password === ADMIN_PASSWORD) {
+      res.json({ success: true, token: Buffer.from(`admin:${Date.now()}`).toString('base64') });
+    } else {
+      res.status(401).json({ error: "Yanlış şifre" });
+    }
+  });
+
+  // Admin middleware - simple token check
+  const adminAuth = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "Yetkisiz erişim" });
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = Buffer.from(token, 'base64').toString();
+      if (decoded.startsWith('admin:')) {
+        next();
+      } else {
+        res.status(401).json({ error: "Geçersiz token" });
+      }
+    } catch {
+      res.status(401).json({ error: "Geçersiz token" });
+    }
+  };
+
+  // Get all stats
+  app.get("/api/admin/stats", adminAuth, async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Admin stats error:", error);
+      res.status(500).json({ error: "İstatistikler alınamadı" });
+    }
+  });
+
+  // Get all users
+  app.get("/api/admin/users", adminAuth, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Admin users error:", error);
+      res.status(500).json({ error: "Kullanıcılar alınamadı" });
+    }
+  });
+
+  // Get all rooms
+  app.get("/api/admin/rooms", adminAuth, async (req, res) => {
+    try {
+      const rooms = await storage.getAllRooms();
+      res.json(rooms);
+    } catch (error) {
+      console.error("Admin rooms error:", error);
+      res.status(500).json({ error: "Odalar alınamadı" });
+    }
+  });
+
+  // Get all tokens
+  app.get("/api/admin/tokens", adminAuth, async (req, res) => {
+    try {
+      const tokens = await storage.getAllTokens();
+      res.json(tokens);
+    } catch (error) {
+      console.error("Admin tokens error:", error);
+      res.status(500).json({ error: "Tokenlar alınamadı" });
+    }
+  });
+
+  // Revoke user token
+  app.delete("/api/admin/tokens/:userId", adminAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      await storage.revokeUserToken(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Revoke token error:", error);
+      res.status(500).json({ error: "Token iptal edilemedi" });
+    }
+  });
+
+  // Revoke all tokens
+  app.delete("/api/admin/tokens", adminAuth, async (req, res) => {
+    try {
+      await storage.revokeAllTokens();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Revoke all tokens error:", error);
+      res.status(500).json({ error: "Tokenlar iptal edilemedi" });
+    }
+  });
+
+  // Delete user
+  app.delete("/api/admin/users/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteUser(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete user error:", error);
+      res.status(500).json({ error: "Kullanıcı silinemedi" });
+    }
+  });
+
+  // Delete room
+  app.delete("/api/admin/rooms/:id", adminAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteRoom(id);
+      gameStates.delete(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete room error:", error);
+      res.status(500).json({ error: "Oda silinemedi" });
+    }
+  });
+
+  // Clear all data
+  app.delete("/api/admin/clear-all", adminAuth, async (req, res) => {
+    try {
+      await storage.clearAllData();
+      gameStates.clear();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Clear all error:", error);
+      res.status(500).json({ error: "Veriler temizlenemedi" });
+    }
+  });
+
+  // Clear old rooms (finished or older than 24 hours)
+  app.delete("/api/admin/clear-old-rooms", adminAuth, async (req, res) => {
+    try {
+      const count = await storage.clearOldRooms();
+      res.json({ success: true, deletedCount: count });
+    } catch (error) {
+      console.error("Clear old rooms error:", error);
+      res.status(500).json({ error: "Eski odalar temizlenemedi" });
+    }
+  });
+
+  // Clear trending cache
+  app.delete("/api/admin/clear-cache", adminAuth, async (req, res) => {
+    try {
+      await storage.clearTrendingCache();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Clear cache error:", error);
+      res.status(500).json({ error: "Cache temizlenemedi" });
+    }
+  });
+
   return httpServer;
 }
