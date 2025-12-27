@@ -64,6 +64,22 @@ export const googleTokens = pgTable("google_tokens", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// GlobalTrendingCache - Global trending içerik havuzu (TTL ile)
+export const globalTrendingCache = pgTable("global_trending_cache", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contentId: text("content_id").notNull().unique(), // YouTube video ID veya channel ID
+  contentType: text("content_type").notNull(), // "video" veya "channel"
+  title: text("title").notNull(),
+  subtitle: text("subtitle"), // Video için kanal adı
+  thumbnailUrl: text("thumbnail_url"),
+  viewCount: text("view_count"),
+  subscriberCount: text("subscriber_count"),
+  videoCount: text("video_count"),
+  duration: integer("duration"), // Video süresi saniye cinsinden
+  publishedAt: text("published_at"),
+  fetchedAt: timestamp("fetched_at").defaultNow(), // TTL kontrolü için
+});
+
 // ContentCache - Odadaki içerik havuzu (video + kanal)
 export const contentCache = pgTable("content_cache", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -197,6 +213,11 @@ export const insertContentSchema = createInsertSchema(contentCache).omit({
   createdAt: true,
 });
 
+export const insertGlobalTrendingSchema = createInsertSchema(globalTrendingCache).omit({
+  id: true,
+  fetchedAt: true,
+});
+
 export const insertRoundSchema = createInsertSchema(rounds).omit({
   id: true,
 });
@@ -221,6 +242,9 @@ export type InsertRoomPlayer = z.infer<typeof insertRoomPlayerSchema>;
 
 export type Content = typeof contentCache.$inferSelect;
 export type InsertContent = z.infer<typeof insertContentSchema>;
+
+export type GlobalTrending = typeof globalTrendingCache.$inferSelect;
+export type InsertGlobalTrending = z.infer<typeof insertGlobalTrendingSchema>;
 
 export type Round = typeof rounds.$inferSelect;
 export type InsertRound = z.infer<typeof insertRoundSchema>;
