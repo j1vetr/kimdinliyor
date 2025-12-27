@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube, Play } from "lucide-react";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, UsersRound, Zap, Trophy, Youtube, Play, Clock, Heart, Timer, Disc3 } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,36 +11,68 @@ const ROTATING_WORDS = ["İzliyor", "Dinliyor", "Beğeniyor", "Takip Ediyor"];
 
 const GAME_MODES = [
   {
-    id: "liked",
+    id: "who_liked",
     title: "Kim Beğenmiş?",
-    tagline: "Arkadaşını yakala!",
+    tagline: "Videoyu hangi oyuncu beğenmiş?",
     icon: ThumbsUp,
     accent: "bg-red-500",
     glow: "shadow-red-500/30",
   },
   {
-    id: "subscribed",
+    id: "who_subscribed",
     title: "Kim Abone?",
-    tagline: "Kanalı bul, sahibini tahmin et!",
+    tagline: "Kanala hangi oyuncu abone?",
     icon: UserPlus,
     accent: "bg-orange-500",
     glow: "shadow-orange-500/30",
   },
   {
-    id: "viewCount",
-    title: "Sayı Tahmini",
-    tagline: "İzlenme sayısını bil!",
+    id: "which_older",
+    title: "Hangisi Daha Eski?",
+    tagline: "İki videodan hangisi daha önce yüklendi?",
+    icon: Clock,
+    accent: "bg-blue-500",
+    glow: "shadow-blue-500/30",
+  },
+  {
+    id: "most_viewed",
+    title: "En Çok İzlenen",
+    tagline: "Hangi video daha fazla izlenmiş?",
     icon: Eye,
+    accent: "bg-emerald-500",
+    glow: "shadow-emerald-500/30",
+  },
+  {
+    id: "oldest_like",
+    title: "İlk Aşkım",
+    tagline: "En eski beğenilen video kime ait?",
+    icon: Heart,
+    accent: "bg-pink-500",
+    glow: "shadow-pink-500/30",
+  },
+  {
+    id: "which_longer",
+    title: "Hangisi Daha Uzun?",
+    tagline: "İki videodan hangisi daha uzun süreli?",
+    icon: Timer,
     accent: "bg-purple-500",
     glow: "shadow-purple-500/30",
   },
   {
-    id: "subscriberCount",
-    title: "Abone Sayısı",
-    tagline: "Kanalın gücünü ölç!",
-    icon: UsersRound,
-    accent: "bg-emerald-500",
-    glow: "shadow-emerald-500/30",
+    id: "which_more_subs",
+    title: "Hangisi Daha Popüler?",
+    tagline: "Hangi kanal daha fazla aboneye sahip?",
+    icon: Users,
+    accent: "bg-cyan-500",
+    glow: "shadow-cyan-500/30",
+  },
+  {
+    id: "which_more_videos",
+    title: "Hangisi Daha Emektar?",
+    tagline: "Hangi kanal daha fazla video yüklemiş?",
+    icon: Disc3,
+    accent: "bg-amber-500",
+    glow: "shadow-amber-500/30",
   },
 ];
 
