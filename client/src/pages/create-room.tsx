@@ -41,7 +41,7 @@ export default function CreateRoom() {
   const [roundDuration, setRoundDuration] = useState(20);
   const [isPublic, setIsPublic] = useState(true);
   const [password, setPassword] = useState("");
-  const [gameModes, setGameModes] = useState<string[]>(["who_liked", "who_subscribed"]);
+  const [gameModes, setGameModes] = useState<string[]>(["which_older", "most_viewed"]);
   const [selectedPreset, setSelectedPreset] = useState<string>("normal");
 
   const toggleMode = (modeId: string) => {
@@ -155,12 +155,12 @@ export default function CreateRoom() {
           >
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <SiYoutube className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-semibold">Tahmin Modları</span>
-                <span className="text-[10px] text-muted-foreground">(YouTube gerekli)</span>
+                <Globe className="h-4 w-4 text-emerald-500" />
+                <span className="text-sm font-semibold">Karşılaştırma Modları</span>
+                <span className="text-[10px] text-muted-foreground">(YouTube Girişi Gerekmiyor)</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {GUESS_MODES.map((mode) => {
+                {COMPARE_MODES.map((mode) => {
                   const Icon = mode.icon;
                   const isSelected = gameModes.includes(mode.id);
                   return (
@@ -186,12 +186,12 @@ export default function CreateRoom() {
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm font-semibold">Karşılaştırma Modları</span>
-                <span className="text-[10px] text-muted-foreground">(Giriş gereksiz)</span>
+                <SiYoutube className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-semibold">Tahmin Modları</span>
+                <span className="text-[10px] text-muted-foreground">(YouTube Girişi Gerekli)</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {COMPARE_MODES.map((mode) => {
+                {GUESS_MODES.map((mode) => {
                   const Icon = mode.icon;
                   const isSelected = gameModes.includes(mode.id);
                   return (
