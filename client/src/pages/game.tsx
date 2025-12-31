@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Mic2, Timer, Disc3 } from "lucide-react";
+import { Loader2, Users, Send, Check, Zap, Flame, Play, ThumbsUp, X, ExternalLink, Eye, UsersRound, Trophy, Clock, ArrowLeft, UserPlus, ChevronUp, ChevronDown, Minus, Smile, Mic2, Timer, Disc3, Sparkles } from "lucide-react";
 import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -762,9 +762,18 @@ export default function Game() {
       )}
 
       {phase === "reveal" && revealData && content && (
-        <div className="flex-1 flex flex-col bg-gradient-to-b from-background to-background/95">
+        <div className="flex-1 flex flex-col relative overflow-hidden">
+          {/* Spotlight Background Effect - Tailwind compatible */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute inset-0 pointer-events-none overflow-hidden"
+          >
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[340px] md:max-w-[440px] h-48 bg-emerald-500/8 rounded-full blur-3xl" />
+          </motion.div>
+
           {/* Header Strip */}
-          <header className="shrink-0 px-4 py-3 md:py-4">
+          <header className="shrink-0 px-4 py-3 md:py-4 relative z-10">
             <div className="max-w-[340px] md:max-w-[440px] mx-auto flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xs md:text-sm font-medium text-foreground/80">Tur {currentRound}/{totalRounds}</span>
@@ -774,22 +783,140 @@ export default function Game() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-1 md:px-3 md:py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
-                <Trophy className="h-3 w-3 text-emerald-500" />
-                <span className="text-[10px] md:text-xs font-medium text-emerald-500 uppercase tracking-wide">
-                  Sonuçlar
+              <motion.div 
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40"
+              >
+                <Sparkles className="h-3 w-3 text-emerald-400" />
+                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">
+                  Sonuç
                 </span>
-              </div>
+              </motion.div>
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto px-4 pb-4">
-            <div className="max-w-[340px] md:max-w-[440px] mx-auto space-y-3 md:space-y-4">
+          <main className="flex-1 overflow-y-auto px-4 pb-4 relative z-10">
+            <div className="max-w-[340px] md:max-w-[440px] mx-auto space-y-4 md:space-y-5">
               
-              {/* Content Card */}
-              <button 
+              {/* Spotlight Answer Reveal */}
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                className="relative"
+              >
+                {/* Glow ring behind the card */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-emerald-400/30 to-emerald-500/20 rounded-xl blur-sm" />
+                
+                <div className="relative rounded-xl bg-gradient-to-b from-emerald-500/15 to-emerald-500/5 border border-emerald-500/30 overflow-hidden backdrop-blur-sm">
+                  {/* Header with shine effect */}
+                  <div className="relative px-4 py-2.5 bg-emerald-500/10 border-b border-emerald-500/20 overflow-hidden">
+                    <motion.div 
+                      initial={{ x: "-100%" }}
+                      animate={{ x: "200%" }}
+                      transition={{ duration: 1.5, ease: "easeInOut" }}
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
+                    />
+                    <div className="flex items-center justify-center gap-2">
+                      <Check className="h-4 w-4 text-emerald-400" />
+                      <span className="text-sm font-bold text-emerald-400 uppercase tracking-wider">Doğru Cevap</span>
+                    </div>
+                  </div>
+                  
+                  {/* Answer Content */}
+                  <div className="p-4">
+                    {isComparisonMode && revealData.correctContentId ? (
+                      <motion.button 
+                        type="button"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="w-full flex items-center gap-4 text-left"
+                        data-testid="button-correct-content-link"
+                        onClick={() => {
+                          const correctContent = revealData.correctContentId === content.id ? content : content2;
+                          if (correctContent?.contentType === "video" && correctContent?.contentId) {
+                            window.open(`https://www.youtube.com/watch?v=${correctContent.contentId}`, "_blank");
+                          } else if (correctContent?.contentType === "channel" && correctContent?.contentId) {
+                            window.open(`https://www.youtube.com/channel/${correctContent.contentId}`, "_blank");
+                          }
+                        }}
+                      >
+                        <div className="w-16 h-12 rounded-lg overflow-hidden shrink-0 bg-muted ring-2 ring-emerald-500/40">
+                          <img 
+                            src={(revealData.correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
+                            alt="" 
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-foreground line-clamp-2">
+                            {(revealData.correctContentId === content.id ? content : content2)?.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {(revealData.correctContentId === content.id ? content : content2)?.subtitle}
+                          </p>
+                        </div>
+                        <ExternalLink className="h-4 w-4 text-emerald-400 shrink-0" />
+                      </motion.button>
+                    ) : (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex items-center justify-center gap-3 flex-wrap py-2"
+                      >
+                        {revealData.correctUserIds.length > 0 ? (
+                          allPlayers
+                            .filter((p: any) => revealData.correctUserIds.includes(p.userId || p.user?.id))
+                            .map((player: any, idx: number) => {
+                              const avatarUrl = player.user?.avatarUrl;
+                              const displayName = player.user?.displayName || player.displayName;
+                              return (
+                                <motion.div 
+                                  key={player.userId || player.user?.id}
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  transition={{ delay: 0.3 + idx * 0.1, type: "spring", stiffness: 500 }}
+                                  className="flex flex-col items-center gap-1.5"
+                                  data-testid={`avatar-correct-player-${player.userId || player.user?.id}`}
+                                >
+                                  <div className="relative">
+                                    <div className="absolute -inset-1 bg-emerald-500/30 rounded-full blur-sm" />
+                                    {avatarUrl ? (
+                                      <img src={avatarUrl} alt="" className="relative w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/50" />
+                                    ) : (
+                                      <div className="relative w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-lg font-bold text-emerald-400 ring-2 ring-emerald-500/50">
+                                        {displayName?.charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className="text-xs font-semibold text-emerald-400">{displayName}</span>
+                                </motion.div>
+                              );
+                            })
+                        ) : (
+                          <div className="flex items-center gap-2 py-2">
+                            <Users className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Kimse beğenmemiş</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Content Reference (smaller) */}
+              <motion.button 
                 type="button"
-                className="w-full rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden text-left"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="w-full rounded-lg bg-card/40 border border-border/10 backdrop-blur-sm overflow-hidden text-left"
+                data-testid="button-content-reference"
                 onClick={() => {
                   if (content?.contentType === "video" && content?.contentId) {
                     window.open(`https://www.youtube.com/watch?v=${content.contentId}`, "_blank");
@@ -798,71 +925,34 @@ export default function Game() {
                   }
                 }}
               >
-                <div className="flex items-center gap-3 p-3">
-                  <div className="w-14 h-10 rounded-md overflow-hidden shrink-0 bg-muted">
+                <div className="flex items-center gap-3 p-2.5">
+                  <div className="w-12 h-8 rounded-md overflow-hidden shrink-0 bg-muted">
                     {content.thumbnailUrl && (
                       <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold line-clamp-1 text-foreground/90">{content.title}</p>
+                    <p className="text-[11px] font-medium line-clamp-1 text-foreground/80">{content.title}</p>
                     <p className="text-[10px] text-muted-foreground">{content.subtitle}</p>
                   </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                 </div>
-              </button>
+              </motion.button>
 
-              {/* Correct Answer Card */}
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 overflow-hidden">
-                <div className="px-3 py-1.5 bg-emerald-500/10 border-b border-emerald-500/20">
-                  <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Doğru Cevap</span>
+              {/* Player Results with staggered reveal */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="space-y-2"
+              >
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Bu Tur</span>
+                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{timeLeft}s</span>
+                  </div>
                 </div>
-                <div className="p-3">
-                  {isComparisonMode && revealData.correctContentId ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-9 rounded-md overflow-hidden shrink-0 bg-muted">
-                        <img 
-                          src={(revealData.correctContentId === content.id ? content : content2)?.thumbnailUrl || ''} 
-                          alt="" 
-                          className="w-full h-full object-cover" 
-                        />
-                      </div>
-                      <p className="text-xs font-medium text-foreground/90 line-clamp-2">
-                        {(revealData.correctContentId === content.id ? content : content2)?.title}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {revealData.correctUserIds.length > 0 ? (
-                        allPlayers
-                          .filter((p: any) => revealData.correctUserIds.includes(p.userId || p.user?.id))
-                          .map((player: any) => {
-                            const avatarUrl = player.user?.avatarUrl;
-                            const displayName = player.user?.displayName || player.displayName;
-                            return (
-                              <div key={player.userId || player.user?.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/20">
-                                {avatarUrl ? (
-                                  <img src={avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full bg-emerald-500/30 flex items-center justify-center text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
-                                    {displayName?.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                                <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{displayName}</span>
-                              </div>
-                            );
-                          })
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">Kimse beğenmemiş</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Player Results */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide px-1">Oyuncu Skorları</span>
                 <div className="space-y-1.5">
                   {[...revealData.results].sort((a, b) => b.score - a.score).map((result, index) => {
                     const isSelf = result.oderId === userId;
@@ -871,84 +961,107 @@ export default function Game() {
                     return (
                       <motion.div 
                         key={result.oderId}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 + index * 0.08, type: "spring", stiffness: 300, damping: 25 }}
                         className={`flex items-center gap-3 p-2.5 rounded-lg transition-all ${
                           result.isCorrect 
-                            ? "bg-emerald-500/10 border border-emerald-500/20" 
+                            ? "bg-emerald-500/10 border border-emerald-500/25" 
                             : result.isPartialCorrect 
-                              ? "bg-amber-500/10 border border-amber-500/20"
-                              : "bg-card/60 border border-border/20"
-                        } ${isSelf ? "ring-1 ring-primary/50" : ""}`}
+                              ? "bg-amber-500/10 border border-amber-500/25"
+                              : "bg-card/50 border border-border/15"
+                        } ${isSelf ? "ring-1 ring-primary/40" : ""}`}
                       >
-                        {/* Rank */}
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                          isTopScorer ? "bg-amber-500/20" : "bg-muted/50"
+                        {/* Rank Badge */}
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
+                          isTopScorer ? "bg-amber-500/30 text-amber-400" : "bg-muted/40 text-muted-foreground"
                         }`}>
-                          {isTopScorer ? (
-                            <Trophy className="h-3.5 w-3.5 text-amber-500" />
-                          ) : (
-                            <span className="text-[10px] font-bold text-muted-foreground">{index + 1}</span>
-                          )}
+                          {isTopScorer ? <Trophy className="h-3 w-3" /> : index + 1}
                         </div>
                         
-                        {/* Avatar */}
+                        {/* Avatar with effects */}
                         <div className="relative shrink-0">
                           {result.avatarUrl ? (
-                            <img src={result.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
+                            <img src={result.avatarUrl} alt="" className={`w-7 h-7 rounded-full object-cover ${result.isCorrect ? "ring-1 ring-emerald-500/50" : ""}`} />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                            <div className={`w-7 h-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold ${result.isCorrect ? "ring-1 ring-emerald-500/50" : ""}`}>
                               {result.displayName?.charAt(0).toUpperCase()}
                             </div>
                           )}
                           {result.streak >= 3 && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center">
+                            <motion.div 
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
+                              className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-orange-500 flex items-center justify-center"
+                            >
                               <Flame className="h-2.5 w-2.5 text-white" />
-                            </div>
+                            </motion.div>
                           )}
                         </div>
                         
-                        {/* Name & Answer */}
+                        {/* Name & Status */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-semibold truncate">{result.displayName}</span>
                             {isSelf && <span className="text-[9px] text-primary font-medium">(Sen)</span>}
                           </div>
-                          <div className="text-[10px] text-muted-foreground truncate mt-0.5">
-                            {isComparisonMode ? (
-                              result.selectedContentId ? (
-                                <span className={result.isCorrect ? "text-emerald-500" : "text-muted-foreground"}>
-                                  {result.selectedContentId === content.id ? content.title?.slice(0, 20) : content2?.title?.slice(0, 20)}...
-                                </span>
-                              ) : <span className="italic">Cevap vermedi</span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {result.isCorrect ? (
+                              <span className="text-[10px] text-emerald-500 font-medium flex items-center gap-0.5">
+                                <Check className="h-2.5 w-2.5" /> Doğru
+                              </span>
+                            ) : result.isPartialCorrect ? (
+                              <span className="text-[10px] text-amber-500 font-medium">Kısmi doğru</span>
                             ) : (
-                              result.selectedUserIds.length > 0 ? (
-                                result.selectedUserIds.map((id: string) => getPlayerName(id)?.split(' ')[0]).join(', ')
-                              ) : <span className="italic">Cevap vermedi</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {isComparisonMode ? (
+                                  result.selectedContentId ? "Yanlış" : "Pas"
+                                ) : (
+                                  result.selectedUserIds?.length > 0 ? "Yanlış" : "Pas"
+                                )}
+                              </span>
                             )}
                           </div>
                         </div>
                         
-                        {/* Score */}
-                        <div className={`text-sm font-bold shrink-0 tabular-nums ${
-                          result.score > 0 ? "text-emerald-500" : result.score < 0 ? "text-red-400" : "text-muted-foreground"
-                        }`}>
+                        {/* Score with animation */}
+                        <motion.div 
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.7 + index * 0.1, type: "spring", stiffness: 500 }}
+                          className={`text-sm font-bold shrink-0 tabular-nums px-2 py-0.5 rounded-full ${
+                            result.score > 0 
+                              ? "text-emerald-400 bg-emerald-500/15" 
+                              : result.score < 0 
+                                ? "text-red-400 bg-red-500/15" 
+                                : "text-muted-foreground bg-muted/30"
+                          }`}
+                        >
                           {result.score > 0 ? `+${result.score}` : result.score}
-                        </div>
+                        </motion.div>
                       </motion.div>
                     );
                   })}
                 </div>
-              </div>
+              </motion.div>
               
-              {/* Countdown Indicator */}
-              <div className="flex items-center justify-center gap-2 py-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary">{timeLeft}</span>
+              {/* Progress Indicator */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="pt-2"
+              >
+                <div className="h-1 bg-muted/30 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: "100%" }}
+                    animate={{ width: "0%" }}
+                    transition={{ duration: timeLeft, ease: "linear" }}
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                  />
                 </div>
-                <span className="text-xs text-muted-foreground">saniye sonra devam ediyor</span>
-              </div>
+              </motion.div>
             </div>
           </main>
         </div>
