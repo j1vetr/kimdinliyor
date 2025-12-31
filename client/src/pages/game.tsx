@@ -648,10 +648,10 @@ export default function Game() {
                   <Button
                     onClick={() => setSelectedContentId(content.id)}
                     variant={selectedContentId === content.id ? "default" : "outline"}
-                    className={`w-full h-10 text-sm font-bold ${
+                    className={`w-full text-sm font-bold ${
                       selectedContentId === content.id 
-                        ? "bg-[hsl(var(--compare-left))] hover:bg-[hsl(var(--compare-left)/0.9)] border-transparent text-white" 
-                        : "border-[hsl(var(--compare-left)/0.5)] text-[hsl(var(--compare-left))] hover:bg-[hsl(var(--compare-left)/0.1)]"
+                        ? "bg-[hsl(var(--compare-left))] border-[hsl(var(--compare-left))] text-white" 
+                        : "border-[hsl(var(--compare-left)/0.5)] text-[hsl(var(--compare-left))]"
                     }`}
                     data-testid="button-select-left"
                   >
@@ -742,10 +742,10 @@ export default function Game() {
                   <Button
                     onClick={() => setSelectedContentId(content2.id)}
                     variant={selectedContentId === content2.id ? "default" : "outline"}
-                    className={`w-full h-10 text-sm font-bold ${
+                    className={`w-full text-sm font-bold ${
                       selectedContentId === content2.id 
-                        ? "bg-[hsl(var(--compare-right))] hover:bg-[hsl(var(--compare-right)/0.9)] border-transparent text-white" 
-                        : "border-[hsl(var(--compare-right)/0.5)] text-[hsl(var(--compare-right))] hover:bg-[hsl(var(--compare-right)/0.1)]"
+                        ? "bg-[hsl(var(--compare-right))] border-[hsl(var(--compare-right))] text-white" 
+                        : "border-[hsl(var(--compare-right)/0.5)] text-[hsl(var(--compare-right))]"
                     }`}
                     data-testid="button-select-right"
                   >
@@ -770,7 +770,8 @@ export default function Game() {
                 </motion.div>
               ) : (
                 <Button
-                  className="w-full h-12 gap-2 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 border-0 shadow-lg shadow-amber-500/25"
+                  size="lg"
+                  className="w-full gap-2 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-600 border-0 shadow-lg shadow-amber-500/25"
                   onClick={handleSubmitAnswer}
                   disabled={!selectedContentId || answerMutation.isPending}
                   data-testid="button-submit-comparison"
