@@ -1409,6 +1409,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         let phase: "question" | "reveal" | "intermission" | "finished" = "question";
         let phaseStartedAt = now;
         let phaseEndsAt = now + roundDurationMs;
+        let needsEndRound = false;
         
         if (currentRoundData?.endedAt) {
           // Round ended, go to reveal phase
@@ -1422,11 +1423,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           phaseStartedAt = roundStartTime;
           phaseEndsAt = roundStartTime + roundDurationMs;
           
-          // If time already expired, go directly to endRound
+          // If time already expired, mark for endRound call after state setup
           if (remaining <= 0) {
-            console.log(`[RECOVERY] Round time expired during restart, ending round`);
-            phase = "reveal";
-            phaseEndsAt = now + REVEAL_DURATION_MS;
+            console.log(`[RECOVERY] Round time expired during restart, will call endRound`);
+            needsEndRound = true;
           }
         }
         
@@ -1455,6 +1455,39 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         gameStates.set(code.toUpperCase(), recoveredState);
         gameState = recoveredState;
         console.log(`[RECOVERY] Game state recreated: round ${currentRoundNum}, phase ${gameState.phase}`);
+        
+        // CRITICAL: If round time expired during restart, call endRound to compute scores
+        if (needsEndRound) {
+          console.log(`[RECOVERY] Calling endRound to compute scores for expired round`);
+          // Call endRound asynchronously - it will handle phase transition and scoring
+          setImmediate(async () => {
+            try {
+              await endRound(code.toUpperCase(), room);
+            } catch (err) {
+              console.error(`[RECOVERY] endRound error:`, err);
+            }
+          });
+        } else {
+          // CRITICAL: Re-arm the phase timeout based on remaining time
+          const remainingMs = Math.max(0, phaseEndsAt - Date.now());
+          if (phase === "question" && remainingMs > 0) {
+            // Schedule endRound for remaining question time
+            const timeoutId = setTimeout(async () => {
+              const currentState = gameStates.get(code.toUpperCase());
+              if (!currentState || currentState.phase !== "question") return;
+              await endRound(code.toUpperCase(), room);
+            }, remainingMs);
+            (recoveredState as any).phaseTimeoutId = timeoutId;
+            console.log(`[RECOVERY] Scheduled question timeout in ${remainingMs}ms`);
+          } else if (phase === "reveal") {
+            // Schedule transition to intermission
+            const timeoutId = setTimeout(async () => {
+              await transitionToIntermission(code.toUpperCase(), room);
+            }, remainingMs > 0 ? remainingMs : REVEAL_DURATION_MS);
+            (recoveredState as any).phaseTimeoutId = timeoutId;
+            console.log(`[RECOVERY] Scheduled reveal timeout in ${remainingMs > 0 ? remainingMs : REVEAL_DURATION_MS}ms`);
+          }
+        }
       }
       
       const currentRound = await storage.getCurrentRound(room.id);
