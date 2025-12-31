@@ -526,7 +526,269 @@ export default function Game() {
         </div>
       )}
 
-      {phase === "question" && content && (
+      {/* VS Arena Mode - Full-screen immersive comparison */}
+      {phase === "question" && content && isComparisonMode && content2 && (
+        <div className="flex-1 flex flex-col relative overflow-hidden">
+          {/* Blurred Background - uses first content thumbnail */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={content.thumbnailUrl || content2.thumbnailUrl || ''} 
+              alt="" 
+              className="w-full h-full object-cover scale-110 blur-xl opacity-40"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
+          </div>
+
+          {/* Header - Floating over background */}
+          <header className="shrink-0 px-4 py-3 relative z-10">
+            <div className="max-w-[600px] mx-auto">
+              {/* Question at top center */}
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center mb-3"
+              >
+                <p className="text-sm md:text-base font-bold text-foreground drop-shadow-lg">{modeInfo?.question}</p>
+              </motion.div>
+              
+              {/* Timer and info row */}
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/10">
+                  <span className="text-xs font-medium text-white/80">Tur {currentRound}/{totalRounds}</span>
+                  {isLightningRound && (
+                    <span className="text-xs text-amber-400 font-medium flex items-center gap-0.5">
+                      <Zap className="h-3 w-3" /> 2x
+                    </span>
+                  )}
+                </div>
+                <div className={`relative w-12 h-12 ${isTimeLow ? "animate-pulse" : ""}`}>
+                  <svg className="w-12 h-12 -rotate-90 drop-shadow-lg" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="20" fill="rgba(0,0,0,0.4)" stroke="currentColor" strokeWidth="2" className="text-white/20" />
+                    <circle 
+                      cx="24" cy="24" r="20" fill="none" strokeWidth="3" strokeLinecap="round"
+                      className={isTimeLow ? "text-red-500" : "text-white"}
+                      strokeDasharray={`${(timeLeft / (room?.roundDuration || 20)) * 125.7} 125.7`}
+                    />
+                  </svg>
+                  <span className={`absolute inset-0 flex items-center justify-center text-base font-bold text-white drop-shadow-md ${isTimeLow ? "text-red-400" : ""}`}>
+                    {timeLeft}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* VS Arena - Main content */}
+          <main className="flex-1 flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 px-4 pb-4 relative z-10">
+            {/* Left Card - Red Team */}
+            <motion.div
+              initial={{ opacity: 0, x: -40, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
+              className="w-full md:w-auto md:flex-1 max-w-[280px] md:max-w-[320px]"
+            >
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => !hasAnswered && setSelectedContentId(content.id)}
+                disabled={hasAnswered}
+                className={`relative w-full rounded-xl overflow-hidden transition-all duration-300 ${
+                  selectedContentId === content.id 
+                    ? "ring-4 ring-[hsl(var(--compare-left))] shadow-[0_0_40px_rgba(239,68,68,0.4)]" 
+                    : "ring-2 ring-[hsl(var(--compare-left)/0.5)] hover:ring-[hsl(var(--compare-left)/0.8)]"
+                } ${hasAnswered && selectedContentId !== content.id ? "opacity-40 grayscale" : ""}`}
+                data-testid="button-select-video-1"
+              >
+                {/* Glow effect when selected */}
+                {selectedContentId === content.id && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute -inset-2 bg-[hsl(var(--compare-left-glow)/0.3)] rounded-2xl blur-xl -z-10"
+                  />
+                )}
+                
+                {/* Image */}
+                <div className="relative aspect-video bg-black">
+                  {content.thumbnailUrl && (
+                    <img src={content.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                  )}
+                  {/* Selection overlay */}
+                  {selectedContentId === content.id && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute inset-0 bg-[hsl(var(--compare-left)/0.6)] flex items-center justify-center"
+                    >
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                        className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center"
+                      >
+                        <Check className="h-8 w-8 text-white" />
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </div>
+                
+                {/* Title footer */}
+                <div className="p-3 bg-gradient-to-t from-black/90 to-black/60 backdrop-blur-sm">
+                  <p className="text-sm font-semibold text-white line-clamp-2">{content.title}</p>
+                </div>
+              </motion.button>
+              
+              {/* Selection button below card */}
+              {!hasAnswered && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-3"
+                >
+                  <Button
+                    onClick={() => setSelectedContentId(content.id)}
+                    variant={selectedContentId === content.id ? "default" : "outline"}
+                    className={`w-full h-10 text-sm font-bold ${
+                      selectedContentId === content.id 
+                        ? "bg-[hsl(var(--compare-left))] hover:bg-[hsl(var(--compare-left)/0.9)] border-transparent text-white" 
+                        : "border-[hsl(var(--compare-left)/0.5)] text-[hsl(var(--compare-left))] hover:bg-[hsl(var(--compare-left)/0.1)]"
+                    }`}
+                    data-testid="button-select-left"
+                  >
+                    {selectedContentId === content.id ? "Seçildi" : "Bunu Seç"}
+                  </Button>
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* VS Badge - Center */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.2 }}
+              className="shrink-0 relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full blur-lg opacity-60" />
+              <div className="relative w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 flex items-center justify-center shadow-2xl border-4 border-white/20">
+                <Zap className="h-6 w-6 md:h-7 md:w-7 text-white drop-shadow-md" />
+              </div>
+            </motion.div>
+
+            {/* Right Card - Blue Team */}
+            <motion.div
+              initial={{ opacity: 0, x: 40, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
+              className="w-full md:w-auto md:flex-1 max-w-[280px] md:max-w-[320px]"
+            >
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
+                disabled={hasAnswered}
+                className={`relative w-full rounded-xl overflow-hidden transition-all duration-300 ${
+                  selectedContentId === content2.id 
+                    ? "ring-4 ring-[hsl(var(--compare-right))] shadow-[0_0_40px_rgba(59,130,246,0.4)]" 
+                    : "ring-2 ring-[hsl(var(--compare-right)/0.5)] hover:ring-[hsl(var(--compare-right)/0.8)]"
+                } ${hasAnswered && selectedContentId !== content2.id ? "opacity-40 grayscale" : ""}`}
+                data-testid="button-select-video-2"
+              >
+                {/* Glow effect when selected */}
+                {selectedContentId === content2.id && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute -inset-2 bg-[hsl(var(--compare-right-glow)/0.3)] rounded-2xl blur-xl -z-10"
+                  />
+                )}
+                
+                {/* Image */}
+                <div className="relative aspect-video bg-black">
+                  {content2.thumbnailUrl && (
+                    <img src={content2.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                  )}
+                  {/* Selection overlay */}
+                  {selectedContentId === content2.id && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute inset-0 bg-[hsl(var(--compare-right)/0.6)] flex items-center justify-center"
+                    >
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500 }}
+                        className="w-14 h-14 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center"
+                      >
+                        <Check className="h-8 w-8 text-white" />
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </div>
+                
+                {/* Title footer */}
+                <div className="p-3 bg-gradient-to-t from-black/90 to-black/60 backdrop-blur-sm">
+                  <p className="text-sm font-semibold text-white line-clamp-2">{content2.title}</p>
+                </div>
+              </motion.button>
+              
+              {/* Selection button below card */}
+              {!hasAnswered && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="mt-3"
+                >
+                  <Button
+                    onClick={() => setSelectedContentId(content2.id)}
+                    variant={selectedContentId === content2.id ? "default" : "outline"}
+                    className={`w-full h-10 text-sm font-bold ${
+                      selectedContentId === content2.id 
+                        ? "bg-[hsl(var(--compare-right))] hover:bg-[hsl(var(--compare-right)/0.9)] border-transparent text-white" 
+                        : "border-[hsl(var(--compare-right)/0.5)] text-[hsl(var(--compare-right))] hover:bg-[hsl(var(--compare-right)/0.1)]"
+                    }`}
+                    data-testid="button-select-right"
+                  >
+                    {selectedContentId === content2.id ? "Seçildi" : "Bunu Seç"}
+                  </Button>
+                </motion.div>
+              )}
+            </motion.div>
+          </main>
+
+          {/* Footer - Submit button */}
+          <footer className="shrink-0 px-4 pb-4 relative z-10">
+            <div className="max-w-[340px] md:max-w-[440px] mx-auto">
+              {hasAnswered ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/30 backdrop-blur-sm"
+                >
+                  <Check className="h-5 w-5 text-emerald-400" />
+                  <span className="text-sm font-bold text-emerald-400">Cevap Kilitlendi</span>
+                </motion.div>
+              ) : (
+                <Button
+                  className="w-full h-12 gap-2 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 border-0 shadow-lg shadow-amber-500/25"
+                  onClick={handleSubmitAnswer}
+                  disabled={!selectedContentId || answerMutation.isPending}
+                  data-testid="button-submit-comparison"
+                >
+                  {answerMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                  {selectedContentId ? "Cevabı Kilitle" : "Bir İçerik Seç"}
+                </Button>
+              )}
+            </div>
+          </footer>
+        </div>
+      )}
+
+      {phase === "question" && content && !isComparisonMode && (
         <div className="flex flex-col h-full bg-gradient-to-b from-background to-background/95">
           {/* Premium Header Strip */}
           <header className="shrink-0 px-4 py-3">
@@ -564,107 +826,7 @@ export default function Game() {
           {/* Main Content */}
           <main className="flex-1 flex flex-col items-center min-h-0 overflow-hidden px-4 pb-4">
             <div className="w-full max-w-[340px] md:max-w-[440px] flex flex-col flex-1 min-h-0 gap-3 md:gap-4">
-              
-              {isComparisonMode && content2 ? (
-                <>
-                  {/* Question Card */}
-                  <div className="shrink-0 px-3 py-2 md:px-4 md:py-3 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm">
-                    <p className="text-xs md:text-sm font-medium text-center text-foreground/90">{modeInfo?.question}</p>
-                  </div>
-                  
-                  {/* VS Comparison */}
-                  <div className="flex-1 flex flex-col gap-2 min-h-0">
-                    <div className="flex-1 flex gap-3 md:gap-4 min-h-0" style={{ maxHeight: '320px' }}>
-                      {/* Video 1 */}
-                      <motion.button
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => !hasAnswered && setSelectedContentId(content.id)}
-                        disabled={hasAnswered}
-                        className={`flex-1 flex flex-col rounded-lg overflow-hidden transition-all duration-200 ${
-                          selectedContentId === content.id 
-                            ? "ring-2 ring-primary shadow-lg shadow-primary/20" 
-                            : "ring-1 ring-border/30 hover:ring-border/60"
-                        } ${hasAnswered ? "opacity-50" : ""}`}
-                        data-testid="button-select-video-1"
-                      >
-                        <div className="relative flex-1 min-h-0 bg-muted">
-                          {content.thumbnailUrl && (
-                            <img src={content.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                          )}
-                          {selectedContentId === content.id && (
-                            <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
-                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                <Check className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-2 md:p-3 bg-card border-t border-border/20">
-                          <p className="text-[11px] md:text-sm font-medium line-clamp-2 leading-snug text-foreground/90">{content.title}</p>
-                        </div>
-                      </motion.button>
-
-                      {/* VS Badge */}
-                      <div className="shrink-0 self-center">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
-                          <span className="text-[9px] md:text-xs font-black text-white">VS</span>
-                        </div>
-                      </div>
-
-                      {/* Video 2 */}
-                      <motion.button
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => !hasAnswered && setSelectedContentId(content2.id)}
-                        disabled={hasAnswered}
-                        className={`flex-1 flex flex-col rounded-lg overflow-hidden transition-all duration-200 ${
-                          selectedContentId === content2.id 
-                            ? "ring-2 ring-primary shadow-lg shadow-primary/20" 
-                            : "ring-1 ring-border/30 hover:ring-border/60"
-                        } ${hasAnswered ? "opacity-50" : ""}`}
-                        data-testid="button-select-video-2"
-                      >
-                        <div className="relative flex-1 min-h-0 bg-muted">
-                          {content2.thumbnailUrl && (
-                            <img src={content2.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                          )}
-                          {selectedContentId === content2.id && (
-                            <div className="absolute inset-0 bg-primary/50 flex items-center justify-center">
-                              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                <Check className="h-4 w-4 md:h-5 md:w-5 text-white" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-2 md:p-3 bg-card border-t border-border/20">
-                          <p className="text-[11px] md:text-sm font-medium line-clamp-2 leading-snug text-foreground/90">{content2.title}</p>
-                        </div>
-                      </motion.button>
-                    </div>
-                  </div>
-
-                  {/* CTA Footer */}
-                  <div className="shrink-0">
-                    {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <Check className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
-                        <span className="text-xs md:text-sm font-semibold text-emerald-500">Cevap Gönderildi</span>
-                      </div>
-                    ) : (
-                      <Button
-                        className="w-full h-11 md:h-12 gap-2 bg-primary hover:bg-primary/90 text-sm md:text-base font-semibold"
-                        onClick={handleSubmitAnswer}
-                        disabled={!selectedContentId || answerMutation.isPending}
-                        data-testid="button-submit-comparison"
-                      >
-                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : <Send className="h-4 w-4 md:h-5 md:w-5" />}
-                        {selectedContentId ? "Cevabı Kilitle" : "Bir Video Seç"}
-                      </Button>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Content Card */}
+              {/* Content Card */}
                   <div className="shrink-0 rounded-lg bg-card/60 border border-border/20 backdrop-blur-sm overflow-hidden">
                     <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
                       <div className="w-16 h-12 md:w-20 md:h-14 rounded-md overflow-hidden shrink-0 bg-muted">
@@ -733,27 +895,25 @@ export default function Game() {
                     </div>
                   </div>
 
-                  {/* CTA Footer */}
-                  <div className="shrink-0">
-                    {hasAnswered ? (
-                      <div className="flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <Check className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
-                        <span className="text-xs md:text-sm font-semibold text-emerald-500">Cevap Kilitlendi</span>
-                      </div>
-                    ) : (
-                      <Button
-                        className="w-full h-11 md:h-12 gap-2 bg-primary hover:bg-primary/90 text-sm md:text-base font-semibold"
-                        onClick={handleSubmitAnswer}
-                        disabled={selectedPlayers.length === 0 || answerMutation.isPending}
-                        data-testid="button-submit-answer"
-                      >
-                        {answerMutation.isPending ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : <Send className="h-4 w-4 md:h-5 md:w-5" />}
-                        {selectedPlayers.length === 0 ? "Oyuncu Seç" : `Kilitle (${selectedPlayers.length})`}
-                      </Button>
-                    )}
+              {/* CTA Footer */}
+              <div className="shrink-0">
+                {hasAnswered ? (
+                  <div className="flex items-center justify-center gap-2 py-2.5 md:py-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <Check className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />
+                    <span className="text-xs md:text-sm font-semibold text-emerald-500">Cevap Kilitlendi</span>
                   </div>
-                </>
-              )}
+                ) : (
+                  <Button
+                    className="w-full h-11 md:h-12 gap-2 bg-primary hover:bg-primary/90 text-sm md:text-base font-semibold"
+                    onClick={handleSubmitAnswer}
+                    disabled={selectedPlayers.length === 0 || answerMutation.isPending}
+                    data-testid="button-submit-answer"
+                  >
+                    {answerMutation.isPending ? <Loader2 className="h-4 w-4 md:h-5 md:w-5 animate-spin" /> : <Send className="h-4 w-4 md:h-5 md:w-5" />}
+                    {selectedPlayers.length === 0 ? "Oyuncu Seç" : `Kilitle (${selectedPlayers.length})`}
+                  </Button>
+                )}
+              </div>
             </div>
           </main>
 

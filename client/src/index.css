@@ -47,6 +47,12 @@
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;
+  
+  /* Comparison Mode Team Colors */
+  --compare-left: 0 77% 55%;
+  --compare-left-glow: 0 85% 45%;
+  --compare-right: 217 91% 60%;
+  --compare-right-glow: 217 95% 50%;
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
@@ -117,6 +123,12 @@
   --chart-4: 280 65% 55%;
   --chart-5: 340 75% 55%;
   --youtube-red: 0 72% 51%;
+  
+  /* Comparison Mode Team Colors - Dark Mode */
+  --compare-left: 0 80% 58%;
+  --compare-left-glow: 0 85% 50%;
+  --compare-right: 217 91% 65%;
+  --compare-right-glow: 217 95% 55%;
 
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
