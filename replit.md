@@ -77,6 +77,15 @@ shared/
 - **Video**: Kullanıcının beğendiği YouTube videoları
 - **Kanal**: Kullanıcının abone olduğu YouTube kanalları
 
+## VS Arena Tasarımı (Karşılaştırma Modları)
+Karşılaştırma modları için tam ekran immersive layout:
+- Bulanık arka plan (içerik thumbnail'inden)
+- Split-screen düzen: Sol kart (kırmızı), Sağ kart (mavi)
+- Merkezi VS rozeti (amber gradient, dönen animasyon)
+- Framer-motion ile kart giriş animasyonları
+- Responsive: Mobilde dikey (flex-col), masaüstünde yatay (md:flex-row)
+- CSS token'ları: `--compare-left`, `--compare-right` (HSL formatında)
+
 ## Oda Durumları
 - `waiting`: Lobi, oyuncular bekliyor
 - `playing`: Oyun aktif
