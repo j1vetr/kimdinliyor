@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { ArrowLeft, Copy, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, User, Clock, Zap, Timer, Sparkles, Eye, Disc3, ThumbsUp, UserPlus, Heart } from "lucide-react";
+import { ArrowLeft, Copy, Crown, Loader2, Users, Play, UserX, Check, ArrowRight, User, Clock, Zap, Timer, Sparkles, Eye, Disc3, ThumbsUp, UserPlus, Heart, Link2 } from "lucide-react";
 import { SiYoutube, SiGoogle, SiWhatsapp } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ export default function Lobby() {
   const [joinName, setJoinName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const mountTimeRef = useRef(Date.now());
 
   const roomQuery = useQuery<RoomWithPlayers>({
@@ -134,6 +135,16 @@ export default function Lobby() {
       setCopied(true);
       toast({ title: "Kod kopyalandı!" });
       setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }, [roomCode, toast]);
+
+  const copyLink = useCallback(async () => {
+    try {
+      const url = `${window.location.origin}/oyun/${roomCode}`;
+      await navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      toast({ title: "Link kopyalandı!" });
+      setTimeout(() => setCopiedLink(false), 2000);
     } catch {}
   }, [roomCode, toast]);
 
@@ -358,9 +369,14 @@ export default function Lobby() {
             <SpotlightCard className="p-4 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Oda Kodu</span>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1">
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={copyCode} data-testid="button-copy-code">
                     {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    <span className="hidden sm:inline">{copied ? "Kopyalandı" : "Kod"}</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={copyLink} data-testid="button-copy-link">
+                    {copiedLink ? <Check className="h-3 w-3 text-emerald-400" /> : <Link2 className="h-3 w-3" />}
+                    <span className="hidden sm:inline">{copiedLink ? "Kopyalandı" : "Link"}</span>
                   </Button>
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-400" onClick={shareWhatsApp} data-testid="button-whatsapp">
                     <SiWhatsapp className="h-3.5 w-3.5" />
