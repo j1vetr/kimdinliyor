@@ -357,7 +357,7 @@ export default function CreateRoom() {
                   <span className="text-sm font-bold tabular-nums">{maxPlayers}</span>
                 </div>
                 <Slider
-                  min={2} max={10} step={1}
+                  min={2} max={12} step={1}
                   value={[maxPlayers]}
                   onValueChange={(v) => setMaxPlayers(v[0])}
                   data-testid="slider-max-players"
