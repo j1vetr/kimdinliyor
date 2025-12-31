@@ -11,14 +11,14 @@ import { SpotlightCard, TiltCard } from "@/components/ui/spotlight-card";
 import { AuroraBackground, GridBackground } from "@/components/ui/animated-background";
 
 const GAME_MODES = [
-  { id: "who_liked", label: "Kim Beğenmiş?", icon: ThumbsUp, color: "text-red-400", category: "guess" },
-  { id: "who_subscribed", label: "Kim Abone?", icon: UserPlus, color: "text-orange-400", category: "guess" },
-  { id: "oldest_like", label: "İlk Aşkım", icon: Heart, color: "text-pink-400", category: "guess" },
-  { id: "which_older", label: "Hangisi Eski?", icon: Clock, color: "text-blue-400", category: "compare" },
-  { id: "most_viewed", label: "Çok İzlenen", icon: Eye, color: "text-emerald-400", category: "compare" },
-  { id: "which_longer", label: "Daha Uzun?", icon: Timer, color: "text-purple-400", category: "compare" },
-  { id: "which_more_subs", label: "Daha Popüler?", icon: Users, color: "text-cyan-400", category: "compare" },
-  { id: "which_more_videos", label: "Daha Emektar?", icon: Disc3, color: "text-amber-400", category: "compare" },
+  { id: "who_liked", label: "Kim Beğenmiş?", icon: ThumbsUp, color: "text-red-400", category: "guess", desc: "Ekranda bir video görürsün. Bu videoyu hangi oyuncu beğenmiş? Doğru tahmin et, puan kazan!" },
+  { id: "who_subscribed", label: "Kim Abone?", icon: UserPlus, color: "text-orange-400", category: "guess", desc: "Bir YouTube kanalı gösterilir. Bu kanala kim abone? Arkadaşlarını ne kadar tanıyorsun?" },
+  { id: "oldest_like", label: "İlk Aşkım", icon: Heart, color: "text-pink-400", category: "guess", desc: "En eski beğenilen video kimin? YouTube geçmişinin derinliklerine dal!" },
+  { id: "which_older", label: "Hangisi Eski?", icon: Clock, color: "text-blue-400", category: "compare", desc: "İki video karşılaştır. Hangisi daha önce yayınlanmış? Yayın tarihlerini tahmin et!" },
+  { id: "most_viewed", label: "Çok İzlenen", icon: Eye, color: "text-emerald-400", category: "compare", desc: "İki video arasında hangisi daha fazla izlenmiş? İzlenme sayılarını tahmin et!" },
+  { id: "which_longer", label: "Daha Uzun?", icon: Timer, color: "text-purple-400", category: "compare", desc: "Hangi video daha uzun süreli? Video sürelerini karşılaştır ve doğru seç!" },
+  { id: "which_more_subs", label: "Daha Popüler?", icon: Users, color: "text-cyan-400", category: "compare", desc: "İki YouTube kanalı karşı karşıya. Hangisinin daha fazla abonesi var?" },
+  { id: "which_more_videos", label: "Daha Emektar?", icon: Disc3, color: "text-amber-400", category: "compare", desc: "Hangi kanal daha fazla video yüklemiş? En çalışkan içerik üreticisini bul!" },
 ];
 
 const STATS = [
@@ -85,7 +85,7 @@ export default function Home() {
             <span className="inline-block">
               Ne{" "}
               <GradientText from="from-primary" to="to-orange-500">
-                <TypeWriter words={["İzliyor?", "Beğeniyor?", "Takip Ediyor?"]} typingSpeed={80} />
+                <TypeWriter words={["İzliyor?", "Beğeniyor?", "Takip Ediyor?"]} typingSpeed={120} deletingSpeed={60} pauseDuration={2500} />
               </GradientText>
             </span>
           </motion.h1>
@@ -165,7 +165,7 @@ export default function Home() {
             className="text-center mb-8"
           >
             <h2 className="text-2xl font-bold mb-2">8 Farklı Oyun Modu</h2>
-            <p className="text-sm text-muted-foreground">Tahmin ve karşılaştırma modlarıyla eğlenceyi katla</p>
+            <p className="text-sm text-muted-foreground">Tahmin ve karşılaştırma modlarıyla eğlenceyi katlayın!</p>
           </motion.div>
 
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-6">
@@ -214,22 +214,32 @@ export default function Home() {
               const Icon = mode.icon;
               return (
                 <>
-                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 mb-3 ${mode.color}`}>
-                    <Icon className="h-6 w-6" />
+                  <div className="flex items-center justify-center gap-3 mb-3">
+                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 ${mode.color}`}>
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-lg font-bold">{mode.label}</h3>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                        mode.category === "guess" ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400"
+                      }`}>
+                        {mode.category === "guess" ? (
+                          <><SiGoogle className="h-2.5 w-2.5" /> Tahmin Modu</>
+                        ) : (
+                          <><Sparkles className="h-2.5 w-2.5" /> Karşılaştırma Modu</>
+                        )}
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold mb-1">{mode.label}</h3>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {mode.category === "guess" ? "YouTube hesabı gerekli" : "Giriş gerekmez"}
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {mode.desc}
                   </p>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                    mode.category === "guess" ? "bg-red-500/10 text-red-400" : "bg-blue-500/10 text-blue-400"
-                  }`}>
-                    {mode.category === "guess" ? (
-                      <><SiGoogle className="h-2.5 w-2.5" /> Tahmin Modu</>
-                    ) : (
-                      <><Sparkles className="h-2.5 w-2.5" /> Karşılaştırma</>
-                    )}
-                  </span>
+                  {mode.category === "guess" && (
+                    <p className="text-[11px] text-amber-400/80 mt-2 flex items-center justify-center gap-1">
+                      <SiYoutube className="h-3 w-3" />
+                      YouTube hesabı bağlantısı gerektirir
+                    </p>
+                  )}
                 </>
               );
             })()}
@@ -240,9 +250,9 @@ export default function Home() {
         <section className="max-w-4xl mx-auto py-12">
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { icon: Users, title: "2-12 Oyuncu", desc: "Arkadaşlarınla özel odada yarış", color: "from-blue-500 to-cyan-500" },
-              { icon: Zap, title: "Seri Bonus", desc: "Art arda doğrulara ekstra puan", color: "from-amber-500 to-orange-500" },
-              { icon: Trophy, title: "Liderlik", desc: "Her oyun sonunda sıralama", color: "from-purple-500 to-pink-500" },
+              { icon: Users, title: "2-12 Oyuncu", desc: "Arkadaşlarınla özel odada yarış!", color: "from-blue-500 to-cyan-500" },
+              { icon: Zap, title: "Seri Bonusu", desc: "Art arda doğru cevaplara ekstra puan!", color: "from-amber-500 to-orange-500" },
+              { icon: Trophy, title: "Liderlik Tablosu", desc: "Her oyun sonunda sıralama ve ödül!", color: "from-purple-500 to-pink-500" },
             ].map((feature, i) => (
               <TiltCard key={i} tiltAmount={5}>
                 <SpotlightCard
@@ -273,9 +283,9 @@ export default function Home() {
 
           <div className="space-y-4">
             {[
-              { step: 1, title: "Oda Oluştur", desc: "6 haneli kod ile yeni oda aç veya mevcut odaya katıl" },
-              { step: 2, title: "YouTube Bağla", desc: "Tahmin modları için Google hesabını bağla" },
-              { step: 3, title: "Oyna & Kazan", desc: "Soruları cevapla, puan topla, zirveye çık!" },
+              { step: 1, title: "Oda Oluştur", desc: "6 haneli kod ile yeni oda aç veya mevcut odaya katıl." },
+              { step: 2, title: "YouTube Bağla", desc: "Tahmin modları için Google hesabını bağla." },
+              { step: 3, title: "Oyna ve Kazan", desc: "Soruları cevapla, puan topla, zirveye çık!" },
             ].map((item, i) => (
               <motion.div
                 key={i}
