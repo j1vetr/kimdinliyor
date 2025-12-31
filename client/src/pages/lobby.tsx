@@ -9,7 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { RoomWithPlayers } from "@shared/schema";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { DecryptedText } from "@/components/ui/decrypted-text";
+import { Hyperspeed } from "@/components/ui/hyperspeed";
+import { PulsingBorder } from "@/components/ui/electric-border";
+import { ClickSpark } from "@/components/ui/click-spark";
+import { SpotlightCard } from "@/components/ui/spotlight";
 
 interface GoogleStatus {
   connected: boolean;
@@ -271,8 +276,12 @@ export default function Lobby() {
   // Main Lobby
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
-      {/* Ambient */}
-      <div className="fixed inset-0 pointer-events-none">
+      {/* Hyperspeed Background - behind everything */}
+      <div className="fixed inset-0 pointer-events-none opacity-20 -z-10">
+        <Hyperspeed starCount={80} speed={0.2} starColor="#ffffff" trailLength={0.2} />
+      </div>
+      {/* Ambient Overlay */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
         <div className="absolute top-0 left-1/4 w-80 h-80 bg-primary/8 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-purple-500/8 rounded-full blur-[90px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px]" />
@@ -334,51 +343,52 @@ export default function Lobby() {
             </div>
           </motion.div>
 
-          {/* Room Code & Share */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
+          {/* Room Code & Share with DecryptedText */}
+          <SpotlightCard
             className="p-4 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10"
+            spotlightColor="rgba(220, 38, 38, 0.1)"
           >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Oda Kodu</span>
-              <div className="flex gap-1.5">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-2 text-xs gap-1"
-                  onClick={copyCode}
-                  data-testid="button-copy-code"
-                >
-                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  {copied ? "Kopyalandı" : "Kopyala"}
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-2 text-xs gap-1 text-green-400"
-                  onClick={shareWhatsApp}
-                  data-testid="button-whatsapp"
-                >
-                  <SiWhatsapp className="h-3 w-3" />
-                </Button>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Oda Kodu</span>
+                <div className="flex gap-1.5">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2 text-xs gap-1"
+                    onClick={copyCode}
+                    data-testid="button-copy-code"
+                  >
+                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    {copied ? "Kopyalandı" : "Kopyala"}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2 text-xs gap-1 text-green-400"
+                    onClick={shareWhatsApp}
+                    data-testid="button-whatsapp"
+                  >
+                    <SiWhatsapp className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-center gap-1.5">
-              {roomCode?.split('').map((char, i) => (
-                <motion.span 
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 + i * 0.03 }}
-                  className="w-10 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl font-bold"
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </div>
-          </motion.div>
+              <div className="flex justify-center">
+                <div className="px-6 py-3 rounded-xl bg-gradient-to-br from-primary/10 to-red-500/5 border border-primary/20">
+                  <DecryptedText 
+                    text={roomCode || ""} 
+                    className="text-3xl font-black tracking-[0.3em] text-primary"
+                    speed={40}
+                    characters="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </SpotlightCard>
 
           {/* YouTube Connection */}
           {hasGuessModes && !googleStatusQuery.data?.connected && (
@@ -443,55 +453,102 @@ export default function Lobby() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {players.map((player, i) => {
-                const isReady = player.user.googleConnected || !hasGuessModes;
-                return (
-                  <motion.div
-                    key={player.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 + i * 0.03 }}
-                    className={`relative flex items-center gap-2 p-2.5 rounded-xl transition-all ${
-                      isReady 
-                        ? "bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20" 
-                        : "bg-white/[0.02] border border-white/5"
-                    }`}
-                    data-testid={`card-player-${player.userId}`}
-                  >
-                    <div className="relative shrink-0">
-                      <div className={`w-9 h-9 rounded-lg overflow-hidden ring-2 ${isReady ? "ring-emerald-500/40" : "ring-white/10"}`}>
-                        {player.user.avatarUrl ? (
-                          <img src={player.user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-muted flex items-center justify-center text-sm font-medium">
-                            {player.user.displayName?.charAt(0).toUpperCase()}
+              <AnimatePresence mode="popLayout">
+                {players.map((player, i) => {
+                  const isReady = player.user.googleConnected || !hasGuessModes;
+                  return (
+                    <motion.div
+                      key={player.id}
+                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                      transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 25 }}
+                      layout
+                    >
+                      {isReady ? (
+                        <PulsingBorder 
+                          active={true} 
+                          color="#22c55e"
+                        >
+                          <div 
+                            className="relative flex items-center gap-2 p-2.5 rounded-xl transition-all bg-gradient-to-br from-emerald-500/10 to-emerald-500/5"
+                            data-testid={`card-player-${player.userId}`}
+                          >
+                            <div className="relative shrink-0">
+                              <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-emerald-500/40">
+                                {player.user.avatarUrl ? (
+                                  <img src={player.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full bg-muted flex items-center justify-center text-sm font-medium">
+                                    {player.user.displayName?.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                              {player.userId === room.hostUserId && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                                  <Crown className="h-2.5 w-2.5 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{player.user.displayName}</p>
+                              <p className="text-[10px] flex items-center gap-0.5 text-emerald-400">
+                                <Check className="h-2.5 w-2.5" />Hazır
+                              </p>
+                            </div>
+                            {isHost && player.userId !== userId && (
+                              <button 
+                                onClick={() => kickPlayerMutation.mutate(player.userId)}
+                                className="absolute top-1 right-1 w-5 h-5 rounded-md bg-red-500/10 text-red-400 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                                data-testid={`button-kick-${player.userId}`}
+                              >
+                                <UserX className="h-3 w-3" />
+                              </button>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      {player.userId === room.hostUserId && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
-                          <Crown className="h-2.5 w-2.5 text-white" />
+                        </PulsingBorder>
+                      ) : (
+                        <div 
+                          className="relative flex items-center gap-2 p-2.5 rounded-xl transition-all bg-white/[0.02] border border-white/5"
+                          data-testid={`card-player-${player.userId}`}
+                        >
+                          <div className="relative shrink-0">
+                            <div className="w-9 h-9 rounded-lg overflow-hidden ring-2 ring-white/10">
+                              {player.user.avatarUrl ? (
+                                <img src={player.user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center text-sm font-medium">
+                                  {player.user.displayName?.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                            {player.userId === room.hostUserId && (
+                              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                                <Crown className="h-2.5 w-2.5 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{player.user.displayName}</p>
+                            <p className="text-[10px] flex items-center gap-0.5 text-muted-foreground">
+                              Bekliyor
+                            </p>
+                          </div>
+                          {isHost && player.userId !== userId && (
+                            <button 
+                              onClick={() => kickPlayerMutation.mutate(player.userId)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-md bg-red-500/10 text-red-400 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                              data-testid={`button-kick-${player.userId}`}
+                            >
+                              <UserX className="h-3 w-3" />
+                            </button>
+                          )}
                         </div>
                       )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{player.user.displayName}</p>
-                      <p className={`text-[10px] flex items-center gap-0.5 ${isReady ? "text-emerald-400" : "text-muted-foreground"}`}>
-                        {isReady ? <><Check className="h-2.5 w-2.5" />Hazır</> : "Bekliyor"}
-                      </p>
-                    </div>
-                    {isHost && player.userId !== userId && (
-                      <button 
-                        onClick={() => kickPlayerMutation.mutate(player.userId)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-md bg-red-500/10 text-red-400 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-                        data-testid={`button-kick-${player.userId}`}
-                      >
-                        <UserX className="h-3 w-3" />
-                      </button>
-                    )}
-                  </motion.div>
-                );
-              })}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
 
               {/* Empty Slots */}
               {[...Array(Math.max(0, Math.min(maxPlayers, 6) - playerCount))].map((_, i) => (
@@ -528,15 +585,17 @@ export default function Lobby() {
                 </p>
               </div>
               {isHost && (
-                <Button
-                  onClick={() => startGameMutation.mutate()}
-                  disabled={!canStart || startGameMutation.isPending}
-                  className="h-10 px-5 gap-2 bg-gradient-to-r from-primary to-red-600 border-0"
-                  data-testid="button-start-game"
-                >
-                  {startGameMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                  Başlat
-                </Button>
+                <ClickSpark sparkColor="#22c55e" sparkCount={10}>
+                  <Button
+                    onClick={() => startGameMutation.mutate()}
+                    disabled={!canStart || startGameMutation.isPending}
+                    className="h-10 px-5 gap-2 bg-gradient-to-r from-primary to-red-600 border-0"
+                    data-testid="button-start-game"
+                  >
+                    {startGameMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                    Başlat
+                  </Button>
+                </ClickSpark>
               )}
             </div>
           </motion.div>

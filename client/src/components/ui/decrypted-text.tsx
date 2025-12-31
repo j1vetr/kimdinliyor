@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 
 interface DecryptedTextProps {
   text: string;
@@ -7,30 +7,38 @@ interface DecryptedTextProps {
   characters?: string;
   revealDirection?: "start" | "end" | "center";
   onComplete?: () => void;
-  trigger?: boolean;
 }
 
-export function DecryptedText({
+function DecryptedTextInner({
   text,
   className = "",
   speed = 50,
   characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*",
   revealDirection = "start",
   onComplete,
-  trigger = true,
 }: DecryptedTextProps) {
-  const [displayText, setDisplayText] = useState(text);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [displayText, setDisplayText] = useState("");
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAnimatedRef = useRef(false);
+  const previousTextRef = useRef(text);
 
-  const scramble = useCallback(() => {
-    if (isAnimating || !trigger) return;
-    setIsAnimating(true);
+  useEffect(() => {
+    if (hasAnimatedRef.current && previousTextRef.current === text) {
+      return;
+    }
+
+    previousTextRef.current = text;
+    hasAnimatedRef.current = true;
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    if (!text) {
+      setDisplayText("");
+      return;
+    }
 
     let iteration = 0;
     const length = text.length;
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
 
     intervalRef.current = setInterval(() => {
       setDisplayText(
@@ -63,26 +71,22 @@ export function DecryptedText({
       if (iteration >= length) {
         if (intervalRef.current) clearInterval(intervalRef.current);
         setDisplayText(text);
-        setIsAnimating(false);
         onComplete?.();
       }
     }, speed);
-  }, [text, speed, characters, revealDirection, isAnimating, trigger, onComplete]);
 
-  useEffect(() => {
-    if (trigger) {
-      scramble();
-    }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [trigger, scramble]);
+  }, [text, speed, characters, revealDirection, onComplete]);
 
   return (
     <span className={`font-mono ${className}`}>
-      {displayText}
+      {displayText || text}
     </span>
   );
 }
+
+export const DecryptedText = memo(DecryptedTextInner);
 
 export default DecryptedText;

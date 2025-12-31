@@ -4,7 +4,7 @@ import { SiYoutube } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { BlurText } from "@/components/ui/blur-text";
@@ -12,7 +12,10 @@ import { SplitText } from "@/components/ui/split-text";
 import { GradientText } from "@/components/ui/gradient-text";
 import { SpotlightCard } from "@/components/ui/spotlight";
 import { Magnet } from "@/components/ui/magnet";
-import { AuroraBackground, Particles } from "@/components/ui/aurora-background";
+import { Particles } from "@/components/ui/aurora-background";
+import { ClickSpark } from "@/components/ui/click-spark";
+import { RotatingText } from "@/components/ui/rotating-text";
+import { GlareHover } from "@/components/ui/glare-hover";
 
 const GAME_MODES = [
   { id: "who_liked", title: "Kim Begenmiş?", icon: ThumbsUp, color: "from-red-500 to-rose-600", desc: "Videoyu beğenen" },
@@ -81,7 +84,7 @@ export default function Home() {
             <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/20 text-primary">YENİ</span>
           </motion.div>
 
-          {/* Main Title with SplitText */}
+          {/* Main Title with SplitText + RotatingText */}
           <div className="mb-6">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight">
               <SplitText 
@@ -101,7 +104,11 @@ export default function Home() {
                   colors={["#dc2626", "#f97316", "#dc2626"]} 
                   className="text-4xl md:text-6xl lg:text-7xl font-black"
                 >
-                  İzliyor?
+                  <RotatingText 
+                    texts={["İzliyor?", "Beğeniyor?", "Takip Ediyor?"]} 
+                    interval={2500}
+                    animationDuration={0.4}
+                  />
                 </GradientText>
               </div>
             </h1>
@@ -145,18 +152,20 @@ export default function Home() {
             transition={{ duration: 0.6, delay: 1 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Magnet strength={0.15}>
-              <Link href="/oda-olustur">
-                <Button
-                  size="lg"
-                  className="h-14 px-8 gap-3 text-lg font-bold bg-gradient-to-r from-primary to-red-600 border-0 shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-shadow"
-                  data-testid="button-create-room"
-                >
-                  <Plus className="h-5 w-5" />
-                  Oda Oluştur
-                </Button>
-              </Link>
-            </Magnet>
+            <ClickSpark sparkColor="#dc2626" sparkCount={12}>
+              <Magnet strength={0.15}>
+                <Link href="/oda-olustur">
+                  <Button
+                    size="lg"
+                    className="h-14 px-8 gap-3 text-lg font-bold bg-gradient-to-r from-primary to-red-600 border-0 shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-shadow"
+                    data-testid="button-create-room"
+                  >
+                    <Plus className="h-5 w-5" />
+                    Oda Oluştur
+                  </Button>
+                </Link>
+              </Magnet>
+            </ClickSpark>
 
             <div className="flex items-center gap-2">
               <Input
@@ -210,20 +219,26 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <SpotlightCard
-                    className="p-4 rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/5 h-full"
-                    spotlightColor="rgba(220, 38, 38, 0.1)"
+                  <GlareHover
+                    className="h-full"
+                    glareOpacity={0.2}
+                    glareSize={150}
                   >
-                    <div className="flex flex-col items-center text-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${mode.color} flex items-center justify-center shadow-lg`}>
-                        <Icon className="h-6 w-6 text-white" />
+                    <SpotlightCard
+                      className="p-4 rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/5 h-full"
+                      spotlightColor="rgba(220, 38, 38, 0.1)"
+                    >
+                      <div className="flex flex-col items-center text-center gap-3">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${mode.color} flex items-center justify-center shadow-lg`}>
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-semibold">{mode.title}</h3>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{mode.desc}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-semibold">{mode.title}</h3>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{mode.desc}</p>
-                      </div>
-                    </div>
-                  </SpotlightCard>
+                    </SpotlightCard>
+                  </GlareHover>
                 </motion.div>
               );
             })}
