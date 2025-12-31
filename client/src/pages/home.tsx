@@ -1,46 +1,135 @@
 import { Link } from "wouter";
-import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, Zap, Trophy, Play, Sparkles, ChevronRight } from "lucide-react";
-import { SiYoutube } from "react-icons/si";
+import { Users, Plus, ArrowRight, ThumbsUp, UserPlus, Eye, Clock, Heart, Timer, Disc3, ChevronRight, Zap, Trophy } from "lucide-react";
+import { SiYoutube, SiGoogle } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/logo";
-import { useState, useRef } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { BlurText } from "@/components/ui/blur-text";
-import { SplitText } from "@/components/ui/split-text";
-import { GradientText } from "@/components/ui/gradient-text";
-import { SpotlightCard } from "@/components/ui/spotlight";
-import { Magnet } from "@/components/ui/magnet";
-import { Particles } from "@/components/ui/aurora-background";
-import { ClickSpark } from "@/components/ui/click-spark";
-import { RotatingText } from "@/components/ui/rotating-text";
-import { GlareHover } from "@/components/ui/glare-hover";
 
-const GAME_MODES = [
-  { id: "who_liked", title: "Kim Begenmiş?", icon: ThumbsUp, color: "from-red-500 to-rose-600", desc: "Videoyu beğenen" },
-  { id: "who_subscribed", title: "Kim Abone?", icon: UserPlus, color: "from-orange-500 to-amber-600", desc: "Kanala abone olan" },
-  { id: "oldest_like", title: "İlk Aşkım", icon: Heart, color: "from-pink-500 to-rose-600", desc: "En eski beğeni" },
-  { id: "which_older", title: "Hangisi Eski?", icon: Clock, color: "from-blue-500 to-cyan-600", desc: "Daha eski video" },
-  { id: "most_viewed", title: "En Çok İzlenen", icon: Eye, color: "from-emerald-500 to-green-600", desc: "Daha çok izlenmiş" },
-  { id: "which_longer", title: "Hangisi Uzun?", icon: Timer, color: "from-purple-500 to-violet-600", desc: "Daha uzun video" },
-  { id: "which_more_subs", title: "Daha Popüler?", icon: Users, color: "from-cyan-500 to-blue-600", desc: "Daha fazla abone" },
-  { id: "which_more_videos", title: "Daha Emektar?", icon: Disc3, color: "from-amber-500 to-orange-600", desc: "Daha fazla video" },
+const TAHMIN_MODLARI = [
+  {
+    id: "who_liked",
+    title: "Kim Beğenmiş?",
+    desc: "Bu videoyu kim beğenmiş?",
+    icon: ThumbsUp,
+  },
+  {
+    id: "who_subscribed",
+    title: "Kim Abone?",
+    desc: "Bu kanala kim abone?",
+    icon: UserPlus,
+  },
+  {
+    id: "oldest_like",
+    title: "İlk Aşkım",
+    desc: "En eski beğeni kimin?",
+    icon: Heart,
+  },
 ];
 
-const FEATURES = [
-  { icon: Users, title: "2-12 Oyuncu", desc: "Arkadaşlarınla oyna" },
-  { icon: Zap, title: "Yıldırım Turları", desc: "2x puan çarpanı" },
-  { icon: Trophy, title: "Seri Bonus", desc: "+10 ekstra puan" },
-  { icon: Play, title: "8 Oyun Modu", desc: "Farklı deneyimler" },
+const KARSILASTIRMA_MODLARI = [
+  {
+    id: "which_older",
+    title: "Hangisi Daha Eski?",
+    desc: "Hangisi önce yüklendi?",
+    icon: Clock,
+  },
+  {
+    id: "most_viewed",
+    title: "En Çok İzlenen",
+    desc: "Hangisi daha çok izlendi?",
+    icon: Eye,
+  },
+  {
+    id: "which_longer",
+    title: "Hangisi Daha Uzun?",
+    desc: "Hangi video daha uzun?",
+    icon: Timer,
+  },
+  {
+    id: "which_more_subs",
+    title: "Hangisi Daha Popüler?",
+    desc: "Hangi kanal daha popüler?",
+    icon: Users,
+  },
+  {
+    id: "which_more_videos",
+    title: "Hangisi Daha Emektar?",
+    desc: "Hangi kanal daha çok video yükledi?",
+    icon: Disc3,
+  },
+];
+
+// Soft dark colors for lobby animation
+const LIVE_LOBBIES = [
+  {
+    name: "Efsane Oda",
+    players: [
+      { name: "Beren", initial: "B", status: "Hazır" },
+      { name: "Selin", initial: "S", status: "Bekliyor" },
+      { name: "Duru", initial: "D", status: "Hazır" },
+      { name: "Mert", initial: "M", status: "Bekliyor" },
+    ],
+    count: "4/6",
+  },
+  {
+    name: "Gece Yarısı",
+    players: [
+      { name: "Ali", initial: "A", status: "Hazır" },
+      { name: "Zeynep", initial: "Z", status: "Hazır" },
+      { name: "Can", initial: "C", status: "Hazır" },
+    ],
+    count: "3/4",
+  },
+  {
+    name: "YouTube Ustaları",
+    players: [
+      { name: "Ece", initial: "E", status: "Hazır" },
+      { name: "Burak", initial: "B", status: "Bekliyor" },
+      { name: "Deniz", initial: "D", status: "Hazır" },
+      { name: "Aylin", initial: "A", status: "Hazır" },
+    ],
+    count: "4/8",
+  },
+  {
+    name: "Tahmin Ustaları",
+    players: [
+      { name: "Melis", initial: "M", status: "Hazır" },
+      { name: "Ozan", initial: "O", status: "Hazır" },
+    ],
+    count: "2/4",
+  },
+  {
+    name: "Video Avcıları",
+    players: [
+      { name: "Yiğit", initial: "Y", status: "Hazır" },
+      { name: "Sude", initial: "S", status: "Bekliyor" },
+      { name: "Emre", initial: "E", status: "Hazır" },
+    ],
+    count: "3/6",
+  },
 ];
 
 export default function Home() {
   const [roomCode, setRoomCode] = useState("");
   const [, setLocation] = useLocation();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef });
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
+  const [currentLobbyIndex, setCurrentLobbyIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [activeRooms, setActiveRooms] = useState(12);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentLobbyIndex((prev) => (prev + 1) % LIVE_LOBBIES.length);
+        setActiveRooms(Math.floor(Math.random() * 8) + 10);
+        setIsTransitioning(false);
+      }, 300);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleJoinRoom = () => {
     if (roomCode.trim()) {
@@ -48,348 +137,312 @@ export default function Home() {
     }
   };
 
-  return (
-    <div ref={containerRef} className="min-h-screen bg-background relative overflow-x-hidden">
-      {/* Aurora Background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-500/8 rounded-full blur-[120px]" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[180px]" />
-        <Particles count={30} />
-      </div>
+  const currentLobby = LIVE_LOBBIES[currentLobbyIndex];
 
-      {/* Header */}
-      <header className="relative z-20 flex items-center justify-center py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <Logo height={56} />
-        </motion.div>
+  return (
+    <div className="home-page">
+      <div className="home-bg-pattern" />
+      
+      <header className="home-header">
+        <Logo height={56} />
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 px-4 pt-8 pb-16 md:pt-12 md:pb-24">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] backdrop-blur-xl border border-white/10 mb-8"
-          >
-            <SiYoutube className="h-4 w-4 text-red-500" />
-            <span className="text-sm font-medium">Multiplayer YouTube Oyunu</span>
-            <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary/20 text-primary">YENİ</span>
-          </motion.div>
-
-          {/* Main Title with SplitText + RotatingText */}
-          <div className="mb-6">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight">
-              <SplitText 
-                text="Arkadaşların" 
-                className="justify-center mb-2"
-                delay={0.03}
-                duration={0.6}
-              />
-              <div className="flex items-center justify-center gap-3 flex-wrap">
-                <SplitText 
-                  text="Ne" 
-                  className="justify-center"
-                  delay={0.03}
-                  duration={0.6}
-                />
-                <GradientText 
-                  colors={["#dc2626", "#f97316", "#dc2626"]} 
-                  className="text-4xl md:text-6xl lg:text-7xl font-black"
-                >
-                  <RotatingText 
-                    texts={["İzliyor?", "Beğeniyor?", "Takip Ediyor?"]} 
-                    interval={2500}
-                    animationDuration={0.4}
-                  />
-                </GradientText>
-              </div>
+      <main className="home-main">
+        {/* Hero Section */}
+        <section className="hero-section">
+          <div className="hero-content">
+            <div className="hero-badge-white">
+              <SiYoutube className="hero-badge-icon" />
+              <span>YouTube Tahmin Yarışması</span>
+            </div>
+            
+            <h1 className="hero-title-alt">
+              <span className="hero-title-white">Arkadaşların</span>
+              <span className="hero-title-white">Ne <span className="hero-title-red">İzliyor?</span></span>
             </h1>
-          </div>
-
-          {/* Subtitle with BlurText */}
-          <div className="mb-10">
-            <BlurText
-              text="YouTube hesabını bağla, arkadaşlarını davet et, tahmin et ve kazan!"
-              className="text-base md:text-lg text-muted-foreground justify-center max-w-lg mx-auto"
-              delay={80}
-              animateBy="words"
-            />
-          </div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-            className="flex justify-center gap-8 md:gap-12 mb-12"
-          >
-            {[
-              { value: "8", label: "Oyun Modu", color: "from-primary to-red-500" },
-              { value: "12", label: "Max Oyuncu", color: "from-blue-400 to-cyan-500" },
-              { value: "25", label: "Max Tur", color: "from-amber-400 to-orange-500" },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className={`text-3xl md:text-4xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
-                  {stat.value}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <ClickSpark sparkColor="#dc2626" sparkCount={12}>
-              <Magnet strength={0.15}>
-                <Link href="/oda-olustur">
-                  <Button
-                    size="lg"
-                    className="h-14 px-8 gap-3 text-lg font-bold bg-gradient-to-r from-primary to-red-600 border-0 shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-shadow"
-                    data-testid="button-create-room"
-                  >
-                    <Plus className="h-5 w-5" />
-                    Oda Oluştur
-                  </Button>
-                </Link>
-              </Magnet>
-            </ClickSpark>
-
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Kod"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
-                maxLength={6}
-                className="w-24 h-14 text-center font-mono text-xl bg-white/[0.03] backdrop-blur-xl border-white/10"
-                data-testid="input-room-code"
-              />
-              <Button
-                onClick={handleJoinRoom}
-                disabled={!roomCode.trim()}
-                size="lg"
-                variant="outline"
-                className="h-14 px-6 gap-2 bg-white/[0.03] backdrop-blur-xl border-white/10"
-                data-testid="button-join-room"
-              >
-                <ArrowRight className="h-5 w-5" />
-                Katıl
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Game Modes Section */}
-      <section className="relative z-10 px-4 py-16">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-10"
-          >
-            <h2 className="text-2xl md:text-3xl font-bold mb-3">
-              <GradientText colors={["#ffffff", "#a1a1aa", "#ffffff"]}>8 Farklı Oyun Modu</GradientText>
-            </h2>
-            <p className="text-sm text-muted-foreground">Tahmin ve karşılaştırma modlarıyla eğlenceyi katla</p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {GAME_MODES.map((mode, i) => {
-              const Icon = mode.icon;
-              return (
-                <motion.div
-                  key={mode.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <GlareHover
-                    className="h-full"
-                    glareOpacity={0.2}
-                    glareSize={150}
-                  >
-                    <SpotlightCard
-                      className="p-4 rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/5 h-full"
-                      spotlightColor="rgba(220, 38, 38, 0.1)"
-                    >
-                      <div className="flex flex-col items-center text-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${mode.color} flex items-center justify-center shadow-lg`}>
-                          <Icon className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold">{mode.title}</h3>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{mode.desc}</p>
-                        </div>
-                      </div>
-                    </SpotlightCard>
-                  </GlareHover>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="relative z-10 px-4 py-16">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {FEATURES.map((feature, i) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="p-4 rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/5 text-center"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mx-auto mb-3">
-                    <Icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="text-sm font-semibold">{feature.title}</h3>
-                  <p className="text-[10px] text-muted-foreground mt-1">{feature.desc}</p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* How to Play Section */}
-      <section className="relative z-10 px-4 py-16">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="p-6 md:p-8 rounded-2xl bg-white/[0.02] backdrop-blur-xl border border-white/10"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <h2 className="text-xl font-bold">Nasıl Oynanır?</h2>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {[
-                { step: "1", title: "Oda Oluştur", desc: "6 haneli kod ile arkadaşlarını davet et" },
-                { step: "2", title: "YouTube Bağla", desc: "Beğenilerin ve aboneliklerin oyuna eklenir" },
-                { step: "3", title: "Tahmin Et!", desc: "Doğru cevapla +5, seri bonusu +10 puan" },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15 }}
-                  className="flex gap-4"
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary shrink-0">
-                    {item.step}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">{item.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Bottom CTA */}
-      <section className="relative z-10 px-4 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-2xl mx-auto"
-        >
-          <SpotlightCard
-            className="p-8 md:p-10 rounded-2xl bg-gradient-to-br from-primary/10 to-red-500/5 border border-primary/20 text-center"
-            spotlightColor="rgba(220, 38, 38, 0.2)"
-          >
-            <motion.div
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="inline-block mb-4"
-            >
-              <SiYoutube className="h-12 w-12 text-primary" />
-            </motion.div>
-            <h3 className="text-2xl font-bold mb-3">Hemen Oynamaya Başla!</h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-              Arkadaşlarını topla, YouTube hesabını bağla ve eğlenceli bir yarışmaya başla.
+            
+            <p className="hero-desc-alt">
+              YouTube hesabını bağla, arkadaşlarını davet et.<br />
+              Kim hangi videoyu beğenmiş, kime abone?<br />
+              Tahmin et, puan topla, eğlen!
             </p>
-            <Magnet strength={0.1}>
+
+            <div className="hero-features">
+              <div className="hero-feature-chip">
+                <Users className="hero-feature-icon" />
+                <span>2-12 Kişi</span>
+              </div>
+              <div className="hero-feature-chip">
+                <Zap className="hero-feature-icon" />
+                <span>8 Mod</span>
+              </div>
+              <div className="hero-feature-chip">
+                <Trophy className="hero-feature-icon" />
+                <span>Seri Bonus</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Live Lobby Preview Card */}
+          <div className="hero-lobby-preview">
+            <div className="hero-lobby-card">
+              <div className="hero-lobby-header">
+                <div className="hero-lobby-live">
+                  <span className="hero-live-dot" />
+                  <span>Canlı Lobiler</span>
+                </div>
+                <span className="hero-lobby-count">{activeRooms} Aktif Oda</span>
+              </div>
+              
+              <div className={`hero-lobby-room ${isTransitioning ? 'transitioning' : ''}`}>
+                <span className="hero-room-name">{currentLobby.name}</span>
+                <span className="hero-room-count">{currentLobby.count}</span>
+              </div>
+
+              <div className={`hero-lobby-players ${isTransitioning ? 'transitioning' : ''}`}>
+                {currentLobby.players.map((player, idx) => (
+                  <div key={`${currentLobbyIndex}-${idx}`} className="hero-lobby-player" style={{ animationDelay: `${idx * 0.08}s` }}>
+                    <div className="hero-lobby-avatar">
+                      {player.initial}
+                    </div>
+                    <div className="hero-lobby-info">
+                      <span className="hero-lobby-name">{player.name}</span>
+                      <span className={`hero-lobby-status ${player.status === 'Hazır' ? 'ready' : ''}`}>{player.status}</span>
+                    </div>
+                    {player.status === "Hazır" && (
+                      <div className="hero-lobby-signal">
+                        <span /><span /><span />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="hero-lobby-dots">
+                {LIVE_LOBBIES.map((_, idx) => (
+                  <span key={idx} className={`hero-lobby-dot ${idx === currentLobbyIndex ? 'active' : ''}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="play-options-section">
+          <div className="play-options-grid">
+            <div className="play-option-card">
+              <div className="play-option-header">
+                <div className="play-option-icon-wrap" style={{ background: 'rgba(239, 68, 68, 0.15)' }}>
+                  <Users style={{ color: '#ef4444' }} />
+                </div>
+                <h2 className="play-option-title">Arkadaşlarınla Oyna</h2>
+              </div>
+              <p className="play-option-desc">
+                Özel bir oda oluştur, arkadaşlarını davet et. Kendi aranızda eğlenceli bir yarışma başlat!
+              </p>
               <Link href="/oda-olustur">
-                <Button
-                  size="lg"
-                  className="gap-2 bg-gradient-to-r from-primary to-red-600 border-0 shadow-lg shadow-primary/25"
-                  data-testid="button-cta-create"
-                >
-                  <Plus className="h-5 w-5" />
+                <Button className="play-option-btn" data-testid="button-create-room-2">
+                  <Plus />
                   Oda Oluştur
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight />
                 </Button>
               </Link>
-            </Magnet>
-          </SpotlightCard>
-        </motion.div>
-      </section>
+            </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 py-8 border-t border-white/5">
-        <div className="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-3">
+            <div className="play-option-card">
+              <div className="play-option-header">
+                <div className="play-option-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.15)' }}>
+                  <ArrowRight style={{ color: '#3b82f6' }} />
+                </div>
+                <h2 className="play-option-title">Odaya Katıl</h2>
+              </div>
+              <p className="play-option-desc">
+                Arkadaşından aldığın 6 haneli oda kodunu gir ve hemen oyuna dahil ol!
+              </p>
+              <div className="join-form">
+                <Input
+                  placeholder="Oda Kodu"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && handleJoinRoom()}
+                  maxLength={7}
+                  className="join-input"
+                  data-testid="input-room-code"
+                />
+                <Button
+                  onClick={handleJoinRoom}
+                  disabled={!roomCode.trim()}
+                  variant="outline"
+                  className="join-btn"
+                  data-testid="button-join-room"
+                >
+                  Katıl
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="modes-section">
+          <div className="modes-container">
+            <div className="section-header">
+              <div className="section-line" />
+              <h2 className="section-title">8 Farklı Mod</h2>
+              <div className="section-line" />
+            </div>
+
+            <div className="modes-arena">
+              <div className="modes-arena-left">
+                <div className="modes-arena-badge">
+                  <SiGoogle className="modes-arena-badge-icon" />
+                  <span>YouTube Hesabı Gerekli</span>
+                </div>
+                <h3 className="modes-arena-title">Tahmin Modları</h3>
+                <p className="modes-arena-desc">
+                  Arkadaşlarının beğenilerini ve aboneliklerini tahmin et.
+                </p>
+                <div className="modes-arena-grid modes-arena-grid-3">
+                  {TAHMIN_MODLARI.map((mode) => {
+                    const Icon = mode.icon;
+                    return (
+                      <div key={mode.id} className="modes-arena-card" data-testid={`card-mode-${mode.id}`}>
+                        <div className="modes-arena-card-icon">
+                          <Icon />
+                        </div>
+                        <div className="modes-arena-card-content">
+                          <span className="modes-arena-card-title">{mode.title}</span>
+                          <span className="modes-arena-card-desc">{mode.desc}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="modes-arena-center">
+                <div className="modes-arena-vs">
+                  <span className="modes-arena-vs-line" />
+                  <span className="modes-arena-vs-text">veya</span>
+                  <span className="modes-arena-vs-line" />
+                </div>
+              </div>
+
+              <div className="modes-arena-right">
+                <div className="modes-arena-badge modes-arena-badge-alt">
+                  <span>Giriş Gerekmez</span>
+                </div>
+                <h3 className="modes-arena-title">Karşılaştırma Modları</h3>
+                <p className="modes-arena-desc">
+                  Trend videolar ve popüler kanallarla yarış.
+                </p>
+                <div className="modes-arena-grid modes-arena-grid-5">
+                  {KARSILASTIRMA_MODLARI.map((mode) => {
+                    const Icon = mode.icon;
+                    return (
+                      <div key={mode.id} className="modes-arena-card" data-testid={`card-mode-${mode.id}`}>
+                        <div className="modes-arena-card-icon">
+                          <Icon />
+                        </div>
+                        <div className="modes-arena-card-content">
+                          <span className="modes-arena-card-title">{mode.title}</span>
+                          <span className="modes-arena-card-desc">{mode.desc}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="howto-section">
+          <div className="howto-container">
+            <div className="section-header">
+              <div className="section-line" />
+              <h2 className="section-title">Nasıl Oynanır?</h2>
+              <div className="section-line" />
+            </div>
+
+            <div className="howto-steps">
+              <div className="howto-step">
+                <div className="howto-step-num">1</div>
+                <div className="howto-step-content">
+                  <h3 className="howto-step-title">Oda Oluştur veya Katıl</h3>
+                  <p className="howto-step-desc">
+                    6 haneli kod ile yeni bir oda aç veya arkadaşının paylaştığı kodu girerek katıl.
+                  </p>
+                </div>
+              </div>
+
+              <div className="howto-connector" />
+
+              <div className="howto-step">
+                <div className="howto-step-num">2</div>
+                <div className="howto-step-content">
+                  <h3 className="howto-step-title">YouTube Hesabını Bağla</h3>
+                  <p className="howto-step-desc">
+                    Tahmin modları için Google ile giriş yap. Beğendiğin videolar ve aboneliklerin oyuna eklenir.
+                  </p>
+                </div>
+              </div>
+
+              <div className="howto-connector" />
+
+              <div className="howto-step">
+                <div className="howto-step-num">3</div>
+                <div className="howto-step-content">
+                  <h3 className="howto-step-title">Tahmin Et ve Kazan!</h3>
+                  <p className="howto-step-desc">
+                    Her turda soruları cevapla, seri bonusu yakala ve liderlik tablosunda zirveye çık!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="cta-section">
+          <div className="cta-card">
+            <div className="cta-content">
+              <SiYoutube className="cta-icon" />
+              <h3 className="cta-title">Hemen Başla!</h3>
+              <p className="cta-desc">
+                Arkadaşlarını topla, YouTube hesabını bağla ve yarışmaya katıl.
+              </p>
+              <Link href="/oda-olustur">
+                <Button size="lg" variant="secondary" className="cta-btn" data-testid="button-cta-create">
+                  <Plus />
+                  Oda Oluştur
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="home-footer">
+        <div className="footer-content">
+          <div className="footer-links">
             <Link href="/gizlilik-politikasi">
-              <span className="hover:text-foreground transition-colors" data-testid="link-privacy">Gizlilik</span>
+              <span className="footer-link" data-testid="link-privacy">Gizlilik Politikası</span>
             </Link>
-            <span className="opacity-30">|</span>
+            <span className="footer-divider">|</span>
             <Link href="/kullanim-kosullari">
-              <span className="hover:text-foreground transition-colors" data-testid="link-terms">Kullanım Koşulları</span>
+              <span className="footer-link" data-testid="link-terms">Kullanım Koşulları</span>
             </Link>
           </div>
-          <div className="flex items-center gap-2">
-            <span>by</span>
-            <a 
-              href="https://toov.com.tr" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="font-medium text-foreground hover:text-primary transition-colors"
-              data-testid="link-developer"
-            >
+          <div className="footer-credits">
+            <span>Geliştirici: </span>
+            <a href="https://toov.com.tr" target="_blank" rel="noopener noreferrer" className="footer-dev" data-testid="link-developer">
               TOOV
             </a>
-            <span className="opacity-30">•</span>
-            <a 
-              href="https://youtube.com" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex items-center gap-1 hover:text-red-400 transition-colors"
-              data-testid="link-youtube"
-            >
-              <SiYoutube className="h-3.5 w-3.5" />
-              YouTube
+            <span className="footer-heart">&lt;3</span>
+          </div>
+          <div className="footer-powered">
+            <span>Powered by </span>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="footer-yt" data-testid="link-youtube">
+              <SiYoutube />
+              <span>YouTube</span>
             </a>
           </div>
         </div>

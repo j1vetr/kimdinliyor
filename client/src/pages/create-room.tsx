@@ -10,9 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { motion } from "framer-motion";
-import { SpotlightCard } from "@/components/ui/spotlight";
-import { ClickSpark } from "@/components/ui/click-spark";
-import { Particles } from "@/components/ui/aurora-background";
 
 const COMPARE_MODES = [
   { id: "which_older", label: "Hangisi Eski?", icon: Clock, gradient: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/30", iconBg: "bg-blue-500" },
@@ -121,12 +118,11 @@ export default function CreateRoom() {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Ambient Background with Particles */}
+      {/* Ambient Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px]" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[150px]" />
-        <Particles count={20} />
       </div>
 
       {/* Header */}
@@ -154,15 +150,12 @@ export default function CreateRoom() {
             <p className="text-sm text-muted-foreground">Arkadaşlarınla yarışmaya hazır mısın?</p>
           </motion.div>
 
-          {/* Room Name - Glass Card with Spotlight */}
-          <SpotlightCard
-            className="relative p-5 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-xl"
-            spotlightColor="rgba(220, 38, 38, 0.08)"
-          >
+          {/* Room Name - Glass Card */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
+            className="relative p-5 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-xl"
           >
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 block">
               Oda Adı
@@ -179,7 +172,6 @@ export default function CreateRoom() {
               {roomName.length}/30
             </div>
           </motion.div>
-          </SpotlightCard>
 
           {/* Game Modes - Glass Card */}
           <motion.div 
@@ -464,28 +456,26 @@ export default function CreateRoom() {
             )}
           </motion.div>
 
-          {/* Submit Button with ClickSpark */}
+          {/* Submit Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <ClickSpark sparkColor="#dc2626" sparkCount={10}>
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full h-14 gap-3 text-base font-bold bg-gradient-to-r from-primary via-primary to-red-500 hover:opacity-90 shadow-lg shadow-primary/25 transition-all"
-                disabled={!isFormValid || createRoomMutation.isPending}
-                data-testid="button-submit-room"
-              >
-                {createRoomMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Play className="h-5 w-5" />
-                )}
-                Oda Oluştur
-              </Button>
-            </ClickSpark>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full h-14 gap-3 text-base font-bold bg-gradient-to-r from-primary via-primary to-red-500 hover:opacity-90 shadow-lg shadow-primary/25 transition-all"
+              disabled={!isFormValid || createRoomMutation.isPending}
+              data-testid="button-submit-room"
+            >
+              {createRoomMutation.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Play className="h-5 w-5" />
+              )}
+              Oda Oluştur
+            </Button>
           </motion.div>
 
         </form>
